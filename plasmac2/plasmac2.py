@@ -3735,7 +3735,7 @@ hal.set_p('plasmac.use-auto-volts', str(value))
 value = getPrefs(PREF,'ENABLE_OPTIONS', 'Ohmic probe enable', False, bool)
 pVars.ohmicEnable.set(value)
 hal.set_p('plasmac.ohmic-probe-enable', str(value))
-value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', vars.max_speed.get() * 60 * 0.5, int)
+value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
 rC(fsetup + '.l.jog.speed','set',value)
 restoreSetup['jogSpeed'] = value
 set_jog_slider(value / vars.max_speed.get() / 60)
