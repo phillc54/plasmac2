@@ -1598,12 +1598,13 @@ def button_action(button, pressed):
         user_button_released(button, buttonCodes[int(button)])
 
 def user_button_setup():
-    global buttonNames, buttonCodes, togglePins, pulsePins, machineBounds
+    global buttonNames, buttonCodes, togglePins, pulsePins, machineBounds, criticalButtons
     global probeButton, probeText, torchButton, torchText, cChangeButton
     singleCodes = ['ohmic-test','cut-type','single-cut','manual-cut','probe-test', \
                    'torch-pulse','change-consumables','framing','latest-file']
     buttonNames = {0:{'name':None}}
     buttonCodes = {0:{'code':None}}
+    criticalButtons = []
     row = 1
     for n in range(1,21):
         bLabel = None
@@ -1616,8 +1617,10 @@ def user_button_setup():
             outCode = {'code':'cut-type', 'text':bName}
         elif bCode.strip() == 'single-cut' and not 'single-cut' in buttonCodes:
             outCode['code'] = 'single-cut'
+            criticalButtons.append(n)
         elif bCode.strip() == 'manual-cut' and not 'manual-cut' in buttonCodes:
             outCode['code'] = 'manual-cut'
+            criticalButtons.append(n)
         elif bCode.startswith('probe-test') and not 'probe-test' in [(v['code']) for k, v in buttonCodes.items()]:
             if bCode.split()[0].strip() == 'probe-test' and len(bCode.split()) < 3:
                 codes = bCode.strip().split()
@@ -1760,6 +1763,8 @@ def user_button_setup():
             rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new')
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
+            if bCode.startswith('toggle-halpin ') and togglePins[str(n)]['runcritical']:
+                rC('.fbuttons.button' + str(n),'configure','-bg','#BB0000','-activebackground','#990000')#togglePins[key]['button']
             row += 1
         elif bName or bCode:
             title = _('USER BUTTON ERROR')
@@ -4000,10 +4005,15 @@ def user_live_update():
             if togglePins[key]['state']:
                 rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg','green','-activebackground','SeaGreen1')
             else:
-                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',buttonBackG,'-activebackground',buttonActBackG)
-        if togglePins[key]['runcritical'] and not togglePins[key]['state']:
-#FIXME: RUN CRITICAL CODE HERE
-            pass
+                if togglePins[key]['runcritical']:
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg','#BB0000','-activebackground','#990000')
+                else:
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',buttonBackG,'-activebackground',buttonActBackG)
+        if togglePins[key]['runcritical']:
+            if togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'normal' and isIdleHomed:
+                rC('.toolbar.program_run','configure','-state','normal')
+            elif not togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'disabled':
+                rC('.toolbar.program_run','configure','-state','disabled')
     # halpin pulse
     for key in pulsePins:
         # service the timers
