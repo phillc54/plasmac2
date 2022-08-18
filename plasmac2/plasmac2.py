@@ -1,6 +1,6 @@
 '''
-plasmac2 is an add-on to the Axis GUI for creating a 
-plasma cutting configuration using the plasmac component
+plasmac2 is an add-on to the LinuxCNC Axis GUI for creating
+a plasma cutting configuration using the plasmac component
 
 plasmac2 makes use of code from the LinuxCNC project:
 http://linuxcnc.org & https://github.com/linuxcnc
@@ -2497,7 +2497,7 @@ pmx485FaultName = {
 # SETUP                                                                      #
 ##############################################################################
 firstRun = 'valid'
-if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/libs')):
+if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     libPath = os.path.expanduser('~/linuxcnc/plasmac2/lib')
     sys.path.append(libPath)
 
@@ -3849,7 +3849,7 @@ else:
     title = _('LOAD ERROR')
     msg0 = _('Cannot find valid library directory')
     msg1 = _('PlasmaC2 extensions are not loaded')
-    notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.expanduser('~/linuxcnc/plasmac2/libs'), msg1))
+    notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.expanduser('~/linuxcnc/plasmac2/lib'), msg1))
 
 
 ##############################################################################
@@ -3921,8 +3921,8 @@ def user_hal_pins():
     materialChangeTimeoutPin = comp['material-change-timeout']
     materialReloadPin = comp['material-reload']
     materialTempPin = comp['material-temp']
-    # # do user button setup after hal pin creation
-    # user_button_setup()
+    # do user button setup after hal pin creation
+    user_button_setup()
     # load materials when setup is complete
     load_materials()
     # start powermax comms if valid port
