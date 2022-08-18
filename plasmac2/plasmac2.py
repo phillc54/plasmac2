@@ -1,41 +1,27 @@
 '''
-plasmac2.py
-called from Axis at startup
-
 plasmac2 is an add-on to the Axis GUI for creating a 
 plasma cutting configuration using the plasmac component
+
+plasmac2 makes use of code from the LinuxCNC project:
+http://linuxcnc.org & https://github.com/linuxcnc
+
+Copyright (C) 2022  Phillip A Carter
+Copyright (C) 2022  Gregory D Carl
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
-
-firstRun = True
-libPath = os.path.expanduser('~/linuxcnc/plasmac2/lib')
-sys.path.append(libPath)
-
-import tarfile
-from tkinter import messagebox
-from tkinter import simpledialog
-from math import radians, atan, degrees
-from collections import OrderedDict
-from glob import glob as GLOB
-from shutil import copy as COPY
-from importlib import reload
-from plasmac import run_from_line as RFL
-import conversational
-import set_offsets
-
-configPath = os.getcwd()
-imagePath = os.path.join(libPath, 'images') # our own images
-imageAxis = os.path.join(BASE, 'share', 'axis', 'images') # images pinched from Axis
-if not os.path.isdir('/tmp/plasmac'):
-    os.mkdir('/tmp/plasmac')
-tmpPath = '/tmp/plasmac'
-
-# not used:
-#installType = 'pkg' if os.path.dirname(os.path.realpath(__file__)) == '/bin' else 'rip'
-
-# not used:
-# use a non existant file name so Axis doesn't open a default file
-# only usefull if we move the file open code in Axis so it it called after the user command file is called
-#args = ['do_not_open_a_file']
 
 
 ##############################################################################
@@ -260,7 +246,7 @@ def set_window_size():
     size = pVars.winSize.get()
     if size not in ['default', 'last', 'fullscreen', 'maximized']:
         title = _('WINDOW ERROR')
-        msg1 = _('Invalid parameters in [GUI_OPTIONS]Window size in preferences file')
+        msg0 = _('Invalid parameters in [GUI_OPTIONS]Window size in preferences file')
         notifications.add('error', '{}:\n{}\n'.format(title, msg0))
         return False
     else:
@@ -2508,1323 +2494,1362 @@ pmx485FaultName = {
 
 
 ##############################################################################
-# SETUP FUNCTIONS                                                            #
+# SETUP                                                                      #
 ##############################################################################
-VER = '2.0'
-PREF = plasmacPreferences()
-MATS = plasmacMaterials()
-TEMP = plasmacTempMaterial()
+firstRun = 'valid'
+if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/libs')):
+    libPath = os.path.expanduser('~/linuxcnc/plasmac2/lib')
+    sys.path.append(libPath)
 
-rC = root_window.tk.call
-rE = root_window.tk.eval
+    import tarfile
+    from tkinter import messagebox
+    from tkinter import simpledialog
+    from math import radians, atan, degrees
+    from collections import OrderedDict
+    from glob import glob as GLOB
+    from shutil import copy as COPY
+    from importlib import reload
+    from plasmac import run_from_line as RFL
+    import conversational
+    import set_offsets
 
-fontName = 'sans'# set the default font
-fontSize = startFontSize = '10'
+    configPath = os.getcwd()
+    imagePath = os.path.join(libPath, 'images') # our own images
+    imageAxis = os.path.join(BASE, 'share', 'axis', 'images') # images pinched from Axis
+    if not os.path.isdir('/tmp/plasmac'):
+        os.mkdir('/tmp/plasmac')
+    tmpPath = '/tmp/plasmac'
 
-# make some widget names to save typing
-ftop = '.pane.top'
-ftabs = ftop + '.tabs'
-fright = ftop + '.right'
-fmanual = ftabs + '.fmanual'
-faxes = fmanual + '.axes'
-fjoints = fmanual + '.joints'
-fjogf = fmanual + '.jogf'
-foverride = fmanual + '.override'
-flimitovr = fmanual + '.jogf.limitovr'
-fjogiovr = fmanual + '.jogf.inhibitovr'
-fplasma = fmanual + '.plasma'
-farcv = fplasma + '.arcv'
-fthc = fplasma + '.thc'
-fmdi = ftabs + '.fmdi'
-ft = '.pane.bottom.t'
-fleds = '.pane.bottom.leds'
-fcutrecs = ftabs + '.fcutrecs'
-fcutrec = fcutrecs + '.pm'
-fleadins = fcutrecs + '.leadins'
-fparam = '.param'
-fsetup = '.setup'
+    # not used:
+    #installType = 'pkg' if os.path.dirname(os.path.realpath(__file__)) == '/bin' else 'rip'
 
-wLeds = [fleds + '.led-arc-ok',\
-         fleds + '.led-torch',\
-         fleds + '.led-thc-enabled',\
-         fleds + '.led-ohmic',\
-         fleds + '.led-float',\
-         fleds + '.led-breakaway',\
-         fleds + '.led-thc-active',\
-         fleds + '.led-up',\
-         fleds + '.led-down',\
-         fleds + '.led-corner-locked',\
-         fleds + '.led-kerf-locked',\
-        ]
+    # not used:
+    # use a non existant file name so Axis doesn't open a default file
+    # only usefull if we move the file open code in Axis so it it called after the user command file is called
+    #args = ['do_not_open_a_file']
 
-wCombos = [fsetup + '.l.gui.wsize',\
-           fsetup + '.l.mats.default',\
-           '.runs.materials',\
-          ]
+    VER = '2.0'
+    PREF = plasmacPreferences()
+    MATS = plasmacMaterials()
+    TEMP = plasmacTempMaterial()
 
-# recreate widget list to move active gcodes and add new widgets
-widget_list_new = []
-for l in widget_list:
-    if '.gcodes' in l[2]:
-        l = ('code_text', Text, '.info.gcodef.gcodes')
-    widget_list_new.append(l)
-widget_list_new.append(('buttonFrame', Frame, '.fbuttons'))
-widget_list_new.append(('convFrame', Frame, '.fconv'))
-widget_list_new.append(('toolFrame', Frame, '.toolconv'))
-widget_list_new.append(('materials', bwidget.ComboBox, '.runs.materials'))
-widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
-widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
-widgets = nf.Widgets(root_window, *widget_list_new)
+    rC = root_window.tk.call
+    rE = root_window.tk.eval
 
-# tk widget variables
-pVars = nf.Variables(root_window,
-         ('plasmatool', StringVar),
-         ('thcEnable', BooleanVar),
-         ('cornerEnable', BooleanVar),
-         ('kerfEnable', BooleanVar),
-         ('autoVolts', BooleanVar),
-         ('ohmicEnable', BooleanVar),
-         ('meshEnable', BooleanVar),
-         ('ignorArcOk', BooleanVar),
-         ('closeDialog', BooleanVar),
-         ('winSize', StringVar),
-         ('startLine', IntVar),
-         ('rflActive', BooleanVar),
-         ('preRflFile', StringVar),
-         ('laserText', StringVar),
-         ('crSpeed', IntVar),
-         ('previewLarge', BooleanVar),
-         ('jogSpeed', DoubleVar),
-         ('plasmacMode', IntVar),
-         ('fontSize', StringVar),
-         ('coneSize', DoubleVar),
-         ('kerfWidth', DoubleVar),
-         ('cutAmps', IntVar),
-         ('cutMode', IntVar),
-         ('gasPressure', DoubleVar),
-         ('pmx485Enable', BooleanVar),
-         ('max_speed_units', DoubleVar),
-         ('convButton', IntVar),
-         ('preConvFile', IntVar),
-         ('lengthJ', StringVar),
-         ('lengthT', StringVar),
-         ('lengthS', DoubleVar),
-         ('pierceJ', StringVar),
-         ('pierceT', StringVar),
-         ('pierceS', IntVar),
-         ('rapidJ', StringVar),
-         ('rapidT', StringVar),
-         ('rapidS', IntVar),
-         ('probeJ', StringVar),
-         ('probeT', StringVar),
-         ('probeS', IntVar),
-         ('torchJ', StringVar),
-         ('torchT', StringVar),
-         ('torchS', IntVar),
-         ('cutJ', StringVar),
-         ('cutT', StringVar),
-         ('cutS', IntVar),
-         ('pausedJ', StringVar),
-         ('pausedT', StringVar),
-         ('pausedS', IntVar),
-         ('runJ', StringVar),
-         ('runT', StringVar),
-         ('runS', IntVar),
-         ('probeJ', StringVar),
-         ('probeT', StringVar),
-         ('probeS', IntVar),
-         ('arcT', StringVar),
-         ('jiOverride', BooleanVar),
-         ('matDefault', IntVar),
-         ('jogInhibitOvr', IntVar),
-         ('limitOvr', IntVar),
-         )
+    fontName = 'sans'# set the default font
+    fontSize = startFontSize = '10'
 
-restoreSetup = {}
-pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
-restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
-pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
-restoreSetup['fontSize'] = pVars.fontSize.get()
-thcFeedRate = round((float(inifile.find('AXIS_Z', 'MAX_VELOCITY')) * float(inifile.find('AXIS_Z', 'OFFSET_AV_RATIO'))) * 60, 3)
-maxHeight = round(hal.get_value('ini.z.max_limit') - hal.get_value('ini.z.min_limit'), 3)
-unitsPerMm = hal.get_value('halui.machine.units-per-mm')
-isIdle = False
-isIdleHomed = False
-isPaused = False
-isRunning = False
-getMaterialBusy = False
-materialFileDict = {}
-materialNumList = []
-materialList = [] # this  may be deleted, duplicate of materialNumList
-materialName = '' # this  may be deleted,  not used
-materialAutoChange = False
-materialChangePin = materialChangeNumberPin = materialChangeTimeoutPin = materialReloadPin = materialTempPin = 0
-probePressed = False
-probeTimer = 0
-probeButton = ''
-probeStart = 0
-torchPressed = False
-torchTimer = 0
-torchButton = ''
-torchStart = 0
-torchHeight = 0
-cChangeButton = ''
-cutType = 0
-togglePins = {}
-pulsePins = {}
-currentTool = None
-manualCut = {'state':False, 'feed':vars.jog_speed.get()}
-singleCut = {'state':False, 'G91':False}
-framingState = False
-runState = False
-laserTimer = 0.0
-laserButtonState = 'laser'
-laserOffsets = {}
-laserOffsets['X'] = getPrefs(PREF,'LASER_OFFSET', 'X axis', 0, float)
-laserOffsets['Y'] = getPrefs(PREF,'LASER_OFFSET', 'Y axis', 0, float)
-probeOffsets = {}
-probeOffsets['X'] = getPrefs(PREF, 'OFFSET_PROBING', 'X axis', 0, float)
-probeOffsets['Y'] = getPrefs(PREF, 'OFFSET_PROBING', 'Y axis', 0, float)
-probeOffsets['Delay'] = getPrefs(PREF, 'OFFSET_PROBING', 'Delay', 0, float)
-machineBounds = {}
-machineBounds['X-'] = round(float(inifile.find('AXIS_X', 'MIN_LIMIT')), 6)
-machineBounds['X+'] = round(float(inifile.find('AXIS_X', 'MAX_LIMIT')), 6)
-machineBounds['Y-'] = round(float(inifile.find('AXIS_Y', 'MIN_LIMIT')), 6)
-machineBounds['Y+'] = round(float(inifile.find('AXIS_Y', 'MAX_LIMIT')), 6)
-machineBounds['Z-'] = round(float(inifile.find('AXIS_Z', 'MIN_LIMIT')), 6)
-machineBounds['Z+'] = round(float(inifile.find('AXIS_Z', 'MAX_LIMIT')), 6)
-machineBounds['xLen'] = machineBounds['X+'] - machineBounds['X-']
-machineBounds['yLen'] = machineBounds['Y+'] - machineBounds['Y-']
-machineBounds['zLen'] = machineBounds['Z+'] - machineBounds['Z-']
-startAlignPos = {X:0, Y:0}
-relPos = {X:0, Y:0}
-activeFunction = False
-pausedState = False
-convFirstRun = True
-convViewOptions = {}
-lastViewType = None
-preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
-pmx485 = {'exists':False}
-spinBoxes = []
-widgetValues = {}
-statValues = {'length':0, 'pierce':0, 'rapid':0, 'probe':0, 'torch':0, 'cut':0, 'paused':0, 'run':0}
-gcodeProperties = None
-# get the default button background colors
-buttonBackG = rC(fjogf + '.jog.jogminus','cget','-bg')
-buttonActBackG = rC(fjogf + '.jog.jogminus','cget','-activebackground')
+    # make some widget names to save typing
+    ftop = '.pane.top'
+    ftabs = ftop + '.tabs'
+    fright = ftop + '.right'
+    fmanual = ftabs + '.fmanual'
+    faxes = fmanual + '.axes'
+    fjoints = fmanual + '.joints'
+    fjogf = fmanual + '.jogf'
+    foverride = fmanual + '.override'
+    flimitovr = fmanual + '.jogf.limitovr'
+    fjogiovr = fmanual + '.jogf.inhibitovr'
+    fplasma = fmanual + '.plasma'
+    farcv = fplasma + '.arcv'
+    fthc = fplasma + '.thc'
+    fmdi = ftabs + '.fmdi'
+    ft = '.pane.bottom.t'
+    fleds = '.pane.bottom.leds'
+    fcutrecs = ftabs + '.fcutrecs'
+    fcutrec = fcutrecs + '.pm'
+    fleadins = fcutrecs + '.leadins'
+    fparam = '.param'
+    fsetup = '.setup'
 
-# # recreate widget list to move active gcodes and add new widgets
-# widget_list_new = []
-# for l in widget_list:
-#     if '.gcodes' in l[2]:
-#         l = ('code_text', Text, '.info.gcodef.gcodes')
-#     widget_list_new.append(l)
-# widget_list_new.append(('buttonFrame', Frame, '.fbuttons'))
-# widget_list_new.append(('convFrame', Frame, '.fconv'))
-# widget_list_new.append(('toolFrame', Frame, '.toolconv'))
-# widget_list_new.append(('materials', bwidget.ComboBox, '.runs.materials'))
-# widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
-# widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
-# 
-# widget_list_new.append(('plasma', LabelFrame, tabs_manual + '.plasma'))
-# widgets = nf.Widgets(root_window, *widget_list_new)
-toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
-                'program_step','program_pause','program_stop','program_blockdelete',
-                'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
-                'view_x','view_y','view_y2','view_p','rotate','clear_plot']
-matButtons   = ['delete','new','reload','save']
+    wLeds = [fleds + '.led-arc-ok',\
+             fleds + '.led-torch',\
+             fleds + '.led-thc-enabled',\
+             fleds + '.led-ohmic',\
+             fleds + '.led-float',\
+             fleds + '.led-breakaway',\
+             fleds + '.led-thc-active',\
+             fleds + '.led-up',\
+             fleds + '.led-down',\
+             fleds + '.led-corner-locked',\
+             fleds + '.led-kerf-locked',\
+            ]
 
-# spinbox validator
-valspin = root_window.register(validate_spinbox)
+    wCombos = [fsetup + '.l.gui.wsize',\
+               fsetup + '.l.mats.default',\
+               '.runs.materials',\
+              ]
 
-# monkeypatched functions
-o.get_view = get_view # axis.py
-o.draw_grid = draw_grid # glcanon.py
+    # recreate widget list to move active gcodes and add new widgets
+    widget_list_new = []
+    for l in widget_list:
+        if '.gcodes' in l[2]:
+            l = ('code_text', Text, '.info.gcodef.gcodes')
+        widget_list_new.append(l)
+    widget_list_new.append(('buttonFrame', Frame, '.fbuttons'))
+    widget_list_new.append(('convFrame', Frame, '.fconv'))
+    widget_list_new.append(('toolFrame', Frame, '.toolconv'))
+    widget_list_new.append(('materials', bwidget.ComboBox, '.runs.materials'))
+    widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
+    widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
+    widgets = nf.Widgets(root_window, *widget_list_new)
 
-# tcl called functions hijacked from axis.py
-TclCommands.reload_file = reload_file
-TclCommands.task_run_line = task_run_line
-TclCommands.task_stop = task_stop
-TclCommands.open_file_name = open_file_name
-TclCommands.gcode_properties = gcode_properties
-TclCommands.set_view_p = set_view_p
-TclCommands.set_view_z = set_view_z
-# tcl functions hijacked from axis.tcl
-TclCommands.update_title = update_title
-TclCommands.update_jog_slider_vel = update_jog_slider_vel
-# new functions
-TclCommands.set_view_t = set_view_t
-TclCommands.param_changed = param_changed
-TclCommands.material_changed = material_changed
-TclCommands.save_material_clicked = save_material_clicked
-TclCommands.reload_material_clicked = reload_material_clicked
-TclCommands.new_material_clicked = new_material_clicked
-TclCommands.delete_material_clicked = delete_material_clicked
-TclCommands.change_default_material = change_default_material
-TclCommands.save_param_clicked = save_param_clicked
-TclCommands.load_param_clicked = load_param_clicked
-TclCommands.backup_clicked = backup_clicked
-TclCommands.save_setup_clicked = save_setup_clicked
-TclCommands.load_setup_clicked = load_setup_clicked
-TclCommands.user_button_add = user_button_add
-TclCommands.preview_toggle = preview_toggle
-TclCommands.setup_toggle = setup_toggle
-TclCommands.param_toggle = param_toggle
-TclCommands.conv_toggle = conv_toggle
-TclCommands.thc_enable_toggled = thc_enable_toggled
-TclCommands.corner_enable_toggled = corner_enable_toggled
-TclCommands.kerf_enable_toggled = kerf_enable_toggled
-TclCommands.auto_volts_toggled = auto_volts_toggled
-TclCommands.ohmic_enable_toggled = ohmic_enable_toggled
-TclCommands.ignore_arc_ok_toggled = ignore_arc_ok_toggled
-TclCommands.close_window = close_window
-TclCommands.set_window_size = set_window_size
-TclCommands.button_action = button_action
-TclCommands.mode_changed = mode_changed
-TclCommands.font_size_changed = font_size_changed
-TclCommands.cone_size_changed = cone_size_changed
-TclCommands.height_raise = height_raise
-TclCommands.height_lower = height_lower
-TclCommands.height_reset = height_reset
-TclCommands.torch_enable = torch_enable
-TclCommands.joint_mode_switch = joint_mode_switch
-TclCommands.ja_button_activated = ja_button_activated
-TclCommands.manual_cut = manual_cut
-TclCommands.touch_off_xy = touch_off_xy
-TclCommands.laser_button_toggled = laser_button_toggled
-TclCommands.cut_rec_motion = cut_rec_motion
-TclCommands.cut_rec_default_changed = cut_rec_default_changed
-TclCommands.cut_rec_slider_changed = cut_rec_slider_changed
-TclCommands.cut_rec_move = cut_rec_move
-TclCommands.cut_rec_cancel = cut_rec_cancel
-TclCommands.pmx485_mode_changed = pmx485_mode_changed
-TclCommands.pmx485_pressure_changed = pmx485_pressure_changed
-TclCommands.pmx485_enable_toggled = pmx485_enable_toggled
-TclCommands.pmx485_mesh_enable_toggled = pmx485_mesh_enable_toggled
-TclCommands.reset_all_stats = reset_all_stats
-TclCommands.set_peripheral_offsets = set_peripheral_offsets
-commands = TclCommands(root_window)
+    # tk widget variables
+    pVars = nf.Variables(root_window,
+             ('plasmatool', StringVar),
+             ('thcEnable', BooleanVar),
+             ('cornerEnable', BooleanVar),
+             ('kerfEnable', BooleanVar),
+             ('autoVolts', BooleanVar),
+             ('ohmicEnable', BooleanVar),
+             ('meshEnable', BooleanVar),
+             ('ignorArcOk', BooleanVar),
+             ('closeDialog', BooleanVar),
+             ('winSize', StringVar),
+             ('startLine', IntVar),
+             ('rflActive', BooleanVar),
+             ('preRflFile', StringVar),
+             ('laserText', StringVar),
+             ('crSpeed', IntVar),
+             ('previewLarge', BooleanVar),
+             ('jogSpeed', DoubleVar),
+             ('plasmacMode', IntVar),
+             ('fontSize', StringVar),
+             ('coneSize', DoubleVar),
+             ('kerfWidth', DoubleVar),
+             ('cutAmps', IntVar),
+             ('cutMode', IntVar),
+             ('gasPressure', DoubleVar),
+             ('pmx485Enable', BooleanVar),
+             ('max_speed_units', DoubleVar),
+             ('convButton', IntVar),
+             ('preConvFile', IntVar),
+             ('lengthJ', StringVar),
+             ('lengthT', StringVar),
+             ('lengthS', DoubleVar),
+             ('pierceJ', StringVar),
+             ('pierceT', StringVar),
+             ('pierceS', IntVar),
+             ('rapidJ', StringVar),
+             ('rapidT', StringVar),
+             ('rapidS', IntVar),
+             ('probeJ', StringVar),
+             ('probeT', StringVar),
+             ('probeS', IntVar),
+             ('torchJ', StringVar),
+             ('torchT', StringVar),
+             ('torchS', IntVar),
+             ('cutJ', StringVar),
+             ('cutT', StringVar),
+             ('cutS', IntVar),
+             ('pausedJ', StringVar),
+             ('pausedT', StringVar),
+             ('pausedS', IntVar),
+             ('runJ', StringVar),
+             ('runT', StringVar),
+             ('runS', IntVar),
+             ('probeJ', StringVar),
+             ('probeT', StringVar),
+             ('probeS', IntVar),
+             ('arcT', StringVar),
+             ('jiOverride', BooleanVar),
+             ('matDefault', IntVar),
+             ('jogInhibitOvr', IntVar),
+             ('limitOvr', IntVar),
+             )
+
+    restoreSetup = {}
+    pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
+    restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
+    pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
+    restoreSetup['fontSize'] = pVars.fontSize.get()
+    thcFeedRate = round((float(inifile.find('AXIS_Z', 'MAX_VELOCITY')) * float(inifile.find('AXIS_Z', 'OFFSET_AV_RATIO'))) * 60, 3)
+    maxHeight = round(hal.get_value('ini.z.max_limit') - hal.get_value('ini.z.min_limit'), 3)
+    unitsPerMm = hal.get_value('halui.machine.units-per-mm')
+    isIdle = False
+    isIdleHomed = False
+    isPaused = False
+    isRunning = False
+    getMaterialBusy = False
+    materialFileDict = {}
+    materialNumList = []
+    materialList = [] # this  may be deleted, duplicate of materialNumList
+    materialName = '' # this  may be deleted,  not used
+    materialAutoChange = False
+    materialChangePin = materialChangeNumberPin = materialChangeTimeoutPin = materialReloadPin = materialTempPin = 0
+    probePressed = False
+    probeTimer = 0
+    probeButton = ''
+    probeStart = 0
+    torchPressed = False
+    torchTimer = 0
+    torchButton = ''
+    torchStart = 0
+    torchHeight = 0
+    cChangeButton = ''
+    cutType = 0
+    togglePins = {}
+    pulsePins = {}
+    currentTool = None
+    manualCut = {'state':False, 'feed':vars.jog_speed.get()}
+    singleCut = {'state':False, 'G91':False}
+    framingState = False
+    runState = False
+    laserTimer = 0.0
+    laserButtonState = 'laser'
+    laserOffsets = {}
+    laserOffsets['X'] = getPrefs(PREF,'LASER_OFFSET', 'X axis', 0, float)
+    laserOffsets['Y'] = getPrefs(PREF,'LASER_OFFSET', 'Y axis', 0, float)
+    probeOffsets = {}
+    probeOffsets['X'] = getPrefs(PREF, 'OFFSET_PROBING', 'X axis', 0, float)
+    probeOffsets['Y'] = getPrefs(PREF, 'OFFSET_PROBING', 'Y axis', 0, float)
+    probeOffsets['Delay'] = getPrefs(PREF, 'OFFSET_PROBING', 'Delay', 0, float)
+    machineBounds = {}
+    machineBounds['X-'] = round(float(inifile.find('AXIS_X', 'MIN_LIMIT')), 6)
+    machineBounds['X+'] = round(float(inifile.find('AXIS_X', 'MAX_LIMIT')), 6)
+    machineBounds['Y-'] = round(float(inifile.find('AXIS_Y', 'MIN_LIMIT')), 6)
+    machineBounds['Y+'] = round(float(inifile.find('AXIS_Y', 'MAX_LIMIT')), 6)
+    machineBounds['Z-'] = round(float(inifile.find('AXIS_Z', 'MIN_LIMIT')), 6)
+    machineBounds['Z+'] = round(float(inifile.find('AXIS_Z', 'MAX_LIMIT')), 6)
+    machineBounds['xLen'] = machineBounds['X+'] - machineBounds['X-']
+    machineBounds['yLen'] = machineBounds['Y+'] - machineBounds['Y-']
+    machineBounds['zLen'] = machineBounds['Z+'] - machineBounds['Z-']
+    startAlignPos = {X:0, Y:0}
+    relPos = {X:0, Y:0}
+    activeFunction = False
+    pausedState = False
+    convFirstRun = True
+    convViewOptions = {}
+    lastViewType = None
+    preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
+    pmx485 = {'exists':False}
+    spinBoxes = []
+    widgetValues = {}
+    statValues = {'length':0, 'pierce':0, 'rapid':0, 'probe':0, 'torch':0, 'cut':0, 'paused':0, 'run':0}
+    gcodeProperties = None
+    # get the default button background colors
+    buttonBackG = rC(fjogf + '.jog.jogminus','cget','-bg')
+    buttonActBackG = rC(fjogf + '.jog.jogminus','cget','-activebackground')
+
+    # # recreate widget list to move active gcodes and add new widgets
+    # widget_list_new = []
+    # for l in widget_list:
+    #     if '.gcodes' in l[2]:
+    #         l = ('code_text', Text, '.info.gcodef.gcodes')
+    #     widget_list_new.append(l)
+    # widget_list_new.append(('buttonFrame', Frame, '.fbuttons'))
+    # widget_list_new.append(('convFrame', Frame, '.fconv'))
+    # widget_list_new.append(('toolFrame', Frame, '.toolconv'))
+    # widget_list_new.append(('materials', bwidget.ComboBox, '.runs.materials'))
+    # widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
+    # widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
+    # 
+    # widget_list_new.append(('plasma', LabelFrame, tabs_manual + '.plasma'))
+    # widgets = nf.Widgets(root_window, *widget_list_new)
+    toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
+                    'program_step','program_pause','program_stop','program_blockdelete',
+                    'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
+                    'view_x','view_y','view_y2','view_p','rotate','clear_plot']
+    matButtons   = ['delete','new','reload','save']
+
+    # spinbox validator
+    valspin = root_window.register(validate_spinbox)
+
+    # monkeypatched functions
+    o.get_view = get_view # axis.py
+    o.draw_grid = draw_grid # glcanon.py
+
+    # tcl called functions hijacked from axis.py
+    TclCommands.reload_file = reload_file
+    TclCommands.task_run_line = task_run_line
+    TclCommands.task_stop = task_stop
+    TclCommands.open_file_name = open_file_name
+    TclCommands.gcode_properties = gcode_properties
+    TclCommands.set_view_p = set_view_p
+    TclCommands.set_view_z = set_view_z
+    # tcl functions hijacked from axis.tcl
+    TclCommands.update_title = update_title
+    TclCommands.update_jog_slider_vel = update_jog_slider_vel
+    # new functions
+    TclCommands.set_view_t = set_view_t
+    TclCommands.param_changed = param_changed
+    TclCommands.material_changed = material_changed
+    TclCommands.save_material_clicked = save_material_clicked
+    TclCommands.reload_material_clicked = reload_material_clicked
+    TclCommands.new_material_clicked = new_material_clicked
+    TclCommands.delete_material_clicked = delete_material_clicked
+    TclCommands.change_default_material = change_default_material
+    TclCommands.save_param_clicked = save_param_clicked
+    TclCommands.load_param_clicked = load_param_clicked
+    TclCommands.backup_clicked = backup_clicked
+    TclCommands.save_setup_clicked = save_setup_clicked
+    TclCommands.load_setup_clicked = load_setup_clicked
+    TclCommands.user_button_add = user_button_add
+    TclCommands.preview_toggle = preview_toggle
+    TclCommands.setup_toggle = setup_toggle
+    TclCommands.param_toggle = param_toggle
+    TclCommands.conv_toggle = conv_toggle
+    TclCommands.thc_enable_toggled = thc_enable_toggled
+    TclCommands.corner_enable_toggled = corner_enable_toggled
+    TclCommands.kerf_enable_toggled = kerf_enable_toggled
+    TclCommands.auto_volts_toggled = auto_volts_toggled
+    TclCommands.ohmic_enable_toggled = ohmic_enable_toggled
+    TclCommands.ignore_arc_ok_toggled = ignore_arc_ok_toggled
+    TclCommands.close_window = close_window
+    TclCommands.set_window_size = set_window_size
+    TclCommands.button_action = button_action
+    TclCommands.mode_changed = mode_changed
+    TclCommands.font_size_changed = font_size_changed
+    TclCommands.cone_size_changed = cone_size_changed
+    TclCommands.height_raise = height_raise
+    TclCommands.height_lower = height_lower
+    TclCommands.height_reset = height_reset
+    TclCommands.torch_enable = torch_enable
+    TclCommands.joint_mode_switch = joint_mode_switch
+    TclCommands.ja_button_activated = ja_button_activated
+    TclCommands.manual_cut = manual_cut
+    TclCommands.touch_off_xy = touch_off_xy
+    TclCommands.laser_button_toggled = laser_button_toggled
+    TclCommands.cut_rec_motion = cut_rec_motion
+    TclCommands.cut_rec_default_changed = cut_rec_default_changed
+    TclCommands.cut_rec_slider_changed = cut_rec_slider_changed
+    TclCommands.cut_rec_move = cut_rec_move
+    TclCommands.cut_rec_cancel = cut_rec_cancel
+    TclCommands.pmx485_mode_changed = pmx485_mode_changed
+    TclCommands.pmx485_pressure_changed = pmx485_pressure_changed
+    TclCommands.pmx485_enable_toggled = pmx485_enable_toggled
+    TclCommands.pmx485_mesh_enable_toggled = pmx485_mesh_enable_toggled
+    TclCommands.reset_all_stats = reset_all_stats
+    TclCommands.set_peripheral_offsets = set_peripheral_offsets
+    commands = TclCommands(root_window)
 
 
 ##############################################################################
 # GUI ALTERATIONS AND ADDITIONS                                              #
 ##############################################################################
-# change dro screen colors
-rC('.pane.top.right.fnumbers.text','configure','-foreground','green','-background','black')
+    # change dro screen colors
+    rC('.pane.top.right.fnumbers.text','configure','-foreground','green','-background','black')
 
-# keep tab label sizes the same
-rC(ftabs,'configure','-homogeneous',True)
-rC(fright,'configure','-homogeneous',True)
+    # keep tab label sizes the same
+    rC(ftabs,'configure','-homogeneous',True)
+    rC(fright,'configure','-homogeneous',True)
 
-# hide some existing widgets
-rC('pack','forget','.toolbar.rule9')
-rC('pack','forget','.toolbar.view_zoomin')
-rC('pack','forget','.toolbar.view_zoomout')
-rC('pack','forget','.toolbar.view_z')
-rC('pack','forget','.toolbar.view_z2')
-rC('pack','forget','.toolbar.view_x')
-rC('pack','forget','.toolbar.view_y')
-rC('pack','forget','.toolbar.view_y2')
-rC('pack','forget','.toolbar.view_p')
-rC('pack','forget','.toolbar.rotate')
-rC('pack','forget','.toolbar.rule12')
-rC('pack','forget','.toolbar.clear_plot')
-rC('grid','forget',fmanual + '.axis')
-rC('grid','forget',fmanual + '.jogf')
-rC('grid','forget',fmanual + '.space1')
-rC('grid','forget',fmanual + '.spindlel')
-rC('grid','forget',fmanual + '.spindlef')
-rC('grid','forget',fmanual + '.space2')
-rC('grid','forget',fmanual + '.coolant')
-rC('grid','forget',fmanual + '.mist')
-rC('grid','forget',fmanual + '.flood')
-rC('pack','forget',ftop + '.jogspeed.l1')
-rC('grid','forget',ftop + '.spinoverride')
-rC('grid','forget',ftop + '.maxvel')
+    # hide some existing widgets
+    rC('pack','forget','.toolbar.rule9')
+    rC('pack','forget','.toolbar.view_zoomin')
+    rC('pack','forget','.toolbar.view_zoomout')
+    rC('pack','forget','.toolbar.view_z')
+    rC('pack','forget','.toolbar.view_z2')
+    rC('pack','forget','.toolbar.view_x')
+    rC('pack','forget','.toolbar.view_y')
+    rC('pack','forget','.toolbar.view_y2')
+    rC('pack','forget','.toolbar.view_p')
+    rC('pack','forget','.toolbar.rotate')
+    rC('pack','forget','.toolbar.rule12')
+    rC('pack','forget','.toolbar.clear_plot')
+    rC('grid','forget',fmanual + '.axis')
+    rC('grid','forget',fmanual + '.jogf')
+    rC('grid','forget',fmanual + '.space1')
+    rC('grid','forget',fmanual + '.spindlel')
+    rC('grid','forget',fmanual + '.spindlef')
+    rC('grid','forget',fmanual + '.space2')
+    rC('grid','forget',fmanual + '.coolant')
+    rC('grid','forget',fmanual + '.mist')
+    rC('grid','forget',fmanual + '.flood')
+    rC('pack','forget',ftop + '.jogspeed.l1')
+    rC('grid','forget',ftop + '.spinoverride')
+    rC('grid','forget',ftop + '.maxvel')
 
-# modify the toolbar
-rC('vrule','.toolbar.rule10')
-rC('vrule','.toolbar.rule11')
-rC('pack','.toolbar.rule9','-side','left','-padx',(66,4),'-pady',4,'-fill','y')
-rC('pack','.toolbar.clear_plot','-side','left')
-rC('pack','.toolbar.rule10','-side','left','-padx',4,'-pady',4,'-fill','y')
-rC('pack','.toolbar.view_z','-side','left')
-rC('pack','.toolbar.view_p','-side','left')
-rC('Button','.toolbar.view_t','-text','T','-command','set_view_t','-relief','link','-takefocus',0)
-rC('pack','.toolbar.view_t','-side','left')
-rC('pack','.toolbar.rule11','-side','left','-padx',4,'-pady',4,'-fill','y')
-rC('pack','.toolbar.view_zoomout','-side','left')
-rC('pack','.toolbar.view_zoomin','-side','left')
-rC('pack','.toolbar.rule12','-side','left','-padx',4,'-pady',4,'-fill','y')
-rC('pack','.toolbar.rotate','-side','left')
-rC('.toolbar.rotate','configure','-takefocus',0)
+    # modify the toolbar
+    rC('vrule','.toolbar.rule10')
+    rC('vrule','.toolbar.rule11')
+    rC('pack','.toolbar.rule9','-side','left','-padx',(66,4),'-pady',4,'-fill','y')
+    rC('pack','.toolbar.clear_plot','-side','left')
+    rC('pack','.toolbar.rule10','-side','left','-padx',4,'-pady',4,'-fill','y')
+    rC('pack','.toolbar.view_z','-side','left')
+    rC('pack','.toolbar.view_p','-side','left')
+    rC('Button','.toolbar.view_t','-text','T','-command','set_view_t','-relief','link','-takefocus',0)
+    rC('pack','.toolbar.view_t','-side','left')
+    rC('pack','.toolbar.rule11','-side','left','-padx',4,'-pady',4,'-fill','y')
+    rC('pack','.toolbar.view_zoomout','-side','left')
+    rC('pack','.toolbar.view_zoomin','-side','left')
+    rC('pack','.toolbar.rule12','-side','left','-padx',4,'-pady',4,'-fill','y')
+    rC('pack','.toolbar.rotate','-side','left')
+    rC('.toolbar.rotate','configure','-takefocus',0)
 
-# new setup toolbar
-# create widgets
-rC('frame','.toolsetup','-borderwidth',1,'-relief','raised')
-rC('Button','.toolsetup.save','-command','save_setup_clicked','-width',8,'-takefocus',0,'-text',_('Save All'),'-padx',0)
-rC('Button','.toolsetup.reload','-command','load_setup_clicked','-width',8,'-takefocus',0,'-text',_('Reload'),'-padx',0)
-rC('Button','.toolsetup.add','-command','user_button_add','-width',8,'-takefocus',0,'-text',_('Add'),'-padx',0)
-rC('Button','.toolsetup.bkp','-command','backup_clicked','-width',8,'-takefocus',0,'-text',_('Backup'),'-padx',0)
-rC('Button','.toolsetup.close','-command','setup_toggle 0','-width',8,'-takefocus',0,'-text',_('Close'),'-padx',0)
-# populate the tool bar
-rC('pack','.toolsetup.save','-side','left')
-rC('pack','.toolsetup.reload','-side','left','-padx',(8,0))
-rC('pack','.toolsetup.add','-side','left','-padx',(8,0))
-rC('pack','.toolsetup.bkp','-side','left','-padx',(8,0))
-rC('pack','.toolsetup.close','-side','left','-padx',(16,0))
-rC('grid','forget','.toolsetup')
+    # new setup toolbar
+    # create widgets
+    rC('frame','.toolsetup','-borderwidth',1,'-relief','raised')
+    rC('Button','.toolsetup.save','-command','save_setup_clicked','-width',8,'-takefocus',0,'-text',_('Save All'),'-padx',0)
+    rC('Button','.toolsetup.reload','-command','load_setup_clicked','-width',8,'-takefocus',0,'-text',_('Reload'),'-padx',0)
+    rC('Button','.toolsetup.add','-command','user_button_add','-width',8,'-takefocus',0,'-text',_('Add'),'-padx',0)
+    rC('Button','.toolsetup.bkp','-command','backup_clicked','-width',8,'-takefocus',0,'-text',_('Backup'),'-padx',0)
+    rC('Button','.toolsetup.close','-command','setup_toggle 0','-width',8,'-takefocus',0,'-text',_('Close'),'-padx',0)
+    # populate the tool bar
+    rC('pack','.toolsetup.save','-side','left')
+    rC('pack','.toolsetup.reload','-side','left','-padx',(8,0))
+    rC('pack','.toolsetup.add','-side','left','-padx',(8,0))
+    rC('pack','.toolsetup.bkp','-side','left','-padx',(8,0))
+    rC('pack','.toolsetup.close','-side','left','-padx',(16,0))
+    rC('grid','forget','.toolsetup')
 
-# new parameters toolbar
-# create widgets
-rC('frame','.toolparam','-borderwidth',1,'-relief','raised')
-rC('Button','.toolparam.save','-command','save_param_clicked','-width',8,'-takefocus',0,'-text',_('Save All'),'-padx',0)
-rC('Button','.toolparam.reload','-command','load_param_clicked','-width',8,'-takefocus',0,'-text',_('Reload'),'-padx',0)
-rC('Button','.toolparam.close','-command','param_toggle 0','-width',8,'-takefocus',0,'-text',_('Close'),'-padx',0)
-# populate the tool bar
-rC('pack','.toolparam.save','-side','left')
-rC('pack','.toolparam.reload','-side','left','-padx',(8,0))
-rC('pack','.toolparam.close','-side','left','-padx',(16,0))
-rC('grid','forget','.toolparam')
+    # new parameters toolbar
+    # create widgets
+    rC('frame','.toolparam','-borderwidth',1,'-relief','raised')
+    rC('Button','.toolparam.save','-command','save_param_clicked','-width',8,'-takefocus',0,'-text',_('Save All'),'-padx',0)
+    rC('Button','.toolparam.reload','-command','load_param_clicked','-width',8,'-takefocus',0,'-text',_('Reload'),'-padx',0)
+    rC('Button','.toolparam.close','-command','param_toggle 0','-width',8,'-takefocus',0,'-text',_('Close'),'-padx',0)
+    # populate the tool bar
+    rC('pack','.toolparam.save','-side','left')
+    rC('pack','.toolparam.reload','-side','left','-padx',(8,0))
+    rC('pack','.toolparam.close','-side','left','-padx',(16,0))
+    rC('grid','forget','.toolparam')
 
-# new material toolbar
-# create widgets
-rC('frame','.toolmat','-borderwidth',1,'-relief','raised')
-rC('Button','.toolmat.delete','-command','delete_material_clicked','-relief','link','-takefocus',0)
-rC('Button','.toolmat.new','-command','new_material_clicked','-relief','link','-takefocus',0)
-rC('Button','.toolmat.reload','-command','reload_material_clicked','-relief','link','-takefocus',0)
-rC('Button','.toolmat.save','-command','save_material_clicked','-relief','link','-takefocus',0)
-# add images
-rC('.toolmat.delete','configure','-image',rC('load_image',imageAxis + '/tool_zoomout'))
-rC('.toolmat.new','configure','-image',rC('load_image',imageAxis + '/tool_zoomin'))
-rC('.toolmat.reload','configure','-image',rC('load_image',imageAxis + '/tool_reload'))
-rC('.toolmat.save','configure','-image',rC('load_image',imagePath + '/save'))
-# populate the tool bar
-rC('pack','.toolmat.save','-side','left','-padx',(0,4))
-rC('pack','.toolmat.reload','-side','left')
-rC('pack','.toolmat.delete','-side','right','-padx',(4,0))
-rC('pack','.toolmat.new','-side','right')
-rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
+    # new material toolbar
+    # create widgets
+    rC('frame','.toolmat','-borderwidth',1,'-relief','raised')
+    rC('Button','.toolmat.delete','-command','delete_material_clicked','-relief','link','-takefocus',0)
+    rC('Button','.toolmat.new','-command','new_material_clicked','-relief','link','-takefocus',0)
+    rC('Button','.toolmat.reload','-command','reload_material_clicked','-relief','link','-takefocus',0)
+    rC('Button','.toolmat.save','-command','save_material_clicked','-relief','link','-takefocus',0)
+    # add images
+    rC('.toolmat.delete','configure','-image',rC('load_image',imageAxis + '/tool_zoomout'))
+    rC('.toolmat.new','configure','-image',rC('load_image',imageAxis + '/tool_zoomin'))
+    rC('.toolmat.reload','configure','-image',rC('load_image',imageAxis + '/tool_reload'))
+    rC('.toolmat.save','configure','-image',rC('load_image',imagePath + '/save'))
+    # populate the tool bar
+    rC('pack','.toolmat.save','-side','left','-padx',(0,4))
+    rC('pack','.toolmat.reload','-side','left')
+    rC('pack','.toolmat.delete','-side','right','-padx',(4,0))
+    rC('pack','.toolmat.new','-side','right')
+    rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
 
-# new statistics page
-rC(fright,'insert','end','stats','-text',_('Statistics'))
-rC(fright + '.fstats','configure','-bd',2)
-stats = fright + '.fstats.statistics'
-rC('labelframe',stats,'-relief','groove')
-rC('label',stats + '.itemL','-text',_('Item'),'-width',16,'-anchor','e')
-rC('label',stats + '.jobL','-text',_('Job'),'-width',10,'-anchor','e')
-rC('label',stats + '.totalL','-text',_('Total'),'-width',10,'-anchor','e')
-rC('label',stats + '.lengthL','-text',_('Cut Length'),'-width',16,'-anchor','e')
-rC('label',stats + '.lengthJ','-textvariable','lengthJ','-width',10,'-anchor','e')
-rC('label',stats + '.lengthT','-textvariable','lengthT','-width',10,'-anchor','e')
-rC('button',stats + '.lengthB','-command','reset_all_stats length','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.pierceL','-text',_('Torch Starts'),'-width',16,'-anchor','e')
-rC('label',stats + '.pierceJ','-textvariable','pierceJ','-width',10,'-anchor','e')
-rC('label',stats + '.pierceT','-textvariable','pierceT','-width',10,'-anchor','e')
-rC('button',stats + '.pierceB','-command','reset_all_stats pierce','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.rapidL','-text',_('Rapid Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.rapidJ','-textvariable','rapidJ','-width',10,'-anchor','e')
-rC('label',stats + '.rapidT','-textvariable','rapidT','-width',10,'-anchor','e')
-rC('button',stats + '.rapidB','-command','reset_all_stats rapid','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.probeL','-text',_('Probe Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.probeJ','-textvariable','probeJ','-width',10,'-anchor','e')
-rC('label',stats + '.probeT','-textvariable','probeT','-width',10,'-anchor','e')
-rC('button',stats + '.probeB','-command','reset_all_stats probe','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.torchL','-text',_('Torch On Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.torchJ','-textvariable','torchJ','-width',10,'-anchor','e')
-rC('label',stats + '.torchT','-textvariable','torchT','-width',10,'-anchor','e')
-rC('button',stats + '.torchB','-command','reset_all_stats torch','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.cutL','-text',_('Cutting Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.cutJ','-textvariable','cutJ','-width',10,'-anchor','e')
-rC('label',stats + '.cutT','-textvariable','cutT','-width',10,'-anchor','e')
-rC('button',stats + '.cutB','-command','reset_all_stats cut','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.pausedL','-text',_('Paused Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.pausedJ','-textvariable','pausedJ','-width',10,'-anchor','e')
-rC('label',stats + '.pausedT','-textvariable','pausedT','-width',10,'-anchor','e')
-rC('button',stats + '.pausedB','-command','reset_all_stats paused','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.runL','-text',_('Total Run Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.runJ','-textvariable','runJ','-width',10,'-anchor','e')
-rC('label',stats + '.runT','-textvariable','runT','-width',10,'-anchor','e')
-rC('button',stats + '.runB','-command','reset_all_stats run','-text',_('Reset'),'-pady',0)
-rC('label',stats + '.arcL','-text',_('Arc On Time'),'-width',16,'-anchor','e')
-rC('label',stats + '.arcT','-textvariable','arcT','-width',10,'-anchor','e')
-rC('grid',stats + '.itemL','-column',0,'-row',0)
-rC('grid',stats + '.jobL','-column',1,'-row',0)
-rC('grid',stats + '.totalL','-column',2,'-row',0)
-rC('grid',stats + '.lengthL','-column',0,'-row',1,'-pady',(8,0))
-rC('grid',stats + '.lengthJ','-column',1,'-row',1,'-pady',(8,0))
-rC('grid',stats + '.lengthT','-column',2,'-row',1,'-pady',(8,0))
-rC('grid',stats + '.lengthB','-column',3,'-row',1,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.pierceL','-column',0,'-row',2,'-pady',(8,0))
-rC('grid',stats + '.pierceJ','-column',1,'-row',2,'-pady',(8,0))
-rC('grid',stats + '.pierceT','-column',2,'-row',2,'-pady',(8,0))
-rC('grid',stats + '.pierceB','-column',3,'-row',2,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.rapidL','-column',0,'-row',3,'-pady',(8,0))
-rC('grid',stats + '.rapidJ','-column',1,'-row',3,'-pady',(8,0))
-rC('grid',stats + '.rapidT','-column',2,'-row',3,'-pady',(8,0))
-rC('grid',stats + '.rapidB','-column',3,'-row',3,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.probeL','-column',0,'-row',4,'-pady',(8,0))
-rC('grid',stats + '.probeJ','-column',1,'-row',4,'-pady',(8,0))
-rC('grid',stats + '.probeT','-column',2,'-row',4,'-pady',(8,0))
-rC('grid',stats + '.probeB','-column',3,'-row',4,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.torchL','-column',0,'-row',5,'-pady',(8,0))
-rC('grid',stats + '.torchJ','-column',1,'-row',5,'-pady',(8,0))
-rC('grid',stats + '.torchT','-column',2,'-row',5,'-pady',(8,0))
-rC('grid',stats + '.torchB','-column',3,'-row',5,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.cutL','-column',0,'-row',6,'-pady',(8,0))
-rC('grid',stats + '.cutJ','-column',1,'-row',6,'-pady',(8,0))
-rC('grid',stats + '.cutT','-column',2,'-row',6,'-pady',(8,0))
-rC('grid',stats + '.cutB','-column',3,'-row',6,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.pausedL','-column',0,'-row',7,'-pady',(8,0))
-rC('grid',stats + '.pausedJ','-column',1,'-row',7,'-pady',(8,0))
-rC('grid',stats + '.pausedT','-column',2,'-row',7,'-pady',(8,0))
-rC('grid',stats + '.pausedB','-column',3,'-row',7,'-padx',(16,0),'-pady',(8,0))
-rC('grid',stats + '.runL','-column',0,'-row',8,'-pady',(8,0))
-rC('grid',stats + '.runJ','-column',1,'-row',8,'-pady',(8,0))
-rC('grid',stats + '.runT','-column',2,'-row',8,'-pady',(8,0))
-rC('grid',stats + '.runB','-column',3,'-row',8,'-padx',(16,0),'-pady',(8,0))
-rC('pack',stats,'-fill','both','-expand',True,'-padx',2,'-pady',2)
+    # new statistics page
+    rC(fright,'insert','end','stats','-text',_('Statistics'))
+    rC(fright + '.fstats','configure','-bd',2)
+    stats = fright + '.fstats.statistics'
+    rC('labelframe',stats,'-relief','groove')
+    rC('label',stats + '.itemL','-text',_('Item'),'-width',16,'-anchor','e')
+    rC('label',stats + '.jobL','-text',_('Job'),'-width',10,'-anchor','e')
+    rC('label',stats + '.totalL','-text',_('Total'),'-width',10,'-anchor','e')
+    rC('label',stats + '.lengthL','-text',_('Cut Length'),'-width',16,'-anchor','e')
+    rC('label',stats + '.lengthJ','-textvariable','lengthJ','-width',10,'-anchor','e')
+    rC('label',stats + '.lengthT','-textvariable','lengthT','-width',10,'-anchor','e')
+    rC('button',stats + '.lengthB','-command','reset_all_stats length','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.pierceL','-text',_('Torch Starts'),'-width',16,'-anchor','e')
+    rC('label',stats + '.pierceJ','-textvariable','pierceJ','-width',10,'-anchor','e')
+    rC('label',stats + '.pierceT','-textvariable','pierceT','-width',10,'-anchor','e')
+    rC('button',stats + '.pierceB','-command','reset_all_stats pierce','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.rapidL','-text',_('Rapid Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.rapidJ','-textvariable','rapidJ','-width',10,'-anchor','e')
+    rC('label',stats + '.rapidT','-textvariable','rapidT','-width',10,'-anchor','e')
+    rC('button',stats + '.rapidB','-command','reset_all_stats rapid','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.probeL','-text',_('Probe Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.probeJ','-textvariable','probeJ','-width',10,'-anchor','e')
+    rC('label',stats + '.probeT','-textvariable','probeT','-width',10,'-anchor','e')
+    rC('button',stats + '.probeB','-command','reset_all_stats probe','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.torchL','-text',_('Torch On Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.torchJ','-textvariable','torchJ','-width',10,'-anchor','e')
+    rC('label',stats + '.torchT','-textvariable','torchT','-width',10,'-anchor','e')
+    rC('button',stats + '.torchB','-command','reset_all_stats torch','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.cutL','-text',_('Cutting Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.cutJ','-textvariable','cutJ','-width',10,'-anchor','e')
+    rC('label',stats + '.cutT','-textvariable','cutT','-width',10,'-anchor','e')
+    rC('button',stats + '.cutB','-command','reset_all_stats cut','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.pausedL','-text',_('Paused Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.pausedJ','-textvariable','pausedJ','-width',10,'-anchor','e')
+    rC('label',stats + '.pausedT','-textvariable','pausedT','-width',10,'-anchor','e')
+    rC('button',stats + '.pausedB','-command','reset_all_stats paused','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.runL','-text',_('Total Run Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.runJ','-textvariable','runJ','-width',10,'-anchor','e')
+    rC('label',stats + '.runT','-textvariable','runT','-width',10,'-anchor','e')
+    rC('button',stats + '.runB','-command','reset_all_stats run','-text',_('Reset'),'-pady',0)
+    rC('label',stats + '.arcL','-text',_('Arc On Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.arcT','-textvariable','arcT','-width',10,'-anchor','e')
+    rC('grid',stats + '.itemL','-column',0,'-row',0)
+    rC('grid',stats + '.jobL','-column',1,'-row',0)
+    rC('grid',stats + '.totalL','-column',2,'-row',0)
+    rC('grid',stats + '.lengthL','-column',0,'-row',1,'-pady',(8,0))
+    rC('grid',stats + '.lengthJ','-column',1,'-row',1,'-pady',(8,0))
+    rC('grid',stats + '.lengthT','-column',2,'-row',1,'-pady',(8,0))
+    rC('grid',stats + '.lengthB','-column',3,'-row',1,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.pierceL','-column',0,'-row',2,'-pady',(8,0))
+    rC('grid',stats + '.pierceJ','-column',1,'-row',2,'-pady',(8,0))
+    rC('grid',stats + '.pierceT','-column',2,'-row',2,'-pady',(8,0))
+    rC('grid',stats + '.pierceB','-column',3,'-row',2,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.rapidL','-column',0,'-row',3,'-pady',(8,0))
+    rC('grid',stats + '.rapidJ','-column',1,'-row',3,'-pady',(8,0))
+    rC('grid',stats + '.rapidT','-column',2,'-row',3,'-pady',(8,0))
+    rC('grid',stats + '.rapidB','-column',3,'-row',3,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.probeL','-column',0,'-row',4,'-pady',(8,0))
+    rC('grid',stats + '.probeJ','-column',1,'-row',4,'-pady',(8,0))
+    rC('grid',stats + '.probeT','-column',2,'-row',4,'-pady',(8,0))
+    rC('grid',stats + '.probeB','-column',3,'-row',4,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.torchL','-column',0,'-row',5,'-pady',(8,0))
+    rC('grid',stats + '.torchJ','-column',1,'-row',5,'-pady',(8,0))
+    rC('grid',stats + '.torchT','-column',2,'-row',5,'-pady',(8,0))
+    rC('grid',stats + '.torchB','-column',3,'-row',5,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.cutL','-column',0,'-row',6,'-pady',(8,0))
+    rC('grid',stats + '.cutJ','-column',1,'-row',6,'-pady',(8,0))
+    rC('grid',stats + '.cutT','-column',2,'-row',6,'-pady',(8,0))
+    rC('grid',stats + '.cutB','-column',3,'-row',6,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.pausedL','-column',0,'-row',7,'-pady',(8,0))
+    rC('grid',stats + '.pausedJ','-column',1,'-row',7,'-pady',(8,0))
+    rC('grid',stats + '.pausedT','-column',2,'-row',7,'-pady',(8,0))
+    rC('grid',stats + '.pausedB','-column',3,'-row',7,'-padx',(16,0),'-pady',(8,0))
+    rC('grid',stats + '.runL','-column',0,'-row',8,'-pady',(8,0))
+    rC('grid',stats + '.runJ','-column',1,'-row',8,'-pady',(8,0))
+    rC('grid',stats + '.runT','-column',2,'-row',8,'-pady',(8,0))
+    rC('grid',stats + '.runB','-column',3,'-row',8,'-padx',(16,0),'-pady',(8,0))
+    rC('pack',stats,'-fill','both','-expand',True,'-padx',2,'-pady',2)
 
-# destroy existing axes and joints
-rC('destroy',faxes)
-rC('destroy',fjoints)
-# create widgets
-rC('labelframe',faxes,'-text',_('Axis:'),'-relief','flat','-bd',0)
-rC('labelframe',fjoints,'-text',_('Joint:'),'-relief','flat','-bd',0)
-# make joints radiobuttons
-for number in range(0,linuxcnc.MAX_JOINTS):
-    ja_button_setup(fjoints + '.joint' + str(number), number, number)
-# populate joints frame
-count = 0
-for row in range(0,2):
-    for column in range(0,5):
-        if count == jointcount: break
-        pad = (0,0) if column == 0 else (8,0)
-        rC('grid',fjoints + '.joint' + str(count),'-row',row,'-column',column,'-padx',pad)
-        count += 1
-# make axis radiobuttons
-for letter in 'xyzabcuvw':
-    ja_button_setup(faxes + '.axis' + letter, letter, letter.upper())
-# populate the axes frame
-count = 0
-letters = 'xyzabcuvw'
-first_axis = ''
-for row in range(0,2):
-    for column in range(0,5):
-        if letters[count] in trajcoordinates:
-            if first_axis == '':
-                first_axis = letters[count]
+    # destroy existing axes and joints
+    rC('destroy',faxes)
+    rC('destroy',fjoints)
+    # create widgets
+    rC('labelframe',faxes,'-text',_('Axis:'),'-relief','flat','-bd',0)
+    rC('labelframe',fjoints,'-text',_('Joint:'),'-relief','flat','-bd',0)
+    # make joints radiobuttons
+    for number in range(0,linuxcnc.MAX_JOINTS):
+        ja_button_setup(fjoints + '.joint' + str(number), number, number)
+    # populate joints frame
+    count = 0
+    for row in range(0,2):
+        for column in range(0,5):
+            if count == jointcount: break
             pad = (0,0) if column == 0 else (8,0)
-            rC('grid',faxes + '.axis' + letters[count],'-row',row,'-column',column,'-padx',pad)
-        count += 1
-        if count == 9: break
+            rC('grid',fjoints + '.joint' + str(count),'-row',row,'-column',column,'-padx',pad)
+            count += 1
+    # make axis radiobuttons
+    for letter in 'xyzabcuvw':
+        ja_button_setup(faxes + '.axis' + letter, letter, letter.upper())
+    # populate the axes frame
+    count = 0
+    letters = 'xyzabcuvw'
+    first_axis = ''
+    for row in range(0,2):
+        for column in range(0,5):
+            if letters[count] in trajcoordinates:
+                if first_axis == '':
+                    first_axis = letters[count]
+                pad = (0,0) if column == 0 else (8,0)
+                rC('grid',faxes + '.axis' + letters[count],'-row',row,'-column',column,'-padx',pad)
+            count += 1
+            if count == 9: break
 
-# rework the jogf frame
-rC('destroy',fjogf)
-# create the widgets
-rC('frame',fjogf)
-rC('labelframe',fjogf + '.jog','-text',_('Jog:'),'-relief','flat','-bd',0)
-rC('button',fjogf + '.jog.jogminus','-command','if ![is_continuous] {jog_minus 1}','-height',1,'-width',1,'-text','-')
-rC('button',fjogf + '.jog.jogplus','-command','if ![is_continuous] {jog_plus 1}','-height',1,'-width',1,'-text','+')
-rC('combobox',fjogf + '.jog.jogincr','-editable',0,'-textvariable','jogincrement','-value',_('Continuous'),'-width',10)
-rC(fjogf + '.jog.jogincr','list','insert','end',_('Continuous'))
-if increments:
-    rC(fjogf + '.jog.jogincr','list','insert','end',*increments)
-rC('labelframe',fjogf + '.zerohome','-text',_('Zero:'),'-relief','flat','-bd',0)
-rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',3)
-rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
-rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
-rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero'))
-rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
-rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
-#rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
-#rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
-rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
-# widget bindings
-rC('bind',fjogf + '.jog.jogminus','<Button-1>','if [is_continuous] {jog_minus}')
-rC('bind',fjogf + '.jog.jogminus','<ButtonRelease-1>','if [is_continuous] {jog_stop}')
-rC('bind',fjogf + '.jog.jogplus','<Button-1>','if [is_continuous] {jog_plus}')
-rC('bind',fjogf + '.jog.jogplus','<ButtonRelease-1>','if [is_continuous] {jog_stop}')
-rC('bind',fjogf + '.zerohome.zeroxy','<Button-1>','touch_off_xy 1 0 0')
-rC('bind',fjogf + '.zerohome.zeroxy','<ButtonRelease-1>','touch_off_xy 0 0 0')
-rC('bind',fjogf + '.zerohome.laser','<Button-1>','laser_button_toggled 1 1')
-rC('bind',fjogf + '.zerohome.laser','<ButtonRelease-1>','laser_button_toggled 0 1')
-# populate the frame
-rC('grid',fjogf + '.jog.jogminus','-row',0,'-column',0,'-sticky','nsew')
-rC('grid',fjogf + '.jog.jogincr','-row',0,'-column',1,'-sticky','nsew','-padx',8)
-rC('grid',fjogf + '.jog.jogplus','-row',0,'-column',2,'-sticky','nsew')
-rC('grid',fjogf + '.jog','-row',0,'-column',0,'-sticky','ew')
-rC('pack',fjogf + '.zerohome.home','-side','left')
-rC('pack',fjogf + '.zerohome.zero','-side','left','-padx',(8,0))
-rC('pack',fjogf + '.zerohome.zeroxy','-side','left','-padx',(8,0))
-rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','ew')
-#if has_limit_switch:
-#    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
-rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','ew')
+    # rework the jogf frame
+    rC('destroy',fjogf)
+    # create the widgets
+    rC('frame',fjogf)
+    rC('labelframe',fjogf + '.jog','-text',_('Jog:'),'-relief','flat','-bd',0)
+    rC('button',fjogf + '.jog.jogminus','-command','if ![is_continuous] {jog_minus 1}','-height',1,'-width',1,'-text','-')
+    rC('button',fjogf + '.jog.jogplus','-command','if ![is_continuous] {jog_plus 1}','-height',1,'-width',1,'-text','+')
+    rC('combobox',fjogf + '.jog.jogincr','-editable',0,'-textvariable','jogincrement','-value',_('Continuous'),'-width',10)
+    rC(fjogf + '.jog.jogincr','list','insert','end',_('Continuous'))
+    if increments:
+        rC(fjogf + '.jog.jogincr','list','insert','end',*increments)
+    rC('labelframe',fjogf + '.zerohome','-text',_('Zero:'),'-relief','flat','-bd',0)
+    rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',3)
+    rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
+    rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
+    rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero'))
+    rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
+    rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
+    #rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
+    #rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
+    rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
+    # widget bindings
+    rC('bind',fjogf + '.jog.jogminus','<Button-1>','if [is_continuous] {jog_minus}')
+    rC('bind',fjogf + '.jog.jogminus','<ButtonRelease-1>','if [is_continuous] {jog_stop}')
+    rC('bind',fjogf + '.jog.jogplus','<Button-1>','if [is_continuous] {jog_plus}')
+    rC('bind',fjogf + '.jog.jogplus','<ButtonRelease-1>','if [is_continuous] {jog_stop}')
+    rC('bind',fjogf + '.zerohome.zeroxy','<Button-1>','touch_off_xy 1 0 0')
+    rC('bind',fjogf + '.zerohome.zeroxy','<ButtonRelease-1>','touch_off_xy 0 0 0')
+    rC('bind',fjogf + '.zerohome.laser','<Button-1>','laser_button_toggled 1 1')
+    rC('bind',fjogf + '.zerohome.laser','<ButtonRelease-1>','laser_button_toggled 0 1')
+    # populate the frame
+    rC('grid',fjogf + '.jog.jogminus','-row',0,'-column',0,'-sticky','nsew')
+    rC('grid',fjogf + '.jog.jogincr','-row',0,'-column',1,'-sticky','nsew','-padx',8)
+    rC('grid',fjogf + '.jog.jogplus','-row',0,'-column',2,'-sticky','nsew')
+    rC('grid',fjogf + '.jog','-row',0,'-column',0,'-sticky','ew')
+    rC('pack',fjogf + '.zerohome.home','-side','left')
+    rC('pack',fjogf + '.zerohome.zero','-side','left','-padx',(8,0))
+    rC('pack',fjogf + '.zerohome.zeroxy','-side','left','-padx',(8,0))
+    rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','ew')
+    #if has_limit_switch:
+    #    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
+    rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','ew')
 
-if homing_order_defined:
-    if ja_name.startswith('A'):
-        hbName = 'axes'
-    else:
-        hbName ='joints'
-    widgets.homebutton.configure(text = _('Home'), command = 'home_all_joints')
+    if homing_order_defined:
+        if ja_name.startswith('A'):
+            hbName = 'axes'
+        else:
+            hbName ='joints'
+        widgets.homebutton.configure(text = _('Home'), command = 'home_all_joints')
 
-# add a spacer to keep the plasma widgets at the bottom
-rC('vspace',fmanual + '.vspace','-height',1)
-rC('grid',fmanual + '.vspace','-column',0,'-row',2,'-pady',0,'-sticky','nsew')
-rC('grid','rowconfigure',fmanual,2,'-weight',99)
+    # add a spacer to keep the plasma widgets at the bottom
+    rC('vspace',fmanual + '.vspace','-height',1)
+    rC('grid',fmanual + '.vspace','-column',0,'-row',2,'-pady',0,'-sticky','nsew')
+    rC('grid','rowconfigure',fmanual,2,'-weight',99)
 
-# new limit switch override frame
-#rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')    limitOvr
-rC('frame',flimitovr,'-bd',0)
-rC('button',fjogf + '.override') # dummy button to placate original axis code
-rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',flimitovr + '.label','-text',_('Override Limits'),'-anchor','center')
-# populate the frame
-rC('grid',flimitovr + '.button','-column',0,'-row',1,'-sticky','nsw')
-rC('grid',flimitovr + '.label','-column',1,'-row',1,'-sticky','w','-padx',(4,0))
-rC('grid','rowconfigure',flimitovr,0,'-weight',1)
-rC('grid','rowconfigure',flimitovr,1,'-weight',0)
-rC('grid','rowconfigure',flimitovr,2,'-weight',1)
+    # new limit switch override frame
+    #rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')    limitOvr
+    rC('frame',flimitovr,'-bd',0)
+    rC('button',fjogf + '.override') # dummy button to placate original axis code
+    rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',flimitovr + '.label','-text',_('Override Limits'),'-anchor','center')
+    # populate the frame
+    rC('grid',flimitovr + '.button','-column',0,'-row',1,'-sticky','nsw')
+    rC('grid',flimitovr + '.label','-column',1,'-row',1,'-sticky','w','-padx',(4,0))
+    rC('grid','rowconfigure',flimitovr,0,'-weight',1)
+    rC('grid','rowconfigure',flimitovr,1,'-weight',0)
+    rC('grid','rowconfigure',flimitovr,2,'-weight',1)
 
-#rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
-#rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
-#rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
-#if has_limit_switch:
-#    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
+    #rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
+    #rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
+    #rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
+    #if has_limit_switch:
+    #    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
 
-# new jog inhibit override frame
-#rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')
-rC('frame',fjogiovr,'-bd',0)
-rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',fjogiovr + '.label','-text',_('Jog Inhibit Override'),'-anchor','center')
-# populate the frame
-rC('grid',fjogiovr + '.button','-column',0,'-row',1,'-sticky','nsw')
-rC('grid',fjogiovr + '.label','-column',1,'-row',1,'-sticky','w','-padx',(4,0))
-rC('grid','rowconfigure',fjogiovr,0,'-weight',1)
-rC('grid','rowconfigure',fjogiovr,1,'-weight',0)
-rC('grid','rowconfigure',fjogiovr,2,'-weight',1)
+    # new jog inhibit override frame
+    #rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')
+    rC('frame',fjogiovr,'-bd',0)
+    rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fjogiovr + '.label','-text',_('Jog Inhibit Override'),'-anchor','center')
+    # populate the frame
+    rC('grid',fjogiovr + '.button','-column',0,'-row',1,'-sticky','nsw')
+    rC('grid',fjogiovr + '.label','-column',1,'-row',1,'-sticky','w','-padx',(4,0))
+    rC('grid','rowconfigure',fjogiovr,0,'-weight',1)
+    rC('grid','rowconfigure',fjogiovr,1,'-weight',0)
+    rC('grid','rowconfigure',fjogiovr,2,'-weight',1)
 
-# new height override frame
-# create the widgets
-rC('labelframe',foverride,'-text',_('THC Height Override:'),'-relief','flat','-bd',0)
-rC('Button',foverride + '.lower','-text','-','-width',1,'-takefocus',0)
-rC('Button',foverride + '.raise','-text','+','-width',1,'-takefocus',0)
-rC('label',foverride + '.height-override','-width',6,'-justify','center','-text','%0.1fV' % (torchHeight))
-rC('Button',foverride + '.reset','-text',_('Reset'),'-width',1,'-takefocus','0','-width',3)
-# populate the frame
-rC('pack',foverride + '.lower','-side','left')
-rC('pack',foverride + '.raise','-side','left','-padx',(8,0))
-rC('pack',foverride + '.height-override','-side','left')
-rC('pack',foverride + '.reset','-side','right')
-rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','w')
-# widget bindings
-rC('bind',foverride + '.lower','<ButtonPress-1>','height_lower')
-rC('bind',foverride + '.raise','<ButtonPress-1>','height_raise')
-rC('bind',foverride + '.reset','<ButtonPress-1>','height_reset')
+    # new height override frame
+    # create the widgets
+    rC('labelframe',foverride,'-text',_('THC Height Override:'),'-relief','flat','-bd',0)
+    rC('Button',foverride + '.lower','-text','-','-width',1,'-takefocus',0)
+    rC('Button',foverride + '.raise','-text','+','-width',1,'-takefocus',0)
+    rC('label',foverride + '.height-override','-width',6,'-justify','center','-text','%0.1fV' % (torchHeight))
+    rC('Button',foverride + '.reset','-text',_('Reset'),'-width',1,'-takefocus','0','-width',3)
+    # populate the frame
+    rC('pack',foverride + '.lower','-side','left')
+    rC('pack',foverride + '.raise','-side','left','-padx',(8,0))
+    rC('pack',foverride + '.height-override','-side','left')
+    rC('pack',foverride + '.reset','-side','right')
+    rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','w')
+    # widget bindings
+    rC('bind',foverride + '.lower','<ButtonPress-1>','height_lower')
+    rC('bind',foverride + '.raise','<ButtonPress-1>','height_raise')
+    rC('bind',foverride + '.reset','<ButtonPress-1>','height_reset')
 
-# new plasma frame
-# create the widgets
-rC('frame',fplasma,'-bd',0)
-rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
-rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg','blue')
-#rC('checkbutton',fplasma + '.thc','-text','THC Enable','-variable','thcEnable','-command','thc_enable_toggled','-anchor','w')
-#rC('checkbutton',fplasma + '.vel','-text','Velocity Lock','-variable','cornerEnable','-command','corner_enable_toggled','-anchor','w')
-#rC('checkbutton',fplasma + '.void','-text','Void Lock','-variable','kerfEnable','-command','kerf_enable_toggled','-anchor','w')
-rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable')
-rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock')
-rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock')
-# populate the frame
-rC('grid',fplasma + '.thc','-column',1,'-row',0,'-sticky','w')
-rC('grid',fplasma + '.thcL','-column',2,'-row',0,'-sticky','w')
-rC('grid',fplasma + '.vel','-column',1,'-row',1,'-sticky','w')
-rC('grid',fplasma + '.velL','-column',2,'-row',1,'-sticky','w')
-rC('grid',fplasma + '.void','-column',1,'-row',2,'-sticky','w')
-rC('grid',fplasma + '.voidL','-column',2,'-row',2,'-sticky','w')
-rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','sew')
+    # new plasma frame
+    # create the widgets
+    rC('frame',fplasma,'-bd',0)
+    rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
+    rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg','blue')
+    #rC('checkbutton',fplasma + '.thc','-text','THC Enable','-variable','thcEnable','-command','thc_enable_toggled','-anchor','w')
+    #rC('checkbutton',fplasma + '.vel','-text','Velocity Lock','-variable','cornerEnable','-command','corner_enable_toggled','-anchor','w')
+    #rC('checkbutton',fplasma + '.void','-text','Void Lock','-variable','kerfEnable','-command','kerf_enable_toggled','-anchor','w')
+    rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable')
+    rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock')
+    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock')
+    # populate the frame
+    rC('grid',fplasma + '.thc','-column',1,'-row',0,'-sticky','w')
+    rC('grid',fplasma + '.thcL','-column',2,'-row',0,'-sticky','w')
+    rC('grid',fplasma + '.vel','-column',1,'-row',1,'-sticky','w')
+    rC('grid',fplasma + '.velL','-column',2,'-row',1,'-sticky','w')
+    rC('grid',fplasma + '.void','-column',1,'-row',2,'-sticky','w')
+    rC('grid',fplasma + '.voidL','-column',2,'-row',2,'-sticky','w')
+    rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','sew')
 
-# hide bottom pane until modified
-rC('pack','forget','.pane.bottom.t.text')
-rC('pack','forget','.pane.bottom.t.sb')
+    # hide bottom pane until modified
+    rC('pack','forget','.pane.bottom.t.text')
+    rC('pack','forget','.pane.bottom.t.sb')
 
-# new led frame
-# create the widgets
-rC('frame',fleds,'-relief','flat','-bd',1)
-rC('canvas',fleds + '.led-arc-ok','-width',20,'-height',20)
-rC('label',fleds + '.lAOlab','-text',_('Arc OK'),'-anchor','w','-width',9)
-rC('canvas',fleds + '.led-torch','-width',20,'-height',20)
-rC('label',fleds + '.lTlab','-text',_('Torch On'),'-anchor','w','-width',9)
-rC('canvas',fleds + '.led-breakaway','-width',20,'-height',20)
-rC('label',fleds + '.lBlab','-text',_('Breakaway'),'-anchor','w','-width',9)
-rC('canvas',fleds + '.led-thc-enabled','-width',20,'-height',20)
-rC('label',fleds + '.lTElab','-text',_('THC Enabled'),'-anchor','w','-width',10)
-rC('canvas',fleds + '.led-thc-active','-width',20,'-height',20)
-rC('label',fleds + '.lTAlab','-text',_('THC Active'),'-anchor','w','-width',10)
-rC('canvas',fleds + '.led-ohmic','-width',20,'-height',20)
-rC('label',fleds + '.lOlab','-text',_('Ohmic Probe'),'-anchor','w','-width',10)
-rC('canvas',fleds + '.led-float','-width',20,'-height',20)
-rC('label',fleds + '.lFlab','-text',_('Float Switch'),'-anchor','w','-width',10)
-rC('canvas',fleds + '.led-up','-width',20,'-height',20)
-rC('label',fleds + '.labup','-text',_('Up'),'-anchor','w','-width',8)
-rC('canvas',fleds + '.led-down','-width',20,'-height',20)
-rC('label',fleds + '.labdn','-text',_('Dn'),'-anchor','w','-width',8)
-rC('canvas',fleds + '.led-corner-locked','-width',20,'-height',20)
-rC('label',fleds + '.lCLlab','-text',_('Vel Lock'),'-anchor','w','-width',8)
-rC('canvas',fleds + '.led-kerf-locked','-width',20,'-height',20)
-rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
-# create the led shapes
-led1 = rC(fleds + '.led-arc-ok','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-rC(fleds + '.led-torch','create','oval',1,1,18,18,'-fill','#F99B0B','-disabledfill','gray')
-rC(fleds + '.led-breakaway','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
-rC(fleds + '.led-thc-enabled','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-rC(fleds + '.led-thc-active','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-rC(fleds + '.led-ohmic','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-rC(fleds + '.led-float','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-rC(fleds + '.led-up','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-rC(fleds + '.led-down','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-rC(fleds + '.led-corner-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
-rC(fleds + '.led-kerf-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
-# populate the frame
-rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
-rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-torch',          '-column',0,'-row',1,'-padx',(4,0),'-pady',(4,0))
-rC('grid',fleds + '.lTlab',              '-column',1,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-breakaway',      '-column',0,'-row',3,'-padx',(4,0),'-pady',(4,0))
-rC('grid',fleds + '.lBlab',              '-column',1,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-thc-enabled',    '-column',2,'-row',0,'-padx',(0,0),'-pady',(4,0))
-rC('grid',fleds + '.lTElab',             '-column',3,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-thc-active',     '-column',2,'-row',1,'-padx',(0,0),'-pady',(4,0))
-rC('grid',fleds + '.lTAlab',             '-column',3,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-ohmic',          '-column',2,'-row',2,'-padx',(0,0),'-pady',(4,0))
-rC('grid',fleds + '.lOlab',              '-column',3,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-float',          '-column',2,'-row',3,'-padx',(0,0),'-pady',(4,0))
-rC('grid',fleds + '.lFlab',              '-column',3,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-up',             '-column',4,'-row',0,'-padx',(4,0),'-pady',(4,0))
-rC('grid',fleds + '.labup',              '-column',5,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-down',           '-column',4,'-row',1,'-padx',(4,0),'-pady',(4,0))
-rC('grid',fleds + '.labdn',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
-rC('grid',fleds + '.lCLlab',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    # new led frame
+    # create the widgets
+    rC('frame',fleds,'-relief','flat','-bd',1)
+    rC('canvas',fleds + '.led-arc-ok','-width',20,'-height',20)
+    rC('label',fleds + '.lAOlab','-text',_('Arc OK'),'-anchor','w','-width',9)
+    rC('canvas',fleds + '.led-torch','-width',20,'-height',20)
+    rC('label',fleds + '.lTlab','-text',_('Torch On'),'-anchor','w','-width',9)
+    rC('canvas',fleds + '.led-breakaway','-width',20,'-height',20)
+    rC('label',fleds + '.lBlab','-text',_('Breakaway'),'-anchor','w','-width',9)
+    rC('canvas',fleds + '.led-thc-enabled','-width',20,'-height',20)
+    rC('label',fleds + '.lTElab','-text',_('THC Enabled'),'-anchor','w','-width',10)
+    rC('canvas',fleds + '.led-thc-active','-width',20,'-height',20)
+    rC('label',fleds + '.lTAlab','-text',_('THC Active'),'-anchor','w','-width',10)
+    rC('canvas',fleds + '.led-ohmic','-width',20,'-height',20)
+    rC('label',fleds + '.lOlab','-text',_('Ohmic Probe'),'-anchor','w','-width',10)
+    rC('canvas',fleds + '.led-float','-width',20,'-height',20)
+    rC('label',fleds + '.lFlab','-text',_('Float Switch'),'-anchor','w','-width',10)
+    rC('canvas',fleds + '.led-up','-width',20,'-height',20)
+    rC('label',fleds + '.labup','-text',_('Up'),'-anchor','w','-width',8)
+    rC('canvas',fleds + '.led-down','-width',20,'-height',20)
+    rC('label',fleds + '.labdn','-text',_('Dn'),'-anchor','w','-width',8)
+    rC('canvas',fleds + '.led-corner-locked','-width',20,'-height',20)
+    rC('label',fleds + '.lCLlab','-text',_('Vel Lock'),'-anchor','w','-width',8)
+    rC('canvas',fleds + '.led-kerf-locked','-width',20,'-height',20)
+    rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
+    # create the led shapes
+    led1 = rC(fleds + '.led-arc-ok','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
+    rC(fleds + '.led-torch','create','oval',1,1,18,18,'-fill','#F99B0B','-disabledfill','gray')
+    rC(fleds + '.led-breakaway','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
+    rC(fleds + '.led-thc-enabled','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
+    rC(fleds + '.led-thc-active','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
+    rC(fleds + '.led-ohmic','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
+    rC(fleds + '.led-float','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
+    rC(fleds + '.led-up','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
+    rC(fleds + '.led-down','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
+    rC(fleds + '.led-corner-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
+    rC(fleds + '.led-kerf-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
+    # populate the frame
+    rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
+    rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-torch',          '-column',0,'-row',1,'-padx',(4,0),'-pady',(4,0))
+    rC('grid',fleds + '.lTlab',              '-column',1,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-breakaway',      '-column',0,'-row',3,'-padx',(4,0),'-pady',(4,0))
+    rC('grid',fleds + '.lBlab',              '-column',1,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-thc-enabled',    '-column',2,'-row',0,'-padx',(0,0),'-pady',(4,0))
+    rC('grid',fleds + '.lTElab',             '-column',3,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-thc-active',     '-column',2,'-row',1,'-padx',(0,0),'-pady',(4,0))
+    rC('grid',fleds + '.lTAlab',             '-column',3,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-ohmic',          '-column',2,'-row',2,'-padx',(0,0),'-pady',(4,0))
+    rC('grid',fleds + '.lOlab',              '-column',3,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-float',          '-column',2,'-row',3,'-padx',(0,0),'-pady',(4,0))
+    rC('grid',fleds + '.lFlab',              '-column',3,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-up',             '-column',4,'-row',0,'-padx',(4,0),'-pady',(4,0))
+    rC('grid',fleds + '.labup',              '-column',5,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-down',           '-column',4,'-row',1,'-padx',(4,0),'-pady',(4,0))
+    rC('grid',fleds + '.labdn',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
+    rC('grid',fleds + '.lCLlab',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
 
-# menu alterations
-# delete existing
-rC('.menu.file','delete','last')
-rC('.menu','delete','last')
-# add new menu items
-rC('.menu.file','add','command','-command','close_window')
-rC('setup_menu_accel','.menu.file','end',_('_Quit'))
-rC('.menu.view','insert',0,'checkbutton','-variable','previewLarge','-command','preview_toggle')
-rC('setup_menu_accel','.menu.view',0,_('Large Pre_view'))
-rC('.menu.view','insert',1,'separator')
-rC('.menu','add','command','-command','conv_toggle 1')
-rC('setup_menu_accel','.menu','end',_('_Conversational'))
-rC('.menu','add','command','-command','param_toggle 1')
-rC('setup_menu_accel','.menu','end',_('_Parameters'))
-rC('.menu','add','command','-command','setup_toggle 1')
-rC('setup_menu_accel','.menu','end',_('_Setup'))
-rC('.menu','add','cascade','-menu','.menu.help')
-rC('setup_menu_accel','.menu','end',_('_Help'))
+    # menu alterations
+    # delete existing
+    rC('.menu.file','delete','last')
+    rC('.menu','delete','last')
+    # add new menu items
+    rC('.menu.file','add','command','-command','close_window')
+    rC('setup_menu_accel','.menu.file','end',_('_Quit'))
+    rC('.menu.view','insert',0,'checkbutton','-variable','previewLarge','-command','preview_toggle')
+    rC('setup_menu_accel','.menu.view',0,_('Large Pre_view'))
+    rC('.menu.view','insert',1,'separator')
+    rC('.menu','add','command','-command','conv_toggle 1')
+    rC('setup_menu_accel','.menu','end',_('_Conversational'))
+    rC('.menu','add','command','-command','param_toggle 1')
+    rC('setup_menu_accel','.menu','end',_('_Parameters'))
+    rC('.menu','add','command','-command','setup_toggle 1')
+    rC('setup_menu_accel','.menu','end',_('_Setup'))
+    rC('.menu','add','cascade','-menu','.menu.help')
+    rC('setup_menu_accel','.menu','end',_('_Help'))
 
-# rework the status bar
-rC('grid','forget',ftop + '.gcodel')
-rC('grid','forget',ftop + '.gcodes')
-rC('pack','forget','.info.tool')
-rC('.info.task_state','configure','-width',6)
-rC('.info.tool','configure','-width',10,'-textvariable','::plasmatool')
-rC('.info.position','configure','-width',25)
-rC('grid','.info','-columnspan',4)
-rC('labelframe','.info.gcodef','-relief','sunken','-bd',2)
-rC('label','.info.gcodef.gcodel','-bd',0)
-rC('setup_widget_accel','.info.gcodef.gcodel','Active Codes:')
-rC('text','.info.gcodef.gcodes','-height',1,'-width',10,'-relief','flat','-bd',0,'-pady',0,)
-rC('.info.gcodef.gcodes','configure','-bg',buttonBackG,'-undo',0,'-wrap','word',)
-rC('pack','.info.tool','-side','left')
-rC('pack','.info.gcodef.gcodel','-side','left')
-rC('pack','.info.gcodef.gcodes','-side','left','-fill','x','-expand',1)
-rC('pack','.info.gcodef','-side','left','-fill','x','-expand',1)
+    # rework the status bar
+    rC('grid','forget',ftop + '.gcodel')
+    rC('grid','forget',ftop + '.gcodes')
+    rC('pack','forget','.info.tool')
+    rC('.info.task_state','configure','-width',6)
+    rC('.info.tool','configure','-width',10,'-textvariable','::plasmatool')
+    rC('.info.position','configure','-width',25)
+    rC('grid','.info','-columnspan',4)
+    rC('labelframe','.info.gcodef','-relief','sunken','-bd',2)
+    rC('label','.info.gcodef.gcodel','-bd',0)
+    rC('setup_widget_accel','.info.gcodef.gcodel','Active Codes:')
+    rC('text','.info.gcodef.gcodes','-height',1,'-width',10,'-relief','flat','-bd',0,'-pady',0,)
+    rC('.info.gcodef.gcodes','configure','-bg',buttonBackG,'-undo',0,'-wrap','word',)
+    rC('pack','.info.tool','-side','left')
+    rC('pack','.info.gcodef.gcodel','-side','left')
+    rC('pack','.info.gcodef.gcodes','-side','left','-fill','x','-expand',1)
+    rC('pack','.info.gcodef','-side','left','-fill','x','-expand',1)
 
-# move existing pane to column 1
-rC('grid','.pane','-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
-rC('grid','columnconfigure','.',0,'-weight',0)
-rC('grid','columnconfigure','.',1,'-weight',1)
-rC('grid','columnconfigure','.',2,'-weight',0)
+    # move existing pane to column 1
+    rC('grid','.pane','-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
+    rC('grid','columnconfigure','.',0,'-weight',0)
+    rC('grid','columnconfigure','.',1,'-weight',1)
+    rC('grid','columnconfigure','.',2,'-weight',0)
 
-# new button panel
-# create widgets
-rC('frame','.fbuttons','-relief','flat')
-#rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','red','-activebackground','#AA0000','-text',_('Torch\nDisabled'))
-rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','#BB0000','-activebackground','#990000','-text',_('Torch\nDisabled'))
-# populate frame
-rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
-rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
-# widget bindings
-rC('bind','.fbuttons.torch-enable','<ButtonPress-1>','torch_enable')
+    # new button panel
+    # create widgets
+    rC('frame','.fbuttons','-relief','flat')
+    #rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','red','-activebackground','#AA0000','-text',_('Torch\nDisabled'))
+    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','#BB0000','-activebackground','#990000','-text',_('Torch\nDisabled'))
+    # populate frame
+    rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
+    rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
+    # widget bindings
+    rC('bind','.fbuttons.torch-enable','<ButtonPress-1>','torch_enable')
 
-# new cut recovery tab
-# create the widgets
-rC(ftabs,'insert','end','cutrecs','-text','Cut Recovery')
-rC(fcutrecs,'configure','-borderwidth',2)
-rC(ftabs,'delete','cutrecs',0)
-rC('labelframe',fcutrec,'-text','Speed:','-relief','flat')
-rC('Button',fcutrec + '.reverse','-text','Rev','-takefocus',0,'-width',3)
-rC('bind',fcutrec + '.reverse','<Button-1>','cut_rec_motion -1')
-rC('bind',fcutrec + '.reverse','<ButtonRelease-1>','cut_rec_motion 0')
-rC('frame',fcutrec + '.display','-relief','flat')
-rC('frame',fcutrec + '.display.top','-relief','flat')
-rC('label',fcutrec + '.display.top.value','-textvariable','crSpeed','-width',6,'-anchor','center')
-rC('scale',fcutrec + '.display.cut-rec-speed','-takefocus',0,'-orient','horizontal','-showvalue',0,'-command','cut_rec_slider_changed')
-rC(fcutrec + '.display.cut-rec-speed','configure','-from',1,'-to',100,'-resolution',1)
-rC('Button',fcutrec + '.forward','-text','Fwd','-takefocus',0,'-width',3)
-rC('frame',fcutrecs + '.buttons')
-rC('button',fcutrecs + '.buttons.laser','-text',_('Laser'),'-takefocus',0)
-rC('button',fcutrecs + '.buttons.cancel','-text',_('Cancel'),'-command','cut_rec_cancel','-takefocus',0)
-rC('labelframe',fleadins,'-text','Leadins:','-relief','flat')
-rC('Button',fleadins + '.nw','-takefocus',0,'-image',rC('load_image',imagePath + '/nw'))
-rC('Button',fleadins + '.n','-takefocus',0,'-image',rC('load_image',imagePath + '/n'))
-rC('Button',fleadins + '.ne','-takefocus',0,'-image',rC('load_image',imagePath + '/ne'))
-rC('Button',fleadins + '.w','-takefocus',0,'-image',rC('load_image',imagePath + '/w'))
-rC('Label',fleadins + '.offset','-textvariable','kerfWidth','-takefocus',0)
-rC('Button',fleadins + '.e','-takefocus',0,'-image',rC('load_image',imagePath + '/e'))
-rC('Button',fleadins + '.sw','-takefocus',0,'-image',rC('load_image',imagePath + '/sw'))
-rC('Button',fleadins + '.s','-takefocus',0,'-image',rC('load_image',imagePath + '/s'))
-rC('Button',fleadins + '.se','-takefocus',0,'-image',rC('load_image',imagePath + '/se'))
-# populate the frame
-rC('pack',fcutrec + '.reverse','-side','left','-fill','y')
-rC('pack',fcutrec + '.display.top.value','-side','left','-fill','y')
-rC('pack',fcutrec + '.display.top','-fill','y')
-rC('pack',fcutrec + '.display.cut-rec-speed','-fill','y')
-rC('pack',fcutrec + '.display','-side','left','-fill','x','-expand',1)
-rC('pack',fcutrec + '.forward','-side','right','-fill','y')
-#rC('pack',fcutrecs + '.buttons.laser','-side','left')
-rC('pack',fcutrecs + '.buttons.cancel','-side','right')
-rC('grid',fcutrecs + '.buttons','-column',0,'-row',1,'-sticky','n','-pady',12)
-rC('grid',fleadins + '.nw','-column',0,'-row',0)
-rC('grid',fleadins + '.n','-column',1,'-row',0)
-rC('grid',fleadins + '.ne','-column',2,'-row',0)
-rC('grid',fleadins + '.w','-column',0,'-row',1)
-rC('grid',fleadins + '.offset','-column',1,'-row',1)
-rC('grid',fleadins + '.e','-column',2,'-row',1)
-rC('grid',fleadins + '.sw','-column',0,'-row',2)
-rC('grid',fleadins + '.s','-column',1,'-row',2)
-rC('grid',fleadins + '.se','-column',2,'-row',2)
-rC('grid',fcutrec,'-column',0,'-row',0,'-sticky','wne')
-rC('grid',fleadins,'-column',0,'-row',2,'-sticky','nsew')
-# set direction buttons stretch
-rC('grid','columnconfigure',fleadins,0,'-weight',1)
-rC('grid','columnconfigure',fleadins,1,'-weight',1,)
-rC('grid','columnconfigure',fleadins,2,'-weight',1)
-rC('grid','rowconfigure',fleadins,0,'-weight',1)
-rC('grid','rowconfigure',fleadins,1,'-weight',1,'-pad',20)
-rC('grid','rowconfigure',fleadins,2,'-weight',1)
-# widget bindings
-rC('bind',fcutrec + '.forward','<Button-1>','cut_rec_motion 1')
-rC('bind',fcutrec + '.forward','<ButtonRelease-1>','cut_rec_motion 0')
-rC('bind',fleadins + '.nw','<Button-1>','cut_rec_move -1 1')
-rC('bind',fleadins + '.n','<Button-1>','cut_rec_move 0 1')
-rC('bind',fleadins + '.ne','<Button-1>','cut_rec_move 1 1')
-rC('bind',fleadins + '.w','<Button-1>','cut_rec_move -1 0')
-rC('bind',fleadins + '.e','<Button-1>','cut_rec_move 1 0')
-rC('bind',fleadins + '.sw','<Button-1>','cut_rec_move -1 -1')
-rC('bind',fleadins + '.s','<Button-1>','cut_rec_move 0 -1')
-rC('bind',fleadins + '.se','<Button-1>','cut_rec_move 1 -1')
-rC('bind',fcutrecs + '.buttons.laser','<Button-1>','laser_button_toggled 1 0')
-rC('bind',fcutrecs + '.buttons.laser','<ButtonRelease-1>','laser_button_toggled 0 0')
+    # new cut recovery tab
+    # create the widgets
+    rC(ftabs,'insert','end','cutrecs','-text','Cut Recovery')
+    rC(fcutrecs,'configure','-borderwidth',2)
+    rC(ftabs,'delete','cutrecs',0)
+    rC('labelframe',fcutrec,'-text','Speed:','-relief','flat')
+    rC('Button',fcutrec + '.reverse','-text','Rev','-takefocus',0,'-width',3)
+    rC('bind',fcutrec + '.reverse','<Button-1>','cut_rec_motion -1')
+    rC('bind',fcutrec + '.reverse','<ButtonRelease-1>','cut_rec_motion 0')
+    rC('frame',fcutrec + '.display','-relief','flat')
+    rC('frame',fcutrec + '.display.top','-relief','flat')
+    rC('label',fcutrec + '.display.top.value','-textvariable','crSpeed','-width',6,'-anchor','center')
+    rC('scale',fcutrec + '.display.cut-rec-speed','-takefocus',0,'-orient','horizontal','-showvalue',0,'-command','cut_rec_slider_changed')
+    rC(fcutrec + '.display.cut-rec-speed','configure','-from',1,'-to',100,'-resolution',1)
+    rC('Button',fcutrec + '.forward','-text','Fwd','-takefocus',0,'-width',3)
+    rC('frame',fcutrecs + '.buttons')
+    rC('button',fcutrecs + '.buttons.laser','-text',_('Laser'),'-takefocus',0)
+    rC('button',fcutrecs + '.buttons.cancel','-text',_('Cancel'),'-command','cut_rec_cancel','-takefocus',0)
+    rC('labelframe',fleadins,'-text','Leadins:','-relief','flat')
+    rC('Button',fleadins + '.nw','-takefocus',0,'-image',rC('load_image',imagePath + '/nw'))
+    rC('Button',fleadins + '.n','-takefocus',0,'-image',rC('load_image',imagePath + '/n'))
+    rC('Button',fleadins + '.ne','-takefocus',0,'-image',rC('load_image',imagePath + '/ne'))
+    rC('Button',fleadins + '.w','-takefocus',0,'-image',rC('load_image',imagePath + '/w'))
+    rC('Label',fleadins + '.offset','-textvariable','kerfWidth','-takefocus',0)
+    rC('Button',fleadins + '.e','-takefocus',0,'-image',rC('load_image',imagePath + '/e'))
+    rC('Button',fleadins + '.sw','-takefocus',0,'-image',rC('load_image',imagePath + '/sw'))
+    rC('Button',fleadins + '.s','-takefocus',0,'-image',rC('load_image',imagePath + '/s'))
+    rC('Button',fleadins + '.se','-takefocus',0,'-image',rC('load_image',imagePath + '/se'))
+    # populate the frame
+    rC('pack',fcutrec + '.reverse','-side','left','-fill','y')
+    rC('pack',fcutrec + '.display.top.value','-side','left','-fill','y')
+    rC('pack',fcutrec + '.display.top','-fill','y')
+    rC('pack',fcutrec + '.display.cut-rec-speed','-fill','y')
+    rC('pack',fcutrec + '.display','-side','left','-fill','x','-expand',1)
+    rC('pack',fcutrec + '.forward','-side','right','-fill','y')
+    #rC('pack',fcutrecs + '.buttons.laser','-side','left')
+    rC('pack',fcutrecs + '.buttons.cancel','-side','right')
+    rC('grid',fcutrecs + '.buttons','-column',0,'-row',1,'-sticky','n','-pady',12)
+    rC('grid',fleadins + '.nw','-column',0,'-row',0)
+    rC('grid',fleadins + '.n','-column',1,'-row',0)
+    rC('grid',fleadins + '.ne','-column',2,'-row',0)
+    rC('grid',fleadins + '.w','-column',0,'-row',1)
+    rC('grid',fleadins + '.offset','-column',1,'-row',1)
+    rC('grid',fleadins + '.e','-column',2,'-row',1)
+    rC('grid',fleadins + '.sw','-column',0,'-row',2)
+    rC('grid',fleadins + '.s','-column',1,'-row',2)
+    rC('grid',fleadins + '.se','-column',2,'-row',2)
+    rC('grid',fcutrec,'-column',0,'-row',0,'-sticky','wne')
+    rC('grid',fleadins,'-column',0,'-row',2,'-sticky','nsew')
+    # set direction buttons stretch
+    rC('grid','columnconfigure',fleadins,0,'-weight',1)
+    rC('grid','columnconfigure',fleadins,1,'-weight',1,)
+    rC('grid','columnconfigure',fleadins,2,'-weight',1)
+    rC('grid','rowconfigure',fleadins,0,'-weight',1)
+    rC('grid','rowconfigure',fleadins,1,'-weight',1,'-pad',20)
+    rC('grid','rowconfigure',fleadins,2,'-weight',1)
+    # widget bindings
+    rC('bind',fcutrec + '.forward','<Button-1>','cut_rec_motion 1')
+    rC('bind',fcutrec + '.forward','<ButtonRelease-1>','cut_rec_motion 0')
+    rC('bind',fleadins + '.nw','<Button-1>','cut_rec_move -1 1')
+    rC('bind',fleadins + '.n','<Button-1>','cut_rec_move 0 1')
+    rC('bind',fleadins + '.ne','<Button-1>','cut_rec_move 1 1')
+    rC('bind',fleadins + '.w','<Button-1>','cut_rec_move -1 0')
+    rC('bind',fleadins + '.e','<Button-1>','cut_rec_move 1 0')
+    rC('bind',fleadins + '.sw','<Button-1>','cut_rec_move -1 -1')
+    rC('bind',fleadins + '.s','<Button-1>','cut_rec_move 0 -1')
+    rC('bind',fleadins + '.se','<Button-1>','cut_rec_move 1 -1')
+    rC('bind',fcutrecs + '.buttons.laser','<Button-1>','laser_button_toggled 1 0')
+    rC('bind',fcutrecs + '.buttons.laser','<ButtonRelease-1>','laser_button_toggled 0 0')
 
-# new parameters frame
-rC('frame',fparam)
-# create the widgets
-rC('frame',fparam + '.c1')
-rC('frame',fparam + '.c2')
-rC('frame',fparam + '.c3')
-rC('frame',fparam + '.c4')
-rC('labelframe',fparam + '.c1.probe','-text','Probing','-relief','groove')
-rC('labelframe',fparam + '.c1.motion','-text','Motion','-relief','groove')
-rC('labelframe',fparam + '.c2.thc','-text','THC','-relief','groove')
-rC('labelframe',fparam + '.c2.safety','-text','Safety','-relief','groove')
-rC('labelframe',fparam + '.c3.arc','-text','Arc','-relief','groove')
-rC('labelframe',fparam + '.c4.scribe','-text','Scribe','-relief','groove')
-rC('labelframe',fparam + '.c4.spotting','-text','Spotting','-relief','groove')
-#  (parent, name, label text, prefs option)
-cp1=['.c1.probe','float-switch-travel','Float Travel','Float Switch Travel']
-# decimals, value, min, max, increment,
-cp1[2:1] = [2,1.5,-25,25,0.01] if s.linear_units == 1 else [3,0.06,-1,1,0.001]
-cp2=['.c1.probe','probe-feed-rate','Probe Speed','Probe Feed Rate']
-cp2[2:1] = [0,300,1,thcFeedRate,1] if s.linear_units == 1 else [1,12,0.1,thcFeedRate,.1]
-cp3=['.c1.probe','probe-start-height','Probe Height','Probe Start Height']
-cp3[2:1] = [0,38,1,maxHeight,1] if s.linear_units == 1 else [2,1.5,.1,maxHeight,0.01]
-cp4=['.c1.probe','ohmic-probe-offset','Ohmic Z Offset','Ohmic Probe Offset']
-cp4[2:1] = [2,0,-25,+25,0.01] if s.linear_units == 1 else [3,0,-1,1,0.001]
-cp5=['.c1.probe','skip-ihs-distance','Skip IHS','Skip IHS Distance']
-cp5[2:1] = [0,0,0,999,1] if s.linear_units == 1 else [1,0,0,99,.1]
-cp6=['.c1.motion','setup-feed-rate','Setup Speed','Setup Feed Rate']
-cp6[2:1] = [0,int(thcFeedRate * 0.8),1,thcFeedRate,1] if s.linear_units == 1 else [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
-cp7=['.c2.safety','safe-height','Safe Height','Safe Height']
-cp7[2:1] = [0,20,0,maxHeight,1] if s.linear_units == 1 else [2,0.75,0,maxHeight,0.01]
-cp8=['.c3.arc','height-per-volt','Height Per Volt','Height Per Volt']
-cp8[2:1] = [3,0.1,0.025,0.5,0.01] if s.linear_units == 1 else [4,0.004,0.001,0.020,0.001]
-cpList = [cp1, cp2, cp3, cp4, \
-          ['.c1.probe','ohmic-max-attempts',0,0,0,10,1,'Ohmic Retries','Ohmic Maximum Attempts'], \
-          cp5, cp6, \
-          ['.c2.thc','thc-delay',1,0.5,0,9,0.1,'Delay','THC Delay'], \
-          ['.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Threshold (V)','THC Threshold'], \
-          ['.c2.thc','pid-p-gain',0,10,0,1000,1,'PID P Gain (Speed)','Pid P Gain'], \
-          ['.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
-          ['.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
-          ['.c2.thc','cornerlock-threshold',0,90,1,99,1,'VAD Threshold (%)','Velocity Anti Dive Threshold'], \
-          ['.c2.thc','kerfcross-override',0,100,10,500,1,'Void Override (%)','Void Sense Override'], \
-          cp7, \
-          ['.c3.arc','arc-fail-delay',1,3,0.1,60,0.1,'Fail Timeout','Arc Fail Timeout'], \
-          ['.c3.arc','arc-max-starts',0,3,1,9,1,'Max. Attempts','Arc Maximum Starts'], \
-          ['.c3.arc','restart-delay',0,3,1,60,1,'Retry Delay','Arc Restart Delay'], \
-          ['.c3.arc','arc-voltage-scale',6,1,-9999,9999,0.000001,'Voltage Scale','Arc Voltage Scale'], \
-          ['.c3.arc','arc-voltage-offset',3,0,-999999,999999,0.001,'Voltage Offset','Arc Voltage Offset'], \
-          ['.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
-          ['.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
-          cp8, \
-          ['.c4.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
-          ['.c4.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
-          ['.c4.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
-          ['.c4.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
-         ]
-cpRow = 0
-cpFrame = cp1[0]
-for cpItem in cpList:
-    if cpItem[0] != cpFrame:
-        cpFrame = cpItem[0]
-        cpRow = 0
-    cpName = fparam + cpItem[0] + '.' + cpItem[1]
-    cpType = 'flt' if cpItem[2] > 0 else 'int'
-    rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
-    rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true','-bg','white')
-    spinBoxes.append(cpName)
-    rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
-    rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
-    rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
-    if cpItem[7] == 'Setup Speed':
-        rC('label',fparam + cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
-        rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',10,'-anchor','e')
-        rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-        rC('grid', fparam + cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
+    # new parameters frame
+    rC('frame',fparam)
+    # create the widgets
+    rC('frame',fparam + '.c1')
+    rC('frame',fparam + '.c2')
+    rC('frame',fparam + '.c3')
+    rC('frame',fparam + '.c4')
+    rC('labelframe',fparam + '.c1.probe','-text','Probing','-relief','groove')
+    rC('labelframe',fparam + '.c1.motion','-text','Motion','-relief','groove')
+    rC('labelframe',fparam + '.c2.thc','-text','THC','-relief','groove')
+    rC('labelframe',fparam + '.c2.safety','-text','Safety','-relief','groove')
+    rC('labelframe',fparam + '.c3.arc','-text','Arc','-relief','groove')
+    rC('labelframe',fparam + '.c4.scribe','-text','Scribe','-relief','groove')
+    rC('labelframe',fparam + '.c4.spotting','-text','Spotting','-relief','groove')
+    #  (parent, name, label text, prefs option)
+    cp1=['.c1.probe','float-switch-travel','Float Travel','Float Switch Travel']
+    # decimals, value, min, max, increment,
+    cp1[2:1] = [2,1.5,-25,25,0.01] if s.linear_units == 1 else [3,0.06,-1,1,0.001]
+    cp2=['.c1.probe','probe-feed-rate','Probe Speed','Probe Feed Rate']
+    cp2[2:1] = [0,300,1,thcFeedRate,1] if s.linear_units == 1 else [1,12,0.1,thcFeedRate,.1]
+    cp3=['.c1.probe','probe-start-height','Probe Height','Probe Start Height']
+    cp3[2:1] = [0,38,1,maxHeight,1] if s.linear_units == 1 else [2,1.5,.1,maxHeight,0.01]
+    cp4=['.c1.probe','ohmic-probe-offset','Ohmic Z Offset','Ohmic Probe Offset']
+    cp4[2:1] = [2,0,-25,+25,0.01] if s.linear_units == 1 else [3,0,-1,1,0.001]
+    cp5=['.c1.probe','skip-ihs-distance','Skip IHS','Skip IHS Distance']
+    cp5[2:1] = [0,0,0,999,1] if s.linear_units == 1 else [1,0,0,99,.1]
+    cp6=['.c1.motion','setup-feed-rate','Setup Speed','Setup Feed Rate']
+    cp6[2:1] = [0,int(thcFeedRate * 0.8),1,thcFeedRate,1] if s.linear_units == 1 else [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
+    cp7=['.c2.safety','safe-height','Safe Height','Safe Height']
+    cp7[2:1] = [0,20,0,maxHeight,1] if s.linear_units == 1 else [2,0.75,0,maxHeight,0.01]
+    cp8=['.c3.arc','height-per-volt','Height Per Volt','Height Per Volt']
+    cp8[2:1] = [3,0.1,0.025,0.5,0.01] if s.linear_units == 1 else [4,0.004,0.001,0.020,0.001]
+    cpList = [cp1, cp2, cp3, cp4, \
+              ['.c1.probe','ohmic-max-attempts',0,0,0,10,1,'Ohmic Retries','Ohmic Maximum Attempts'], \
+              cp5, cp6, \
+              ['.c2.thc','thc-delay',1,0.5,0,9,0.1,'Delay','THC Delay'], \
+              ['.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Threshold (V)','THC Threshold'], \
+              ['.c2.thc','pid-p-gain',0,10,0,1000,1,'PID P Gain (Speed)','Pid P Gain'], \
+              ['.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
+              ['.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
+              ['.c2.thc','cornerlock-threshold',0,90,1,99,1,'VAD Threshold (%)','Velocity Anti Dive Threshold'], \
+              ['.c2.thc','kerfcross-override',0,100,10,500,1,'Void Override (%)','Void Sense Override'], \
+              cp7, \
+              ['.c3.arc','arc-fail-delay',1,3,0.1,60,0.1,'Fail Timeout','Arc Fail Timeout'], \
+              ['.c3.arc','arc-max-starts',0,3,1,9,1,'Max. Attempts','Arc Maximum Starts'], \
+              ['.c3.arc','restart-delay',0,3,1,60,1,'Retry Delay','Arc Restart Delay'], \
+              ['.c3.arc','arc-voltage-scale',6,1,-9999,9999,0.000001,'Voltage Scale','Arc Voltage Scale'], \
+              ['.c3.arc','arc-voltage-offset',3,0,-999999,999999,0.001,'Voltage Offset','Arc Voltage Offset'], \
+              ['.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
+              ['.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
+              cp8, \
+              ['.c4.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
+              ['.c4.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
+              ['.c4.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
+              ['.c4.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
+             ]
+    cpRow = 0
+    cpFrame = cp1[0]
+    for cpItem in cpList:
+        if cpItem[0] != cpFrame:
+            cpFrame = cpItem[0]
+            cpRow = 0
+        cpName = fparam + cpItem[0] + '.' + cpItem[1]
+        cpType = 'flt' if cpItem[2] > 0 else 'int'
+        rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
+        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true','-bg','white')
+        spinBoxes.append(cpName)
+        rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
+        rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
+        rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
+        if cpItem[7] == 'Setup Speed':
+            rC('label',fparam + cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
+            rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',10,'-anchor','e')
+            rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+            rC('grid', fparam + cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
+            cpRow += 1
+        rC('grid', cpName + 'L','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid', cpName,'-column',1,'-row',cpRow,'-sticky','e','-padx',(0,4),'-pady',(4,0))
         cpRow += 1
-    rC('grid', cpName + 'L','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-    rC('grid', cpName,'-column',1,'-row',cpRow,'-sticky','e','-padx',(0,4),'-pady',(4,0))
-    cpRow += 1
-# populate parameters frame
-rC('grid',fparam + '.c1.probe','-column',0,'-row',0,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c1.motion','-column',0,'-row',1,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c2.thc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c2.safety','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c3.arc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c4.scribe','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c4.spotting','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-rC('grid',fparam + '.c1','-column',0,'-row',0,'-sticky','n')
-rC('grid',fparam + '.c2','-column',1,'-row',0,'-sticky','n')
-rC('grid',fparam + '.c3','-column',2,'-row',0,'-sticky','n')
-rC('grid',fparam + '.c4','-column',3,'-row',0,'-sticky','n')
+    # populate parameters frame
+    rC('grid',fparam + '.c1.probe','-column',0,'-row',0,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c1.motion','-column',0,'-row',1,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c2.thc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c2.safety','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c3.arc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c4.scribe','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c4.spotting','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c1','-column',0,'-row',0,'-sticky','n')
+    rC('grid',fparam + '.c2','-column',1,'-row',0,'-sticky','n')
+    rC('grid',fparam + '.c3','-column',2,'-row',0,'-sticky','n')
+    rC('grid',fparam + '.c4','-column',3,'-row',0,'-sticky','n')
 
-# new settings frame
-rC('frame',fsetup)
-# left panel
-rC('frame',fsetup + '.l')
-# gui frame
-rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
-rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
-#rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog')
-rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
-rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
-rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
-rC('label',fsetup + '.l.gui.fsizeL','-text','Font Size','-anchor','e')
-rC('ComboBox',fsetup + '.l.gui.fsize','-modifycmd','font_size_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
-rC(fsetup + '.l.gui.fsize','configure','-values',[9,10,11,12,13,14,15,16])
-rC('label',fsetup + '.l.gui.coneL','-text','Cone Size','-anchor','e')
-rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
-rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
-rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg','white','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
-rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
-spinBoxes.append(fsetup + '.l.gui.zoom')
-# populate gui frame
-rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
-rC('grid',fsetup + '.l.gui.wsizeL','-column',0,'-row',1,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','w','-padx',(0,4),'-pady',(4,0))
-rC('grid',fsetup + '.l.gui.fsizeL','-column',0,'-row',2,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid',fsetup + '.l.gui.coneL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
-rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
+    # new settings frame
+    rC('frame',fsetup)
+    # left panel
+    rC('frame',fsetup + '.l')
+    # gui frame
+    rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
+    rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
+    #rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog')
+    rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
+    rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
+    rC('label',fsetup + '.l.gui.fsizeL','-text','Font Size','-anchor','e')
+    rC('ComboBox',fsetup + '.l.gui.fsize','-modifycmd','font_size_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(fsetup + '.l.gui.fsize','configure','-values',[9,10,11,12,13,14,15,16])
+    rC('label',fsetup + '.l.gui.coneL','-text','Cone Size','-anchor','e')
+    rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
+    rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
+    rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg','white','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
+    rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
+    spinBoxes.append(fsetup + '.l.gui.zoom')
+    # populate gui frame
+    rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.wsizeL','-column',0,'-row',1,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','w','-padx',(0,4),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.fsizeL','-column',0,'-row',2,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.coneL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
-# jog frame
-rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
-rC('label',fsetup + '.l.jog.speedL','-width', 13,'-text','Units Per Minute','-anchor','e')
-rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
-minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
-rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
-rC(fsetup + '.l.jog.speed','configure','-format','%0.0f')
-rC(fsetup + '.l.jog.speed','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'int',0))
-spinBoxes.append(fsetup + '.l.jog.speed')
-# populate plasmac frame
-rC('grid',fsetup + '.l.jog.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.jog.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup + '.l.jog',0,'-weight',1)
-rC('grid','columnconfigure',fsetup + '.l.jog',1,'-weight',1)
+    # jog frame
+    rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
+    rC('label',fsetup + '.l.jog.speedL','-width', 13,'-text','Units Per Minute','-anchor','e')
+    rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
+    minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
+    rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
+    rC(fsetup + '.l.jog.speed','configure','-format','%0.0f')
+    rC(fsetup + '.l.jog.speed','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'int',0))
+    spinBoxes.append(fsetup + '.l.jog.speed')
+    # populate plasmac frame
+    rC('grid',fsetup + '.l.jog.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.jog.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.l.jog',0,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.l.jog',1,'-weight',1)
 
-# plasmac frame
-rC('labelframe',fsetup + '.l.plasmac','-text','Plasmac','-relief','groove')
-rC('label',fsetup + '.l.plasmac.modeL','-width', 13,'-text','Mode','-anchor','e')
-rC('ComboBox',fsetup + '.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',10,'-justify','right','-editable',0)
-rC(fsetup + '.l.plasmac.mode','configure','-values',[0,1,2])
-# populate plasmac frame
-rC('grid',fsetup + '.l.plasmac.modeL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup + '.l.plasmac',0,'-weight',1)
-rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
+    # plasmac frame
+    rC('labelframe',fsetup + '.l.plasmac','-text','Plasmac','-relief','groove')
+    rC('label',fsetup + '.l.plasmac.modeL','-width', 13,'-text','Mode','-anchor','e')
+    rC('ComboBox',fsetup + '.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(fsetup + '.l.plasmac.mode','configure','-values',[0,1,2])
+    # populate plasmac frame
+    rC('grid',fsetup + '.l.plasmac.modeL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.l.plasmac',0,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
 
-# material frame
-rC('labelframe',fsetup + '.l.mats','-text','Material','-relief','groove')
-rC('label',fsetup + '.l.mats.defaultL','-width', 13,'-text','Default','-anchor','e')
-rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',10,'-justify','right','-editable',0)
-# populate material frame
-rC('grid',fsetup + '.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup + '.l.mats',0,'-weight',1)
-rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
+    # material frame
+    rC('labelframe',fsetup + '.l.mats','-text','Material','-relief','groove')
+    rC('label',fsetup + '.l.mats.defaultL','-width', 13,'-text','Default','-anchor','e')
+    rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',10,'-justify','right','-editable',0)
+    # populate material frame
+    rC('grid',fsetup + '.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.l.mats',0,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
 
-# cut recovery frame
-rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
-rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text','Speed %','-anchor','e')
-rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
-minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
-rC(fsetup + '.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
-rC(fsetup + '.l.cr.speed','configure','-format','%0.0f')
-rC(fsetup + '.l.cr.speed','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'int',0))
-spinBoxes.append(fsetup + '.l.cr.speed')
-# populate cut recovery frame
-rC('grid',fsetup + '.l.cr.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.l.cr.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup + '.l.cr',0,'-weight',1)
-rC('grid','columnconfigure',fsetup + '.l.cr',1,'-weight',1)
-#populate left panel
-rC('grid',fsetup + '.l.gui','-column',0,'-row',0,'-sticky','new')
-rC('grid',fsetup + '.l.jog','-column',0,'-row',1,'-sticky','new')
-rC('grid',fsetup + '.l.plasmac','-column',0,'-row',2,'-sticky','new')
-rC('grid',fsetup + '.l.mats','-column',0,'-row',3,'-sticky','new')
-rC('grid',fsetup + '.l.cr','-column',0,'-row',4,'-sticky','new')
+    # cut recovery frame
+    rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
+    rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text','Speed %','-anchor','e')
+    rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
+    minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
+    rC(fsetup + '.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
+    rC(fsetup + '.l.cr.speed','configure','-format','%0.0f')
+    rC(fsetup + '.l.cr.speed','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'int',0))
+    spinBoxes.append(fsetup + '.l.cr.speed')
+    # populate cut recovery frame
+    rC('grid',fsetup + '.l.cr.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.cr.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.l.cr',0,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.l.cr',1,'-weight',1)
+    #populate left panel
+    rC('grid',fsetup + '.l.gui','-column',0,'-row',0,'-sticky','new')
+    rC('grid',fsetup + '.l.jog','-column',0,'-row',1,'-sticky','new')
+    rC('grid',fsetup + '.l.plasmac','-column',0,'-row',2,'-sticky','new')
+    rC('grid',fsetup + '.l.mats','-column',0,'-row',3,'-sticky','new')
+    rC('grid',fsetup + '.l.cr','-column',0,'-row',4,'-sticky','new')
 
-# middle panel for utilities
-rC('labelframe',fsetup + '.utilities','-text','Utilities','-relief','groove')
-rC('button',fsetup + '.utilities.offsets','-command','set_peripheral_offsets','-text','Set Offsets')
-#populate left panel
-rC('grid',fsetup + '.utilities.offsets','-column',0,'-row',0,'-sticky','new')
+    # middle panel for utilities
+    rC('labelframe',fsetup + '.utilities','-text','Utilities','-relief','groove')
+    rC('button',fsetup + '.utilities.offsets','-command','set_peripheral_offsets','-text','Set Offsets')
+    #populate left panel
+    rC('grid',fsetup + '.utilities.offsets','-column',0,'-row',0,'-sticky','new')
 
-# right panel (for user buttons)
-rC('labelframe',fsetup + '.ubuttons','-text','User Buttons','-relief','groove')
-rC('label',fsetup + '.ubuttons.numL','-text',' #','-width',2,'-anchor','e')
-rC('label',fsetup + '.ubuttons.nameL','-text','Name','-width',14,'-anchor','w')
-rC('label',fsetup + '.ubuttons.codeL','-text','Code','-width',48,'-anchor','w')
-for n in range(1, 21):
-    rC('label',fsetup + '.ubuttons.num' + str(n),'-text',str(n),'-anchor','e')
-    rC('entry',fsetup + '.ubuttons.name' + str(n),'-width',14)
-    rC('entry',fsetup + '.ubuttons.code' + str(n))
-rC('grid',fsetup + '.ubuttons.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-rC('grid',fsetup + '.ubuttons.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-rC('grid',fsetup + '.ubuttons.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
-# populate settings frame
-rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.utilities','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-rC('grid',fsetup + '.ubuttons','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
-rC('grid','columnconfigure',fsetup,0,'-weight',0)
-rC('grid','columnconfigure',fsetup,1,'-weight',1)
-rC('grid','columnconfigure',fsetup,2,'-weight',0)
-rC('grid','columnconfigure',fsetup,3,'-weight',1)
-rC('grid','columnconfigure',fsetup,4,'-weight',0)
+    # right panel (for user buttons)
+    rC('labelframe',fsetup + '.ubuttons','-text','User Buttons','-relief','groove')
+    rC('label',fsetup + '.ubuttons.numL','-text',' #','-width',2,'-anchor','e')
+    rC('label',fsetup + '.ubuttons.nameL','-text','Name','-width',14,'-anchor','w')
+    rC('label',fsetup + '.ubuttons.codeL','-text','Code','-width',48,'-anchor','w')
+    for n in range(1, 21):
+        rC('label',fsetup + '.ubuttons.num' + str(n),'-text',str(n),'-anchor','e')
+        rC('entry',fsetup + '.ubuttons.name' + str(n),'-width',14)
+        rC('entry',fsetup + '.ubuttons.code' + str(n))
+    rC('grid',fsetup + '.ubuttons.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.ubuttons.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.ubuttons.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
+    # populate settings frame
+    rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.utilities','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.ubuttons','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup,0,'-weight',0)
+    rC('grid','columnconfigure',fsetup,1,'-weight',1)
+    rC('grid','columnconfigure',fsetup,2,'-weight',0)
+    rC('grid','columnconfigure',fsetup,3,'-weight',1)
+    rC('grid','columnconfigure',fsetup,4,'-weight',0)
 
-# run panel
-# create the widgets
-rC('frame','.runs','-relief','flat')
-# materials frame
-rC('ComboBox','.runs.materials','-modifycmd','material_changed','-textvariable','matCurrent','-width',10,'-editable',0)
-rC('labelframe','.runs.material','-text','Material','-relief','groove')
-#  (parent, name, label text)
-rp1=['.runs.material','kerf-width','Kerf Width']
-#  (decimals, value, min, max, increment
-rp1[2:1] = [2,0.5,0,5,0.01] if s.linear_units == 1 else [4,0.02,0,1,0.0001]
-rp2=['.runs.material','pierce-height','Pierce Height']
-rp2[2:1] = [2,4,0,25,0.01] if s.linear_units == 1 else [3,0.16,0,1,0.001]
-rp3=['.runs.material','cut-height','Cut Height']
-rp3[2:1] = [2,1,0,25,0.01] if s.linear_units == 1 else [3,0.04,0,1,0.001]
-rp4=['.runs.material','cut-feed-rate','Feed Rate']
-rp4[2:1] = [0,4000,0,19999,1] if s.linear_units == 1 else [0,160,0,999,0.1]
-rpList = [rp1, rp2, \
-          ['.runs.material','pierce-delay',1,0.0,0,10,0.1,'Pierce Delay'], \
-          rp3, rp4, \
-          ['.runs.material','cut-amps',0,45,0,999,1,'Cut Amps'], \
-          ['.runs.material','cut-volts',0,122,50,300,1,'Cut Volts'], \
-          ['.runs.material','puddle-jump-height',0,0,0,200,1,'P-Jump Height'], \
-          ['.runs.material','puddle-jump-delay',2,0,0,9,0.01,'P-Jump Delay'], \
-          ['.runs.material','pause-at-end',1,0,0,9,0.1,'Pause At End'], \
-          ['.runs.material','cut-mode',0,1,1,3,1,'Cut Mode'], \
-          ['.runs.material','gas-pressure',1,0,0,150,0.1,'Gas Pressure'], \
-         ]
-rpRow = 0
-for rpItem in rpList:
-    rpName = rpItem[0] + '.' + rpItem[1]
-    rpType = 'flt' if rpItem[2] > 0 else 'int'
-    rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true','-bg','white')
-    spinBoxes.append(rpName)
-    rC(rpName,'configure','-from',rpItem[4],'-to',rpItem[5])
-    if rpItem[1] == 'kerf-width':
-        rC(rpName,'configure','-textvariable','kerfWidth')
-    elif rpItem[1] == 'cut-amps':
-        rC(rpName,'configure','-textvariable','cutAmps')
-    elif rpItem[1] == 'cut-mode':
-        rC(rpName,'configure','-textvariable','cutMode')
-    elif rpItem[1] == 'gas-pressure':
-        rC(rpName,'configure','-textvariable','gasPressure')
-    rC(rpName,'configure','-increment',rpItem[6],'-format','%0.{}f'.format(rpItem[2]))
-    rC(rpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,rpType,rpItem[2]))
-    rC('label',rpName + 'L','-text',rpItem[7])
-    if rpItem[1] not in ['cut-mode', 'gas-pressure']:
-        rC('grid', rpName,'-column',0,'-row',rpRow)
-        rC('grid', rpName + 'L','-column',1,'-row',rpRow,'-sticky','W')
-    rpRow += 1
-# checkbox frame
-rC('labelframe','.runs.check','-text','Cut','-relief','groove')
-#rC('checkbutton','.runs.check.av','-text','Use Auto Volts','-variable','autoVolts','-command','auto_volts_toggled','-anchor','w')
-#rC('checkbutton','.runs.check.ohmic','-text','Ohmic Probe Enable','-variable','ohmicEnable','-command','ohmic_enable_toggled','-anchor','w')
-#rC('checkbutton','.runs.check.mesh','-text','Mesh Mode','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-anchor','w')
-#rC('checkbutton','.runs.check.ignoreok','-text','Ignore Arc OK','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-anchor','w')
-#rC('pack','.runs.check.av','-fill','x')
-#rC('pack','.runs.check.ohmic','-fill','x')
-#rC('pack','.runs.check.mesh','-fill','x')
-#rC('pack','.runs.check.ignoreok','-fill','x')
-rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label','.runs.check.avL','-text','Use Auto Volts')
-rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label','.runs.check.ohmicL','-text','Ohmic Probe Enable')
-rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label','.runs.check.meshL','-text','Mesh Mode')
-rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label','.runs.check.ignoreokL','-text','Ignore Arc OK')
-# populate the frame
-rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
-rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
-rC('grid','.runs.check.ohmic','-column',0,'-row',1,'-sticky','w')
-rC('grid','.runs.check.ohmicL','-column',1,'-row',1,'-sticky','w')
-rC('grid','.runs.check.mesh','-column',0,'-row',2,'-sticky','w')
-rC('grid','.runs.check.meshL','-column',1,'-row',2,'-sticky','w')
-rC('grid','.runs.check.ignoreok','-column',0,'-row',3,'-sticky','w')
-rC('grid','.runs.check.ignoreokL','-column',1,'-row',3,'-sticky','w')
+    # run panel
+    # create the widgets
+    rC('frame','.runs','-relief','flat')
+    # materials frame
+    rC('ComboBox','.runs.materials','-modifycmd','material_changed','-textvariable','matCurrent','-width',10,'-editable',0)
+    rC('labelframe','.runs.material','-text','Material','-relief','groove')
+    #  (parent, name, label text)
+    rp1=['.runs.material','kerf-width','Kerf Width']
+    #  (decimals, value, min, max, increment
+    rp1[2:1] = [2,0.5,0,5,0.01] if s.linear_units == 1 else [4,0.02,0,1,0.0001]
+    rp2=['.runs.material','pierce-height','Pierce Height']
+    rp2[2:1] = [2,4,0,25,0.01] if s.linear_units == 1 else [3,0.16,0,1,0.001]
+    rp3=['.runs.material','cut-height','Cut Height']
+    rp3[2:1] = [2,1,0,25,0.01] if s.linear_units == 1 else [3,0.04,0,1,0.001]
+    rp4=['.runs.material','cut-feed-rate','Feed Rate']
+    rp4[2:1] = [0,4000,0,19999,1] if s.linear_units == 1 else [0,160,0,999,0.1]
+    rpList = [rp1, rp2, \
+              ['.runs.material','pierce-delay',1,0.0,0,10,0.1,'Pierce Delay'], \
+              rp3, rp4, \
+              ['.runs.material','cut-amps',0,45,0,999,1,'Cut Amps'], \
+              ['.runs.material','cut-volts',0,122,50,300,1,'Cut Volts'], \
+              ['.runs.material','puddle-jump-height',0,0,0,200,1,'P-Jump Height'], \
+              ['.runs.material','puddle-jump-delay',2,0,0,9,0.01,'P-Jump Delay'], \
+              ['.runs.material','pause-at-end',1,0,0,9,0.1,'Pause At End'], \
+              ['.runs.material','cut-mode',0,1,1,3,1,'Cut Mode'], \
+              ['.runs.material','gas-pressure',1,0,0,150,0.1,'Gas Pressure'], \
+             ]
+    rpRow = 0
+    for rpItem in rpList:
+        rpName = rpItem[0] + '.' + rpItem[1]
+        rpType = 'flt' if rpItem[2] > 0 else 'int'
+        rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true','-bg','white')
+        spinBoxes.append(rpName)
+        rC(rpName,'configure','-from',rpItem[4],'-to',rpItem[5])
+        if rpItem[1] == 'kerf-width':
+            rC(rpName,'configure','-textvariable','kerfWidth')
+        elif rpItem[1] == 'cut-amps':
+            rC(rpName,'configure','-textvariable','cutAmps')
+        elif rpItem[1] == 'cut-mode':
+            rC(rpName,'configure','-textvariable','cutMode')
+        elif rpItem[1] == 'gas-pressure':
+            rC(rpName,'configure','-textvariable','gasPressure')
+        rC(rpName,'configure','-increment',rpItem[6],'-format','%0.{}f'.format(rpItem[2]))
+        rC(rpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,rpType,rpItem[2]))
+        rC('label',rpName + 'L','-text',rpItem[7])
+        if rpItem[1] not in ['cut-mode', 'gas-pressure']:
+            rC('grid', rpName,'-column',0,'-row',rpRow)
+            rC('grid', rpName + 'L','-column',1,'-row',rpRow,'-sticky','W')
+        rpRow += 1
+    # checkbox frame
+    rC('labelframe','.runs.check','-text','Cut','-relief','groove')
+    #rC('checkbutton','.runs.check.av','-text','Use Auto Volts','-variable','autoVolts','-command','auto_volts_toggled','-anchor','w')
+    #rC('checkbutton','.runs.check.ohmic','-text','Ohmic Probe Enable','-variable','ohmicEnable','-command','ohmic_enable_toggled','-anchor','w')
+    #rC('checkbutton','.runs.check.mesh','-text','Mesh Mode','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-anchor','w')
+    #rC('checkbutton','.runs.check.ignoreok','-text','Ignore Arc OK','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-anchor','w')
+    #rC('pack','.runs.check.av','-fill','x')
+    #rC('pack','.runs.check.ohmic','-fill','x')
+    #rC('pack','.runs.check.mesh','-fill','x')
+    #rC('pack','.runs.check.ignoreok','-fill','x')
+    rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label','.runs.check.avL','-text','Use Auto Volts')
+    rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label','.runs.check.ohmicL','-text','Ohmic Probe Enable')
+    rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label','.runs.check.meshL','-text','Mesh Mode')
+    rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label','.runs.check.ignoreokL','-text','Ignore Arc OK')
+    # populate the frame
+    rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
+    rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
+    rC('grid','.runs.check.ohmic','-column',0,'-row',1,'-sticky','w')
+    rC('grid','.runs.check.ohmicL','-column',1,'-row',1,'-sticky','w')
+    rC('grid','.runs.check.mesh','-column',0,'-row',2,'-sticky','w')
+    rC('grid','.runs.check.meshL','-column',1,'-row',2,'-sticky','w')
+    rC('grid','.runs.check.ignoreok','-column',0,'-row',3,'-sticky','w')
+    rC('grid','.runs.check.ignoreokL','-column',1,'-row',3,'-sticky','w')
 
-# pmx frame
-rC('labelframe','.runs.pmx','-text','Powermax','-relief','groove')
-rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
-rC('label','.runs.pmx.info','-text','PMX Info goes here','-anchor','w')
-rC('pack','.runs.pmx.enable','-expand',1,'-fill','x')
-rC('pack','.runs.pmx.info','-expand',1,'-fill','x')
-# populate the run panel
-rC('grid','.runs.materials','-column',0,'-row',0,'-sticky','new','-padx',2,'-pady',(0,2))
-rC('grid','.runs.material','-column',0,'-row',1,'-sticky','new','-padx',2,'-pady',(0,2))
-rC('grid','.runs.check','-column',0,'-row',2,'-sticky','new','-padx',2,'-pady',(0,2))
-# rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
-rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
+    # pmx frame
+    rC('labelframe','.runs.pmx','-text','Powermax','-relief','groove')
+    rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label','.runs.pmx.info','-text','PMX Info goes here','-anchor','w')
+    rC('pack','.runs.pmx.enable','-expand',1,'-fill','x')
+    rC('pack','.runs.pmx.info','-expand',1,'-fill','x')
+    # populate the run panel
+    rC('grid','.runs.materials','-column',0,'-row',0,'-sticky','new','-padx',2,'-pady',(0,2))
+    rC('grid','.runs.material','-column',0,'-row',1,'-sticky','new','-padx',2,'-pady',(0,2))
+    rC('grid','.runs.check','-column',0,'-row',2,'-sticky','new','-padx',2,'-pady',(0,2))
+    # rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
+    rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
 
-# bottom pane widgets
-# configure
-rC(ft,'configure','-relief','flat','-pady',0)
-rC(ft + '.sb','configure','-bd',1)
-rC(ft + '.sb','configure','-width', 16)
-rC(ft + '.text','configure','-width',10,'-height',6,'-borderwidth',1,'-relief','sunken')
-# populate
-rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',2,'-sticky','nsew')
-rC('pack',ft + '.sb','-fill','y','-side','left','-padx',1)
-rC('pack',ft + '.text','-fill','both','-expand',1,'-side','left','-pady',0)
+    # bottom pane widgets
+    # configure
+    rC(ft,'configure','-relief','flat','-pady',0)
+    rC(ft + '.sb','configure','-bd',1)
+    rC(ft + '.sb','configure','-width', 16)
+    rC(ft + '.text','configure','-width',10,'-height',6,'-borderwidth',1,'-relief','sunken')
+    # populate
+    rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',2,'-sticky','nsew')
+    rC('pack',ft + '.sb','-fill','y','-side','left','-padx',1)
+    rC('pack',ft + '.text','-fill','both','-expand',1,'-side','left','-pady',0)
 
-# new conversational frames
-rC('frame','.toolconv','-borderwidth',1,'-relief','raised')
-rC('frame','.fconv','-relief','flat')
+    # new conversational frames
+    rC('frame','.toolconv','-borderwidth',1,'-relief','raised')
+    rC('frame','.fconv','-relief','flat')
 
-# change jog slider resolution
-rC('.pane.top.jogspeed.s', 'configure','-resolution',0.00001)
+    # change jog slider resolution
+    rC('.pane.top.jogspeed.s', 'configure','-resolution',0.00001)
 
-# change some existing help text
-dels = [24,23,22,20,19,18,17]
-for d in dels:
-    del help1[d]
-del help1[4]
-help1.insert(10,('Control+ `,1..9,0', _('Set Rapid Override from 0% to 100%')),)
-help1.insert(11,('Alt+ `,1..9,0', _('Set Jog Speed from 0% to 100%')),)
+    # change some existing help text
+    dels = [24,23,22,20,19,18,17]
+    for d in dels:
+        del help1[d]
+    del help1[4]
+    help1.insert(10,('Control+ `,1..9,0', _('Set Rapid Override from 0% to 100%')),)
+    help1.insert(11,('Alt+ `,1..9,0', _('Set Jog Speed from 0% to 100%')),)
 
-# remove redundant bindings
-root_window.unbind('R') # reverse
-root_window.unbind('F') # forward
-root_window.unbind('<Key-F7>') # mist toggle
-root_window.unbind('<Key-F8>') # flood toggle
-root_window.unbind('<Key-F9>') # spindle forward toggle
-root_window.unbind('<Key-F10>') # spindle backward toggle
-root_window.unbind('<Key-F11>') # spindle decrease
-root_window.unbind('<Key-F12>') # spindle increase
-root_window.unbind('B') # brake on
-root_window.unbind('b') # brake off
+    # remove redundant bindings
+    root_window.unbind('R') # reverse
+    root_window.unbind('F') # forward
+    root_window.unbind('<Key-F7>') # mist toggle
+    root_window.unbind('<Key-F8>') # flood toggle
+    root_window.unbind('<Key-F9>') # spindle forward toggle
+    root_window.unbind('<Key-F10>') # spindle backward toggle
+    root_window.unbind('<Key-F11>') # spindle decrease
+    root_window.unbind('<Key-F12>') # spindle increase
+    root_window.unbind('B') # brake on
+    root_window.unbind('b') # brake off
 
-# new key bindings
-root_window.bind('<Escape>', commands.task_stop)
-root_window.bind('<Key-F9>', commands.manual_cut)
-root_window.bind('<Control-Key-quoteleft>',lambda event: set_rapidrate(0))
-root_window.bind('<Control-Key-1>',lambda event: set_rapidrate(10))
-root_window.bind('<Control-Key-2>',lambda event: set_rapidrate(20))
-root_window.bind('<Control-Key-3>',lambda event: set_rapidrate(30))
-root_window.bind('<Control-Key-4>',lambda event: set_rapidrate(40))
-root_window.bind('<Control-Key-5>',lambda event: set_rapidrate(50))
-root_window.bind('<Control-Key-6>',lambda event: set_rapidrate(60))
-root_window.bind('<Control-Key-7>',lambda event: set_rapidrate(70))
-root_window.bind('<Control-Key-8>',lambda event: set_rapidrate(80))
-root_window.bind('<Control-Key-9>',lambda event: set_rapidrate(90))
-root_window.bind('<Control-Key-0>',lambda event: set_rapidrate(100))
-root_window.bind('<Alt-Key-quoteleft>',lambda event: set_jog_slider(0.0))
-root_window.bind('<Alt-Key-1>',lambda event: set_jog_slider(0.1))
-root_window.bind('<Alt-Key-2>',lambda event: set_jog_slider(0.2))
-root_window.bind('<Alt-Key-3>',lambda event: set_jog_slider(0.3))
-root_window.bind('<Alt-Key-4>',lambda event: set_jog_slider(0.4))
-root_window.bind('<Alt-Key-5>',lambda event: set_jog_slider(0.5))
-root_window.bind('<Alt-Key-6>',lambda event: set_jog_slider(0.6))
-root_window.bind('<Alt-Key-7>',lambda event: set_jog_slider(0.7))
-root_window.bind('<Alt-Key-8>',lambda event: set_jog_slider(0.8))
-root_window.bind('<Alt-Key-9>',lambda event: set_jog_slider(0.9))
-root_window.bind('<Alt-Key-0>',lambda event: set_jog_slider(1.0))
+    # new key bindings
+    root_window.bind('<Escape>', commands.task_stop)
+    root_window.bind('<Key-F9>', commands.manual_cut)
+    root_window.bind('<Control-Key-quoteleft>',lambda event: set_rapidrate(0))
+    root_window.bind('<Control-Key-1>',lambda event: set_rapidrate(10))
+    root_window.bind('<Control-Key-2>',lambda event: set_rapidrate(20))
+    root_window.bind('<Control-Key-3>',lambda event: set_rapidrate(30))
+    root_window.bind('<Control-Key-4>',lambda event: set_rapidrate(40))
+    root_window.bind('<Control-Key-5>',lambda event: set_rapidrate(50))
+    root_window.bind('<Control-Key-6>',lambda event: set_rapidrate(60))
+    root_window.bind('<Control-Key-7>',lambda event: set_rapidrate(70))
+    root_window.bind('<Control-Key-8>',lambda event: set_rapidrate(80))
+    root_window.bind('<Control-Key-9>',lambda event: set_rapidrate(90))
+    root_window.bind('<Control-Key-0>',lambda event: set_rapidrate(100))
+    root_window.bind('<Alt-Key-quoteleft>',lambda event: set_jog_slider(0.0))
+    root_window.bind('<Alt-Key-1>',lambda event: set_jog_slider(0.1))
+    root_window.bind('<Alt-Key-2>',lambda event: set_jog_slider(0.2))
+    root_window.bind('<Alt-Key-3>',lambda event: set_jog_slider(0.3))
+    root_window.bind('<Alt-Key-4>',lambda event: set_jog_slider(0.4))
+    root_window.bind('<Alt-Key-5>',lambda event: set_jog_slider(0.5))
+    root_window.bind('<Alt-Key-6>',lambda event: set_jog_slider(0.6))
+    root_window.bind('<Alt-Key-7>',lambda event: set_jog_slider(0.7))
+    root_window.bind('<Alt-Key-8>',lambda event: set_jog_slider(0.8))
+    root_window.bind('<Alt-Key-9>',lambda event: set_jog_slider(0.9))
+    root_window.bind('<Alt-Key-0>',lambda event: set_jog_slider(1.0))
 
-# remove all tooltips
-rC('DynamicHelp::delete','ftabs_manual.axes.axisx')
-for w in toolButtons:
-    rC('DynamicHelp::delete','.toolbar.{}'.format(w))
+    # remove all tooltips
+    rC('DynamicHelp::delete','ftabs_manual.axes.axisx')
+    for w in toolButtons:
+        rC('DynamicHelp::delete','.toolbar.{}'.format(w))
 
 
 ##############################################################################
 # INITIALIZATION                                                             #
 ##############################################################################
-# reinitialize notifications to keep them on top of new widgets
-notifications.__init__(root_window)
-font_size_changed()
-update_title()
-o.show_overlay = False
-hal.set_p('plasmac.mode', '{}'.format(pVars.plasmacMode.get()))
-hal.set_p('plasmac.torch-enable', '0')
-hal.set_p('plasmac.height-override', '{:0.3f}'.format(torchHeight))
-hal.set_p('plasmac.thc-feed-rate', '{}'.format(thcFeedRate))
-pVars.previewLarge.set(False)
-pVars.laserText.set(_('Laser'))
-value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC enable', False, bool)
-pVars.thcEnable.set(value)
-hal.set_p('plasmac.thc-enable', str(value))
-value = getPrefs(PREF,'ENABLE_OPTIONS', 'Corner lock enable', False, bool)
-pVars.cornerEnable.set(value)
-hal.set_p('plasmac.cornerlock-enable', str(value))
-value = getPrefs(PREF,'ENABLE_OPTIONS', 'Kerf cross enable', False, bool)
-pVars.kerfEnable.set(value)
-hal.set_p('plasmac.kerfcross-enable', str(value))
-value = getPrefs(PREF,'ENABLE_OPTIONS', 'Use auto volts', False, bool)
-pVars.autoVolts.set(value)
-hal.set_p('plasmac.use-auto-volts', str(value))
-value = getPrefs(PREF,'ENABLE_OPTIONS', 'Ohmic probe enable', False, bool)
-pVars.ohmicEnable.set(value)
-hal.set_p('plasmac.ohmic-probe-enable', str(value))
-value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
-rC(fsetup + '.l.jog.speed','set',value)
-restoreSetup['jogSpeed'] = value
-set_jog_slider(value / vars.max_speed.get() / 60)
-value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning', True, bool)
-pVars.closeDialog.set(value)
-restoreSetup['closeDialog'] = value
-root_window.protocol('WM_DELETE_WINDOW', close_window)
-value = getPrefs(PREF,'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ','')
-putPrefs(PREF,'GUI_OPTIONS', 'Window size', value, str)
-pVars.winSize.set(value)
-restoreSetup['winSize'] = value
-value = getPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', 0.5, float)
-pVars.coneSize.set(value)
-restoreSetup['coneSize'] = value
-cone_size_changed()
-value = getPrefs(PREF,'GUI_OPTIONS', 'Table zoom', 1, float)
-rC(fsetup + '.l.gui.zoom','set',value)
-restoreSetup['tableZoom'] = value
-value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
-restoreSetup['crPercent'] = value
-rC(fsetup + '.l.cr.speed','set',value)
-statDivisor = 1000 if unitsPerMm == 1 else 1
-statSuffix = 'M' if unitsPerMm == 1 else '"'
-# we bring in some ints as floats so we can read QtPlasmaC statistics
-pVars.lengthS.set(getPrefs(PREF,'STATISTICS', 'Cut length', 0, float))
-pVars.lengthJ.set('0.00{}'.format(statSuffix))
-pVars.lengthT.set('{:0.2f}{}'.format(pVars.lengthS.get() / statDivisor, statSuffix))
-pVars.pierceS.set(getPrefs(PREF,'STATISTICS', 'Pierce count', 0, int))
-pVars.pierceJ.set('0')
-pVars.pierceT.set(pVars.pierceS.get())
-pVars.rapidS.set(int(getPrefs(PREF,'STATISTICS', 'Rapid time', 0, float)))
-pVars.rapidJ.set('00:00:00')
-pVars.rapidT.set(secs_to_hms(pVars.rapidS.get()))
-pVars.probeS.set(int(getPrefs(PREF,'STATISTICS', 'Probe time', 0, float)))
-pVars.probeJ.set('00:00:00')
-pVars.probeT.set(secs_to_hms(pVars.probeS.get()))
-pVars.torchS.set(int(getPrefs(PREF,'STATISTICS', 'Torch on time', 0, float)))
-pVars.torchJ.set('00:00:00')
-pVars.torchT.set(secs_to_hms(pVars.torchS.get()))
-pVars.pausedS.set(int(getPrefs(PREF,'STATISTICS', 'Paused time', 0, float)))
-pVars.pausedJ.set('00:00:00')
-pVars.pausedT.set(secs_to_hms(pVars.pausedS.get()))
-pVars.cutS.set(int(getPrefs(PREF,'STATISTICS', 'Cut time', 0, float)))
-pVars.cutJ.set('00:00:00')
-pVars.cutT.set(secs_to_hms(pVars.cutS.get()))
-pVars.runS.set(int(getPrefs(PREF,'STATISTICS', 'Program run time', 0, float)))
-pVars.runJ.set('00:00:00')
-pVars.runT.set(secs_to_hms(pVars.runS.get()))
-laser_button_enable()
-set_probe_offset_pins()
-for widget in wLeds:
-    rC(widget,'configure','-state','disabled')
-    widgetValues[widget] = 0
+    # reinitialize notifications to keep them on top of new widgets
+    notifications.__init__(root_window)
+    font_size_changed()
+    update_title()
+    o.show_overlay = False
+    hal.set_p('plasmac.mode', '{}'.format(pVars.plasmacMode.get()))
+    hal.set_p('plasmac.torch-enable', '0')
+    hal.set_p('plasmac.height-override', '{:0.3f}'.format(torchHeight))
+    hal.set_p('plasmac.thc-feed-rate', '{}'.format(thcFeedRate))
+    pVars.previewLarge.set(False)
+    pVars.laserText.set(_('Laser'))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC enable', False, bool)
+    pVars.thcEnable.set(value)
+    hal.set_p('plasmac.thc-enable', str(value))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Corner lock enable', False, bool)
+    pVars.cornerEnable.set(value)
+    hal.set_p('plasmac.cornerlock-enable', str(value))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Kerf cross enable', False, bool)
+    pVars.kerfEnable.set(value)
+    hal.set_p('plasmac.kerfcross-enable', str(value))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Use auto volts', False, bool)
+    pVars.autoVolts.set(value)
+    hal.set_p('plasmac.use-auto-volts', str(value))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Ohmic probe enable', False, bool)
+    pVars.ohmicEnable.set(value)
+    hal.set_p('plasmac.ohmic-probe-enable', str(value))
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
+    rC(fsetup + '.l.jog.speed','set',value)
+    restoreSetup['jogSpeed'] = value
+    set_jog_slider(value / vars.max_speed.get() / 60)
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning', True, bool)
+    pVars.closeDialog.set(value)
+    restoreSetup['closeDialog'] = value
+    root_window.protocol('WM_DELETE_WINDOW', close_window)
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ','')
+    putPrefs(PREF,'GUI_OPTIONS', 'Window size', value, str)
+    pVars.winSize.set(value)
+    restoreSetup['winSize'] = value
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', 0.5, float)
+    pVars.coneSize.set(value)
+    restoreSetup['coneSize'] = value
+    cone_size_changed()
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Table zoom', 1, float)
+    rC(fsetup + '.l.gui.zoom','set',value)
+    restoreSetup['tableZoom'] = value
+    value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
+    restoreSetup['crPercent'] = value
+    rC(fsetup + '.l.cr.speed','set',value)
+    statDivisor = 1000 if unitsPerMm == 1 else 1
+    statSuffix = 'M' if unitsPerMm == 1 else '"'
+    # we bring in some ints as floats so we can read QtPlasmaC statistics
+    pVars.lengthS.set(getPrefs(PREF,'STATISTICS', 'Cut length', 0, float))
+    pVars.lengthJ.set('0.00{}'.format(statSuffix))
+    pVars.lengthT.set('{:0.2f}{}'.format(pVars.lengthS.get() / statDivisor, statSuffix))
+    pVars.pierceS.set(getPrefs(PREF,'STATISTICS', 'Pierce count', 0, int))
+    pVars.pierceJ.set('0')
+    pVars.pierceT.set(pVars.pierceS.get())
+    pVars.rapidS.set(int(getPrefs(PREF,'STATISTICS', 'Rapid time', 0, float)))
+    pVars.rapidJ.set('00:00:00')
+    pVars.rapidT.set(secs_to_hms(pVars.rapidS.get()))
+    pVars.probeS.set(int(getPrefs(PREF,'STATISTICS', 'Probe time', 0, float)))
+    pVars.probeJ.set('00:00:00')
+    pVars.probeT.set(secs_to_hms(pVars.probeS.get()))
+    pVars.torchS.set(int(getPrefs(PREF,'STATISTICS', 'Torch on time', 0, float)))
+    pVars.torchJ.set('00:00:00')
+    pVars.torchT.set(secs_to_hms(pVars.torchS.get()))
+    pVars.pausedS.set(int(getPrefs(PREF,'STATISTICS', 'Paused time', 0, float)))
+    pVars.pausedJ.set('00:00:00')
+    pVars.pausedT.set(secs_to_hms(pVars.pausedS.get()))
+    pVars.cutS.set(int(getPrefs(PREF,'STATISTICS', 'Cut time', 0, float)))
+    pVars.cutJ.set('00:00:00')
+    pVars.cutT.set(secs_to_hms(pVars.cutS.get()))
+    pVars.runS.set(int(getPrefs(PREF,'STATISTICS', 'Program run time', 0, float)))
+    pVars.runJ.set('00:00:00')
+    pVars.runT.set(secs_to_hms(pVars.runS.get()))
+    laser_button_enable()
+    set_probe_offset_pins()
+    for widget in wLeds:
+        rC(widget,'configure','-state','disabled')
+        widgetValues[widget] = 0
 
-comboFg = rC(fsetup + '.ubuttons.name1','cget','-fg')
-comboBg = rC(fsetup + '.ubuttons.name1','cget','-bg')
-for widget in wCombos:
-    rC(widget,'configure','-selectforeground',comboFg)
-    rC(widget,'configure','-selectbackground',comboBg)
+    comboFg = rC(fsetup + '.ubuttons.name1','cget','-fg')
+    comboBg = rC(fsetup + '.ubuttons.name1','cget','-bg')
+    for widget in wCombos:
+        rC(widget,'configure','-selectforeground',comboFg)
+        rC(widget,'configure','-selectbackground',comboBg)
 
-halPinList = hal.get_info_pins()
-load_param_clicked()
-mode_changed()
-pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
-#pmPort = None if pmPort == 'None' else pmPort
-if pmPort:
-    try:
-        import serial.tools.list_ports as PORTS
-        pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
-        ports = []
-        for p in PORTS.comports():
-            ports.append(p[0])
-        if pmPort not in ports:
-            title = 'PORT ERROR'
-            msg0 = 'cannot be found'
-            msg1 = 'Powermax communications is disabled'
-            notifications.add('error', '{}:\n{} {}\n{}\n'.format(title, pmPort, msg0, msg1))
+    halPinList = hal.get_info_pins()
+    load_param_clicked()
+    mode_changed()
+    pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
+    #pmPort = None if pmPort == 'None' else pmPort
+    if pmPort:
+        try:
+            import serial.tools.list_ports as PORTS
+            pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
+            ports = []
+            for p in PORTS.comports():
+                ports.append(p[0])
+            if pmPort not in ports:
+                title = 'PORT ERROR'
+                msg0 = 'cannot be found'
+                msg1 = 'Powermax communications is disabled'
+                notifications.add('error', '{}:\n{} {}\n{}\n'.format(title, pmPort, msg0, msg1))
+                pmPort = None
+            rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
+            rC('grid',stats + '.arcL','-column',0,'-row',9,'-pady',(8,0))
+            rC('grid',stats + '.arcT','-column',2,'-row',9,'-pady',(8,0))
+        except:
+            title = 'MODULE ERROR'
+            msg0 = 'python3-serial cannot be found'
+            msg1 = 'Install python3-serial or linuxcnc-dev'
+            notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
-        rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
-        rC('grid',stats + '.arcL','-column',0,'-row',9,'-pady',(8,0))
-        rC('grid',stats + '.arcT','-column',2,'-row',9,'-pady',(8,0))
-    except:
-        title = 'MODULE ERROR'
-        msg0 = 'python3-serial cannot be found'
-        msg1 = 'Install python3-serial or linuxcnc-dev'
-        notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
-        pmPort = None
-set_window_size()
-#commands.set_view_t()
+    set_window_size()
+    #commands.set_view_t()
+
+else:
+    firstRun = 'invalid'
+    title = _('LOAD ERROR')
+    msg0 = _('Cannot find valid library directory')
+    msg1 = _('PlasmaC2 extensions are not loaded')
+    notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.expanduser('~/linuxcnc/plasmac2/libs'), msg1))
 
 
 ##############################################################################
@@ -3833,6 +3858,8 @@ set_window_size()
 ##############################################################################
 def user_hal_pins():
     global firstRun, previewSize
+    if firstRun == 'invalid':
+        return
     # create new hal pins
     comp.newpin('arc-voltage', hal.HAL_FLOAT, hal.HAL_IN)
     comp.newpin('led-arc-ok', hal.HAL_BIT, hal.HAL_IN)
@@ -3894,8 +3921,8 @@ def user_hal_pins():
     materialChangeTimeoutPin = comp['material-change-timeout']
     materialReloadPin = comp['material-reload']
     materialTempPin = comp['material-temp']
-    # do user button setup after hal pin creation
-    user_button_setup()
+    # # do user button setup after hal pin creation
+    # user_button_setup()
     # load materials when setup is complete
     load_materials()
     # start powermax comms if valid port
@@ -3923,7 +3950,7 @@ def user_hal_pins():
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
     # the first run has completed
-    firstRun = False
+    firstRun = None
     # run users custom python commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
         exec(open(os.path.join(configPath, 'user_commands.py')).read())
