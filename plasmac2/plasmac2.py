@@ -122,7 +122,6 @@ def mode_changed():
         rC('grid','forget',fplasma + '.arc-voltage')
         rC('grid','forget',fleds + '.led-kerf-locked')
         rC('grid','forget',fleds + '.lKLlab')
-#        rC('pack','forget','.runs.check.av','-side','bottom','-fill','x')
         rC('grid','forget','.runs.check.av')
         rC('grid','forget','.runs.check.avL')
         rC('grid','forget',fparam + '.c2.thc.thc-delay')
@@ -159,7 +158,6 @@ def mode_changed():
         rC('grid',fplasma + '.arc-voltage','-column',0,'-row',1,'-sticky','se','-rowspan',2)
         rC('grid',fleds + '.led-kerf-locked','-column',4,'-row',3,'-padx',(4,0),'-pady',(4,0))
         rC('grid',fleds + '.lKLlab',         '-column',5,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-#        rC('pack','.runs.check.av','-side','top','-fill','x')
         rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
         rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
         rC('grid',fparam + '.c2.thc.thc-delayL','-column',0,'-row',0,'-sticky','e')
@@ -446,7 +444,6 @@ def show_default():
         rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
         rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
     enable_menus(True)
-
 
 def enable_menus(state):
     state = 'normal' if state else 'disabled'
@@ -939,11 +936,9 @@ def backup_clicked():
 def torch_enable():
     if hal.get_value('plasmac.torch-enable'):
         hal.set_p('plasmac.torch-enable','0')
-#        rC('.fbuttons.torch-enable','configure','-bg','red','-activebackground','#AA0000','-text','Torch\nDisabled')
-        rC('.fbuttons.torch-enable','configure','-text','Torch\nDisabled','-bg','#bb0000','-activebackground','#990000')
+        rC('.fbuttons.torch-enable','configure','-text','Torch\nDisabled','-bg','#BB0000','-activebackground','#990000')
     else:
         hal.set_p('plasmac.torch-enable','1')
-#        rC('.fbuttons.torch-enable','configure','-bg','green','-activebackground','#00AA00','-text','Torch\nEnabled')
         rC('.fbuttons.torch-enable','configure','-text','Torch\nEnabled','-bg','#00AA00','-activebackground','#007700')
 
 #FIXME: KEEP THE PREVIEW UPDATING WHILE CODE IS BEING RUN
@@ -2373,7 +2368,7 @@ def pmx485_status_changed(state):
             pmx485['connected'] = False
             pmx485['retryTimer'] = 3
 
-# probably not required as we change the text in periodic
+#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT IN PERIODIC
 #def pmx485_arc_time_changed(time):
 #    print('pmx485_arc_time_changed', time)
 #    if pmx485['connected']:
@@ -2532,13 +2527,11 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     PREF = plasmacPreferences()
     MATS = plasmacMaterials()
     TEMP = plasmacTempMaterial()
-
     rC = root_window.tk.call
     rE = root_window.tk.eval
-
-    fontName = 'sans'# set the default font
+    # set the default font
+    fontName = 'sans'
     fontSize = startFontSize = '10'
-
     # make some widget names to save typing
     ftop = '.pane.top'
     ftabs = ftop + '.tabs'
@@ -2561,7 +2554,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     fleadins = fcutrecs + '.leadins'
     fparam = '.param'
     fsetup = '.setup'
-
     wLeds = [fleds + '.led-arc-ok',\
              fleds + '.led-torch',\
              fleds + '.led-thc-enabled',\
@@ -2574,12 +2566,10 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
              fleds + '.led-corner-locked',\
              fleds + '.led-kerf-locked',\
             ]
-
     wCombos = [fsetup + '.l.gui.wsize',\
                fsetup + '.l.mats.default',\
                '.runs.materials',\
               ]
-
     # recreate widget list to move active gcodes and add new widgets
     widget_list_new = []
     for l in widget_list:
@@ -2593,7 +2583,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
     widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
     widgets = nf.Widgets(root_window, *widget_list_new)
-
     # tk widget variables
     pVars = nf.Variables(root_window,
              ('plasmatool', StringVar),
@@ -2657,7 +2646,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
              ('jogInhibitOvr', IntVar),
              ('limitOvr', IntVar),
              )
-
     restoreSetup = {}
     pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
@@ -2730,35 +2718,16 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # get the default button background colors
     buttonBackG = rC(fjogf + '.jog.jogminus','cget','-bg')
     buttonActBackG = rC(fjogf + '.jog.jogminus','cget','-activebackground')
-
-    # # recreate widget list to move active gcodes and add new widgets
-    # widget_list_new = []
-    # for l in widget_list:
-    #     if '.gcodes' in l[2]:
-    #         l = ('code_text', Text, '.info.gcodef.gcodes')
-    #     widget_list_new.append(l)
-    # widget_list_new.append(('buttonFrame', Frame, '.fbuttons'))
-    # widget_list_new.append(('convFrame', Frame, '.fconv'))
-    # widget_list_new.append(('toolFrame', Frame, '.toolconv'))
-    # widget_list_new.append(('materials', bwidget.ComboBox, '.runs.materials'))
-    # widget_list_new.append(('kerfWidth', Spinbox, '.runs.material.kerf-width'))
-    # widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
-    # 
-    # widget_list_new.append(('plasma', LabelFrame, tabs_manual + '.plasma'))
-    # widgets = nf.Widgets(root_window, *widget_list_new)
     toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
                     'program_step','program_pause','program_stop','program_blockdelete',
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
                     'view_x','view_y','view_y2','view_p','rotate','clear_plot']
     matButtons   = ['delete','new','reload','save']
-
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
-
     # monkeypatched functions
     o.get_view = get_view # axis.py
     o.draw_grid = draw_grid # glcanon.py
-
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
     TclCommands.task_run_line = task_run_line
@@ -3055,8 +3024,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero'))
     rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
     rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
-    #rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
-    #rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
     rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
     # widget bindings
     rC('bind',fjogf + '.jog.jogminus','<Button-1>','if [is_continuous] {jog_minus}')
@@ -3076,8 +3043,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('pack',fjogf + '.zerohome.zero','-side','left','-padx',(8,0))
     rC('pack',fjogf + '.zerohome.zeroxy','-side','left','-padx',(8,0))
     rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','ew')
-    #if has_limit_switch:
-    #    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
     rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','ew')
 
     if homing_order_defined:
@@ -3093,7 +3058,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('grid','rowconfigure',fmanual,2,'-weight',99)
 
     # new limit switch override frame
-    #rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')    limitOvr
     rC('frame',flimitovr,'-bd',0)
     rC('button',fjogf + '.override') # dummy button to placate original axis code
     rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
@@ -3105,14 +3069,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('grid','rowconfigure',flimitovr,1,'-weight',0)
     rC('grid','rowconfigure',flimitovr,2,'-weight',1)
 
-    #rC('checkbutton',fjogf + '.override','-command','toggle_override_limits','-variable','override_limits')
-    #rC('setup_widget_accel',fjogf + '.override',_('Override Limits'))
-    #rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
-    #if has_limit_switch:
-    #    rC('grid',fjogf + '.override','-column',0,'-row',1,'-columnspan',3,'-pady',2,'-sticky','W')
-
     # new jog inhibit override frame
-    #rC('checkbutton',fjogiovr,'-text','Jog Inhibit Override','-variable','jogInhibitOvr')
     rC('frame',fjogiovr,'-bd',0)
     rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
     rC('label',fjogiovr + '.label','-text',_('Jog Inhibit Override'),'-anchor','center')
@@ -3146,9 +3103,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('frame',fplasma,'-bd',0)
     rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
     rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg','blue')
-    #rC('checkbutton',fplasma + '.thc','-text','THC Enable','-variable','thcEnable','-command','thc_enable_toggled','-anchor','w')
-    #rC('checkbutton',fplasma + '.vel','-text','Velocity Lock','-variable','cornerEnable','-command','corner_enable_toggled','-anchor','w')
-    #rC('checkbutton',fplasma + '.void','-text','Void Lock','-variable','kerfEnable','-command','kerf_enable_toggled','-anchor','w')
     rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
     rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable')
     rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
@@ -3273,7 +3227,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    #rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','red','-activebackground','#AA0000','-text',_('Torch\nDisabled'))
     rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','#BB0000','-activebackground','#990000','-text',_('Torch\nDisabled'))
     # populate frame
     rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
@@ -3316,7 +3269,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('pack',fcutrec + '.display.cut-rec-speed','-fill','y')
     rC('pack',fcutrec + '.display','-side','left','-fill','x','-expand',1)
     rC('pack',fcutrec + '.forward','-side','right','-fill','y')
-    #rC('pack',fcutrecs + '.buttons.laser','-side','left')
     rC('pack',fcutrecs + '.buttons.cancel','-side','right')
     rC('grid',fcutrecs + '.buttons','-column',0,'-row',1,'-sticky','n','-pady',12)
     rC('grid',fleadins + '.nw','-column',0,'-row',0)
@@ -3450,7 +3402,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # gui frame
     rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
     rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
-    #rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog')
     rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
     rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
@@ -3615,14 +3566,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
         rpRow += 1
     # checkbox frame
     rC('labelframe','.runs.check','-text','Cut','-relief','groove')
-    #rC('checkbutton','.runs.check.av','-text','Use Auto Volts','-variable','autoVolts','-command','auto_volts_toggled','-anchor','w')
-    #rC('checkbutton','.runs.check.ohmic','-text','Ohmic Probe Enable','-variable','ohmicEnable','-command','ohmic_enable_toggled','-anchor','w')
-    #rC('checkbutton','.runs.check.mesh','-text','Mesh Mode','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-anchor','w')
-    #rC('checkbutton','.runs.check.ignoreok','-text','Ignore Arc OK','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-anchor','w')
-    #rC('pack','.runs.check.av','-fill','x')
-    #rC('pack','.runs.check.ohmic','-fill','x')
-    #rC('pack','.runs.check.mesh','-fill','x')
-    #rC('pack','.runs.check.ignoreok','-fill','x')
     rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
     rC('label','.runs.check.avL','-text','Use Auto Volts')
     rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
@@ -3818,7 +3761,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     load_param_clicked()
     mode_changed()
     pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
-    #pmPort = None if pmPort == 'None' else pmPort
     if pmPort:
         try:
             import serial.tools.list_ports as PORTS
@@ -3842,7 +3784,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
     set_window_size()
-    #commands.set_view_t()
 
 else:
     firstRun = 'invalid'
@@ -3853,8 +3794,7 @@ else:
 
 
 ##############################################################################
-# HAL SETUP                                                                  #
-# CALLED DIRECTLY FROM AXIS ONCE AT STARTUP                                  #
+# HAL SETUP - CALLED DIRECTLY FROM AXIS ONCE AT STARTUP                      #
 ##############################################################################
 def user_hal_pins():
     global firstRun, previewSize
@@ -3949,7 +3889,7 @@ def user_hal_pins():
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
-    # the first run has completed
+    # the first run has successfully completed
     firstRun = None
     # run users custom python commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
@@ -3958,8 +3898,7 @@ def user_hal_pins():
 
 
 ##############################################################################
-# UPDATE FUNCTION                                                            #
-# CALLED FROM AXIS EVERY CYCLE                                               #
+# UPDATE FUNCTION - CALLED FROM AXIS EVERY CYCLE                             #
 ##############################################################################
 def user_live_update():
     # don't do any updates until first run is complete.
@@ -3985,7 +3924,8 @@ def user_live_update():
     # set current x and y relative positions
     relPos['X'] = round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 6)
     relPos['Y'] = round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 6)
-#FIXME: SET DISPLAY UNITS, WE MAY WANT TO MAKE THIS OPTIONAL WITH A CHECKBOX
+#FIXME: WE MAY WANT TO MAKE THIS OPTIONAL WITH A CHECKBOX
+    # set display units
     if o.canon:
         if 200 in o.canon.state.gcodes:
             vars.metric.set(0)
@@ -4253,14 +4193,16 @@ def user_live_update():
             comp['preview-tab'] = 0
         except:
             pass
-    # allows user to set a HAL pin to initiate the sequence of
-    # reloading the program, clearing the live plot, and rezooming the axis
+    # allows user to set a HAL pin to initiate the sequence of:
+    # reloading the program
     if comp['refresh'] == 1:
         comp['refresh'] = 2
         commands.reload_file()
+    # clearing the live plot
     elif comp['refresh'] == 2:
         comp['refresh'] = 3
         commands.clear_live_plot()
+    # rezooming the axis
     elif comp['refresh'] == 3:
         comp['refresh'] = 0
         commands.set_view_z()
@@ -4274,7 +4216,7 @@ def user_live_update():
             pmx485_fault_changed(pmx485['compFault'])
         if pmx485['compArcTime'] != hal.get_value('pmx485.arcTime'):
             pmx485['compArcTime'] = hal.get_value('pmx485.arcTime')
-            # probably not required as we change the text directly, here in periodic
+#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT DIRECTLY, HERE IN PERIODIC
             #pmx485_arc_time_changed(pmx485['compArcTime'])
             pVars.arcT.set(secs_to_hms(pmx485['compArcTime']))
         if pmx485['compMinC'] != hal.get_value('pmx485.current_min'):
@@ -4300,7 +4242,6 @@ def user_live_update():
     if vars.on_any_limit.get() and not rC('winfo','ismapped',flimitovr):
         rC('grid',flimitovr,'-row',1,'-column',0,'-columnspan',3,'-sticky','nsew')
     elif not vars.on_any_limit.get() and rC('winfo','ismapped',flimitovr):
-#        rC(fjogf + '.override','invoke')
         rC(flimitovr + '.button','invoke')
         rC('grid','forget',flimitovr)
     # hide/show jog inhibit override checkbox
