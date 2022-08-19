@@ -188,7 +188,7 @@ def font_size_changed():
     ngcFont = str(int(fontSize) - 1)
     rC('font','configure','TkDefaultFont','-family', fontName, '-size', fontSize)
     rC(fplasma + '.arc-voltage','configure','-font',arcFont)
-    rC('.pane.bottom.t.text','configure','-height',8,'-font',font, '-foreground','blue')
+    rC('.pane.bottom.t.text','configure','-height',8,'-font',font, '-foreground',ourBlue)
     rC('.info.gcodef.gcodes','configure','-font',font)
     if s.paused:
         rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery')
@@ -936,10 +936,10 @@ def backup_clicked():
 def torch_enable():
     if hal.get_value('plasmac.torch-enable'):
         hal.set_p('plasmac.torch-enable','0')
-        rC('.fbuttons.torch-enable','configure','-text','Torch\nDisabled','-bg','#BB0000','-activebackground','#990000')
+        rC('.fbuttons.torch-enable','configure','-text','Torch\nDisabled','-bg',ourRed,'-activebackground',ourRedDark)
     else:
         hal.set_p('plasmac.torch-enable','1')
-        rC('.fbuttons.torch-enable','configure','-text','Torch\nEnabled','-bg','#00AA00','-activebackground','#007700')
+        rC('.fbuttons.torch-enable','configure','-text','Torch\nEnabled','-bg',ourGreen,'-activebackground',ourGreenDark)
 
 #FIXME: KEEP THE PREVIEW UPDATING WHILE CODE IS BEING RUN
 # this is a kludge, cannot Esc to abort...
@@ -964,7 +964,7 @@ def ja_button_setup(widget, button, text):
     rC('radiobutton', widget,'-value',button,'-text',text,'-anchor','center', \
        '-variable','ja_rbutton','-command','ja_button_activated','-padx',10,'-pady',6, \
        '-indicatoron',0,'-bd',2,'-highlightthickness',0, \
-       '-selectcolor','#00AA00','-activebackground','#007700')
+       '-selectcolor',ourGreen,'-activebackground',ourGreenDark)
 
 def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
@@ -1764,7 +1764,7 @@ def user_button_setup():
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
             if bCode.startswith('toggle-halpin ') and togglePins[str(n)]['runcritical']:
-                rC('.fbuttons.button' + str(n),'configure','-bg','#BB0000','-activebackground','#990000')
+                rC('.fbuttons.button' + str(n),'configure','-bg',ourRed,'-activebackground',ourRedDark)
             row += 1
         elif bName or bCode:
             title = _('USER BUTTON ERROR')
@@ -1804,7 +1804,7 @@ def user_button_pressed(button, code):
             probeTimer = code['time']
             hal.set_p('plasmac.probe-test','1')
             rC('.fbuttons.button' + probeButton,'configure','-text',str(int(probeTimer)))
-            rC('.fbuttons.button' + probeButton,'configure','-bg','red')
+            rC('.fbuttons.button' + probeButton,'configure','-bg',ourRed)
     elif code['code'] == 'torch-pulse':
         if torchTimer:
             torchTimer = 0
@@ -1815,7 +1815,7 @@ def user_button_pressed(button, code):
             hal.set_p('plasmac.torch-pulse-time','{}'.format(torchTimer))
             hal.set_p('plasmac.torch-pulse-start','1')
             rC('.fbuttons.button' + torchButton,'configure','-text',str(int(torchTimer)))
-            rC('.fbuttons.button' + torchButton,'configure','-bg','red')
+            rC('.fbuttons.button' + torchButton,'configure','-bg',ourRed)
     elif code['code'] == 'change-consumables' and not hal.get_value('plasmac.breakaway'):
         if hal.get_value('axis.x.eoffset-counts') or hal.get_value('axis.y.eoffset-counts'):
             hal.set_p('plasmac.consumable-change', '0')
@@ -1831,7 +1831,7 @@ def user_button_pressed(button, code):
             hal.set_p('plasmac.x-offset', '{:.0f}'.format((xPos - s.position[0]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.y-offset', '{:.0f}'.format((yPos - s.position[1]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.consumable-change', '1')
-            rC('.fbuttons.button' + button,'configure','-bg','orange','-activebackground','darkorange1')
+            rC('.fbuttons.button' + button,'configure','-bg',ourOrange,'-activebackground',ourOrangeDark)
     elif code['code'] == 'framing':
         pass # actioned from button_release
     elif code['code'] == 'load':
@@ -1865,7 +1865,7 @@ def user_button_released(button, code):
             if cutType:
                 comp['cut-type'] = 1
                 text = _('Pierce\nOnly') if '\\' in code['text'] else _('Pierce Only')
-                rC('.fbuttons.button' + button,'configure','-bg','orange','-activebackground','darkorange1','-text',text)
+                rC('.fbuttons.button' + button,'configure','-bg',ourOrange,'-activebackground',ourOrangeDark,'-text',text)
             else:
                 comp['cut-type'] = 0
                 rC('.fbuttons.button' + button,'configure','-bg',buttonBackG,'-activebackground',buttonActBackG,'-text',code['text'])
@@ -1916,7 +1916,7 @@ def user_button_load():
             rC('grid',fsetup + '.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
-            fg = 'black' if buttonNames[n]['name'] else 'red'
+            fg = ourBlack if buttonNames[n]['name'] else ourRed
             rC(fsetup + '.ubuttons.name' + str(n),'configure','-fg',fg)
             rC(fsetup + '.ubuttons.code' + str(n),'configure','-fg',fg)
 
@@ -2538,6 +2538,18 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # set the default font
     fontName = 'sans'
     fontSize = startFontSize = '10'
+    # some color names
+    ourRed = '#DD0000'
+    ourRedDark = '#990000'
+    ourGreen = '#00CC00'
+    ourGreenDark = '#008800'
+    ourOrange = '#FFAA00'
+    ourOrangeDark = '#BB6600'
+    ourYellow = '#FFFF00'
+    ourBlue = '#0000FF'
+    ourWhite = '#FFFFFF'
+    ourGray = '#AAAAAA'
+    ourBlack = '#000000'
     # make some widget names to save typing
     ftop = '.pane.top'
     ftabs = ftop + '.tabs'
@@ -2803,7 +2815,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
 # GUI ALTERATIONS AND ADDITIONS                                              #
 ##############################################################################
     # change dro screen colors
-    rC('.pane.top.right.fnumbers.text','configure','-foreground','green','-background','black')
+    rC('.pane.top.right.fnumbers.text','configure','-foreground',ourGreen,'-background',ourBlack)
 
     # keep tab label sizes the same
     rC(ftabs,'configure','-homogeneous',True)
@@ -3066,7 +3078,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # new limit switch override frame
     rC('frame',flimitovr,'-bd',0)
     rC('button',fjogf + '.override') # dummy button to placate original axis code
-    rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',flimitovr + '.label','-text',_('Override Limits'),'-anchor','center')
     # populate the frame
     rC('grid',flimitovr + '.button','-column',0,'-row',1,'-sticky','nsw')
@@ -3077,7 +3089,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
 
     # new jog inhibit override frame
     rC('frame',fjogiovr,'-bd',0)
-    rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',fjogiovr + '.label','-text',_('Jog Inhibit Override'),'-anchor','center')
     # populate the frame
     rC('grid',fjogiovr + '.button','-column',0,'-row',1,'-sticky','nsw')
@@ -3108,12 +3120,12 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # create the widgets
     rC('frame',fplasma,'-bd',0)
     rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
-    rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg','blue')
-    rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg',ourBlue)
+    rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable')
-    rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock')
-    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock')
     # populate the frame
     rC('grid',fplasma + '.thc','-column',1,'-row',0,'-sticky','w')
@@ -3154,17 +3166,17 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('canvas',fleds + '.led-kerf-locked','-width',20,'-height',20)
     rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
     # create the led shapes
-    led1 = rC(fleds + '.led-arc-ok','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-    rC(fleds + '.led-torch','create','oval',1,1,18,18,'-fill','#F99B0B','-disabledfill','gray')
-    rC(fleds + '.led-breakaway','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
-    rC(fleds + '.led-thc-enabled','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-    rC(fleds + '.led-thc-active','create','oval',1,1,18,18,'-fill','#37F608','-disabledfill','gray')
-    rC(fleds + '.led-ohmic','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-    rC(fleds + '.led-float','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-    rC(fleds + '.led-up','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-    rC(fleds + '.led-down','create','oval',1,1,18,18,'-fill','yellow','-disabledfill','gray')
-    rC(fleds + '.led-corner-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
-    rC(fleds + '.led-kerf-locked','create','oval',1,1,18,18,'-fill','red','-disabledfill','gray')
+    led1 = rC(fleds + '.led-arc-ok','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
+    rC(fleds + '.led-torch','create','oval',1,1,18,18,'-fill',ourOrange,'-disabledfill',ourGray)
+    rC(fleds + '.led-breakaway','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
+    rC(fleds + '.led-thc-enabled','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
+    rC(fleds + '.led-thc-active','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
+    rC(fleds + '.led-ohmic','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
+    rC(fleds + '.led-float','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
+    rC(fleds + '.led-up','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
+    rC(fleds + '.led-down','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
+    rC(fleds + '.led-corner-locked','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
+    rC(fleds + '.led-kerf-locked','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
     # populate the frame
     rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
     rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
@@ -3233,7 +3245,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg','#BB0000','-activebackground','#990000','-text',_('Torch\nDisabled'))
+    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg',ourRed,'-activebackground',ourRedDark,'-text',_('Torch\nDisabled'))
     # populate frame
     rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
     rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
@@ -3374,7 +3386,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
         cpName = fparam + cpItem[0] + '.' + cpItem[1]
         cpType = 'flt' if cpItem[2] > 0 else 'int'
         rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
-        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true','-bg','white')
+        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
         spinBoxes.append(cpName)
         rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
@@ -3408,7 +3420,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # gui frame
     rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
     rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
-    rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
@@ -3419,7 +3431,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
     rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
-    rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg','white','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
+    rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite,'-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
     spinBoxes.append(fsetup + '.l.gui.zoom')
     # populate gui frame
@@ -3439,7 +3451,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # jog frame
     rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
     rC('label',fsetup + '.l.jog.speedL','-width', 13,'-text','Units Per Minute','-anchor','e')
-    rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
+    rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
     rC(fsetup + '.l.jog.speed','configure','-format','%0.0f')
@@ -3475,7 +3487,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # cut recovery frame
     rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
     rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text','Speed %','-anchor','e')
-    rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true','-bg','white')
+    rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
     rC(fsetup + '.l.cr.speed','configure','-format','%0.0f')
@@ -3552,7 +3564,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     for rpItem in rpList:
         rpName = rpItem[0] + '.' + rpItem[1]
         rpType = 'flt' if rpItem[2] > 0 else 'int'
-        rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true','-bg','white')
+        rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true','-bg',ourWhite)
         spinBoxes.append(rpName)
         rC(rpName,'configure','-from',rpItem[4],'-to',rpItem[5])
         if rpItem[1] == 'kerf-width':
@@ -3572,13 +3584,13 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
         rpRow += 1
     # checkbox frame
     rC('labelframe','.runs.check','-text','Cut','-relief','groove')
-    rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label','.runs.check.avL','-text','Use Auto Volts')
-    rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label','.runs.check.ohmicL','-text','Ohmic Probe Enable')
-    rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label','.runs.check.meshL','-text','Mesh Mode')
-    rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label','.runs.check.ignoreokL','-text','Ignore Arc OK')
     # populate the frame
     rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
@@ -3592,7 +3604,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
 
     # pmx frame
     rC('labelframe','.runs.pmx','-text','Powermax','-relief','groove')
-    rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor','#00AA00','-activebackground','#007700')
+    rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen,'-activebackground',ourGreenDark)
     rC('label','.runs.pmx.info','-text','PMX Info goes here','-anchor','w')
     rC('pack','.runs.pmx.enable','-expand',1,'-fill','x')
     rC('pack','.runs.pmx.info','-expand',1,'-fill','x')
@@ -4004,10 +4016,10 @@ def user_live_update():
         if hal.get_value(togglePins[key]['pin']) != togglePins[key]['state']:
             togglePins[key]['state'] = hal.get_value(togglePins[key]['pin'])
             if togglePins[key]['state']:
-                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg','green','-activebackground','SeaGreen1')
+                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',ourGreen,'-activebackground',ourGreenDark)
             else:
                 if togglePins[key]['runcritical']:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg','#BB0000','-activebackground','#990000')
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',ourRed,'-activebackground',ourRedDark)
                 else:
                     rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',buttonBackG,'-activebackground',buttonActBackG)
         if togglePins[key]['runcritical']:
@@ -4031,7 +4043,7 @@ def user_live_update():
         if hal.get_value(pulsePins[key]['pin']) != pulsePins[key]['state']:
             pulsePins[key]['state'] = hal.get_value(pulsePins[key]['pin'])
             if pulsePins[key]['state']:
-                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg','green','-activebackground','SeaGreen1')
+                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',ourGreen,'-activebackground',ourGreenDark)
             else:
                 rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',buttonBackG,'-activebackground',buttonActBackG)
     # reset a consumable change
