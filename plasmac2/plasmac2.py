@@ -1916,6 +1916,9 @@ def user_button_load():
             rC('grid',fsetup + '.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
+            fg = 'black' if buttonNames[n]['name'] else 'red'
+            rC(fsetup + '.ubuttons.name' + str(n),'configure','-fg',fg)
+            rC(fsetup + '.ubuttons.code' + str(n),'configure','-fg',fg)
 
 def user_button_save():
     for n in range(1, 21):
