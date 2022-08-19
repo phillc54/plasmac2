@@ -1764,7 +1764,7 @@ def user_button_setup():
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
             if bCode.startswith('toggle-halpin ') and togglePins[str(n)]['runcritical']:
-                rC('.fbuttons.button' + str(n),'configure','-bg','#BB0000','-activebackground','#990000')#togglePins[key]['button']
+                rC('.fbuttons.button' + str(n),'configure','-bg','#BB0000','-activebackground','#990000')
             row += 1
         elif bName or bCode:
             title = _('USER BUTTON ERROR')
@@ -1904,20 +1904,18 @@ def user_button_add():
             break
 
 def user_button_load():
-    buttons = False
     for n in range(1, 21):
         rC('grid','forget',fsetup + '.ubuttons.num' + str(n))
         rC('grid','forget',fsetup + '.ubuttons.name' + str(n))
         rC('grid','forget',fsetup + '.ubuttons.code' + str(n))
         rC(fsetup + '.ubuttons.name' + str(n),'delete',0,'end')
         rC(fsetup + '.ubuttons.code' + str(n),'delete',0,'end')
-        if buttonNames[n]['name'] and buttonCodes[n]['code']:
+        if getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str) or getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str):
             rC(fsetup + '.ubuttons.name' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str))
             rC(fsetup + '.ubuttons.code' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str))
             rC('grid',fsetup + '.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
-            buttons = True
 
 def user_button_save():
     for n in range(1, 21):
