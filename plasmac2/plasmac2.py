@@ -1614,6 +1614,10 @@ def user_button_setup():
         if bCode.strip() == 'ohmic-test' and not 'ohmic-test' in [(v['code']) for k, v in buttonCodes.items()]:
             outCode['code'] = 'ohmic-test'
         elif bCode.strip() == 'cut-type' and not 'cut-type' in buttonCodes:
+            bName = bName.split(',')
+            if len(bName) == 1:
+                text = _('Pierce\Only') if '\\' in bName[0] else _('Pierce Only')
+                bName.append(text)
             outCode = {'code':'cut-type', 'text':bName}
         elif bCode.strip() == 'single-cut' and not 'single-cut' in buttonCodes:
             outCode['code'] = 'single-cut'
@@ -1753,15 +1757,19 @@ def user_button_setup():
         if not rC('winfo','exists','.fbuttons.button' + str(n)):
             rC('button','.fbuttons.button' + str(n),'-takefocus',0,'-width',10)
         if bName and outCode['code']:
-            bhelp = bName.replace('\\',' ')
-            bName = bName.split('\\')
-            if len(bName) > 1:
-                rC('.fbuttons.button' + str(n),'configure','-height',2)
-                bLabel = bName[0] + '\n' + bName[1]
+            bHeight = 1
+            if type(bName) == list:
+                if '\\' in bName[0] or '\\' in bName[1]:
+                    bHeight = 2
+                if rC('.fbuttons.button' + str(n),'cget','-bg') != buttonBackG:
+                    bName = bName[1]
+                else:
+                    bName = bName[0]
             else:
-                bLabel = bName[0]
-                rC('.fbuttons.button' + str(n),'configure','-height',1)
-            rC('.fbuttons.button' + str(n),'configure','-text',bLabel)
+                if '\\' in bName:
+                    bHeight = 2
+            bLabel = bName.replace('\\', '\n')
+            rC('.fbuttons.button' + str(n),'configure','-text',bLabel,'-height',bHeight)
             rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new')
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
@@ -1866,11 +1874,13 @@ def user_button_released(button, code):
             cutType ^= 1
             if cutType:
                 comp['cut-type'] = 1
-                text = _('Pierce\nOnly') if '\\' in code['text'] else _('Pierce Only')
-                rC('.fbuttons.button' + button,'configure','-bg',ourOrange,'-activebackground',ourOrangeDark,'-text',text)
+                text = code['text'][1].replace('\\', '\n')
+                color = ourOrange
             else:
                 comp['cut-type'] = 0
-                rC('.fbuttons.button' + button,'configure','-bg',buttonBackG,'-activebackground',buttonActBackG,'-text',code['text'].replace('\\', '\n'))
+                text = code['text'][0].replace('\\', '\n')
+                color = buttonBackG
+            rC('.fbuttons.button' + button,'configure','-bg',color,'-text',text)
             reload_file()
     elif code['code'] == 'single-cut':
         single_cut()
@@ -1932,7 +1942,14 @@ def user_button_save():
     putPrefs(PREF,'BUTTONS', 'Torch disabled', rC(fsetup + '.r.torch.disabled','get'), str)
     torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
     torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
-    torch_enable()
+    if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
+        rC('.fbuttons.torch-enable','configure','-height',2)
+    else:
+        rC('.fbuttons.torch-enable','configure','-height',1)
+    if hal.get_value('plasmac.torch-enable'):
+        rC('.fbuttons.torch-enable','configure','-text',torchEnable['enabled'].replace('\\','\n'),'-bg',ourGreen,'-activebackground',ourGreenDark)
+    else:
+        rC('.fbuttons.torch-enable','configure','-text',torchEnable['disabled'].replace('\\','\n'),'-bg',ourRed,'-activebackground',ourRedDark)
     for n in range(1, 21):
         if rC(fsetup + '.r.ubuttons.name' + str(n),'get') and rC(fsetup + '.r.ubuttons.code' + str(n),'get'):
             putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.name' + str(n),'get'), str)
@@ -3262,6 +3279,10 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('frame','.fbuttons','-relief','flat')
 #    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg',ourRed,'-activebackground',ourRedDark,'-text',_('Torch\nDisabled'))
     rC('button','.fbuttons.torch-enable','-width',6,'-bg',ourRed,'-activebackground',ourRedDark,'-text',torchEnable['disabled'].replace('\\','\n'))
+    if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
+        rC('.fbuttons.torch-enable','configure','-height',2)
+    else:
+        rC('.fbuttons.torch-enable','configure','-height',1)
     # populate frame
     rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
     rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
