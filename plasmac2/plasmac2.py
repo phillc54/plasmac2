@@ -936,10 +936,10 @@ def backup_clicked():
 def torch_enable():
     if hal.get_value('plasmac.torch-enable'):
         hal.set_p('plasmac.torch-enable','0')
-        rC('.fbuttons.torch-enable','configure','-text','Torch\nDisabled','-bg',ourRed,'-activebackground',ourRedDark)
+        rC('.fbuttons.torch-enable','configure','-text',torchEnable['disabled'].replace('\\','\n'),'-bg',ourRed,'-activebackground',ourRedDark)
     else:
         hal.set_p('plasmac.torch-enable','1')
-        rC('.fbuttons.torch-enable','configure','-text','Torch\nEnabled','-bg',ourGreen,'-activebackground',ourGreenDark)
+        rC('.fbuttons.torch-enable','configure','-text',torchEnable['enabled'].replace('\\','\n'),'-bg',ourGreen,'-activebackground',ourGreenDark)
 
 #FIXME: KEEP THE PREVIEW UPDATING WHILE CODE IS BEING RUN
 # this is a kludge, cannot Esc to abort...
@@ -1899,47 +1899,57 @@ def user_button_released(button, code):
 
 def user_button_add():
     for n in range(1, 21):
-        if not rC('winfo','ismapped',fsetup + '.ubuttons.num' + str(n)):
-            rC('grid',fsetup + '.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
+        if not rC('winfo','ismapped',fsetup + '.r.ubuttons.num' + str(n)):
+            rC('grid',fsetup + '.r.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
             break
 
 def user_button_load():
+    rC(fsetup + '.r.torch.enabled','delete',0,'end')
+    rC(fsetup + '.r.torch.disabled','delete',0,'end')
+    rC(fsetup + '.r.torch.enabled','insert','end',getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str))
+    rC(fsetup + '.r.torch.disabled','insert','end',getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str))
     for n in range(1, 21):
-        rC('grid','forget',fsetup + '.ubuttons.num' + str(n))
-        rC('grid','forget',fsetup + '.ubuttons.name' + str(n))
-        rC('grid','forget',fsetup + '.ubuttons.code' + str(n))
-        rC(fsetup + '.ubuttons.name' + str(n),'delete',0,'end')
-        rC(fsetup + '.ubuttons.code' + str(n),'delete',0,'end')
+        rC('grid','forget',fsetup + '.r.ubuttons.num' + str(n))
+        rC('grid','forget',fsetup + '.r.ubuttons.name' + str(n))
+        rC('grid','forget',fsetup + '.r.ubuttons.code' + str(n))
+        rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
+        rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
         if getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str) or getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str):
-            rC(fsetup + '.ubuttons.name' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str))
-            rC(fsetup + '.ubuttons.code' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str))
-            rC('grid',fsetup + '.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
+            rC(fsetup + '.r.ubuttons.name' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str))
+            rC(fsetup + '.r.ubuttons.code' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str))
+            rC('grid',fsetup + '.r.ubuttons.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
             fg = ourBlack if buttonNames[n]['name'] else ourRed
-            rC(fsetup + '.ubuttons.name' + str(n),'configure','-fg',fg)
-            rC(fsetup + '.ubuttons.code' + str(n),'configure','-fg',fg)
+            rC(fsetup + '.r.ubuttons.name' + str(n),'configure','-fg',fg)
+            rC(fsetup + '.r.ubuttons.code' + str(n),'configure','-fg',fg)
 
 def user_button_save():
+    global torchEnable
+    putPrefs(PREF,'BUTTONS', 'Torch enabled', rC(fsetup + '.r.torch.enabled','get'), str)
+    putPrefs(PREF,'BUTTONS', 'Torch disabled', rC(fsetup + '.r.torch.disabled','get'), str)
+    torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
+    torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
+    torch_enable()
     for n in range(1, 21):
-        if rC(fsetup + '.ubuttons.name' + str(n),'get') and rC(fsetup + '.ubuttons.code' + str(n),'get'):
-            putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.ubuttons.name' + str(n),'get'), str)
-            putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.ubuttons.code' + str(n),'get'), str)
-            rC('grid','forget',fsetup + '.ubuttons.num' + str(n))
-            rC('grid','forget',fsetup + '.ubuttons.name' + str(n))
-            rC('grid','forget',fsetup + '.ubuttons.code' + str(n))
+        if rC(fsetup + '.r.ubuttons.name' + str(n),'get') and rC(fsetup + '.r.ubuttons.code' + str(n),'get'):
+            putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.name' + str(n),'get'), str)
+            putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.r.ubuttons.code' + str(n),'get'), str)
+            rC('grid','forget',fsetup + '.r.ubuttons.num' + str(n))
+            rC('grid','forget',fsetup + '.r.ubuttons.name' + str(n))
+            rC('grid','forget',fsetup + '.r.ubuttons.code' + str(n))
             rC('grid','forget','.fbuttons.button' + str(n))
-            rC(fsetup + '.ubuttons.name' + str(n),'delete',0,'end')
-            rC(fsetup + '.ubuttons.code' + str(n),'delete',0,'end')
-        elif (rC(fsetup + '.ubuttons.name' + str(n),'get') and not rC(fsetup + '.ubuttons.code' + str(n),'get')) or \
-             (not rC(fsetup + '.ubuttons.name' + str(n),'get') and rC(fsetup + '.ubuttons.code' + str(n),'get')):
+            rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
+            rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
+        elif (rC(fsetup + '.r.ubuttons.name' + str(n),'get') and not rC(fsetup + '.r.ubuttons.code' + str(n),'get')) or \
+             (not rC(fsetup + '.r.ubuttons.name' + str(n),'get') and rC(fsetup + '.r.ubuttons.code' + str(n),'get')):
             title = _('USER BUTTON ERROR')
             msg0 = _('code or name missing from user button')
             notifications.add('error', '{}:\n{} #{}'.format(title, msg0, n))
-            rC(fsetup + '.ubuttons.name' + str(n),'delete',0,'end')
-            rC(fsetup + '.ubuttons.code' + str(n),'delete',0,'end')
+            rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
+            rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
     user_button_setup()
 
 
@@ -2703,6 +2713,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     singleCut = {'state':False, 'G91':False}
     framingState = False
     runState = False
+    torchEnable = {}
+    torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
+    torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
     laserTimer = 0.0
     laserButtonState = 'laser'
     laserOffsets = {}
@@ -3247,7 +3260,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg',ourRed,'-activebackground',ourRedDark,'-text',_('Torch\nDisabled'))
+#    rC('button','.fbuttons.torch-enable','-width',6,'-height',2,'-bg',ourRed,'-activebackground',ourRedDark,'-text',_('Torch\nDisabled'))
+    rC('button','.fbuttons.torch-enable','-width',6,'-bg',ourRed,'-activebackground',ourRedDark,'-text',torchEnable['disabled'].replace('\\','\n'))
     # populate frame
     rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
     rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
@@ -3513,22 +3527,38 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     #populate left panel
     rC('grid',fsetup + '.utilities.offsets','-column',0,'-row',0,'-sticky','new')
 
-    # right panel (for user buttons)
-    rC('labelframe',fsetup + '.ubuttons','-text','User Buttons','-relief','groove')
-    rC('label',fsetup + '.ubuttons.numL','-text',' #','-width',2,'-anchor','e')
-    rC('label',fsetup + '.ubuttons.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.ubuttons.codeL','-text','Code','-width',48,'-anchor','w')
+    # right panel (for buttons)
+    rC('frame',fsetup + '.r')
+    # top for torch enable
+    rC('labelframe',fsetup + '.r.torch','-text','Torch Enable','-relief','groove')
+    rC('label',fsetup + '.r.torch.enabledL','-text','Enabled','-width',14,'-anchor','w')
+    rC('label',fsetup + '.r.torch.disabledL','-text','Disabled','-width',14,'-anchor','w')
+    rC('entry',fsetup + '.r.torch.enabled','-width',14)
+    rC('entry',fsetup + '.r.torch.disabled','-width',14)
+    rC('grid',fsetup + '.r.torch.enabledL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.r.torch.disabledL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.r.torch.enabled','-column',0,'-row',1,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.torch.disabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0))
+    # ubuttons for user buttons
+    rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
+    rC('label',fsetup + '.r.ubuttons.numL','-text',' #','-width',2,'-anchor','e')
+    rC('label',fsetup + '.r.ubuttons.nameL','-text','Name','-width',14,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.codeL','-text','Code','-width',48,'-anchor','w')
     for n in range(1, 21):
-        rC('label',fsetup + '.ubuttons.num' + str(n),'-text',str(n),'-anchor','e')
-        rC('entry',fsetup + '.ubuttons.name' + str(n),'-width',14)
-        rC('entry',fsetup + '.ubuttons.code' + str(n))
-    rC('grid',fsetup + '.ubuttons.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.ubuttons.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.ubuttons.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
+        rC('label',fsetup + '.r.ubuttons.num' + str(n),'-text',str(n),'-anchor','e')
+        rC('entry',fsetup + '.r.ubuttons.name' + str(n),'-width',14)
+        rC('entry',fsetup + '.r.ubuttons.code' + str(n))
+    rC('grid',fsetup + '.r.ubuttons.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
+    # populate right panel
+    rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','ew')
+    rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','ew')
+
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.utilities','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.ubuttons','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup,0,'-weight',0)
     rC('grid','columnconfigure',fsetup,1,'-weight',1)
     rC('grid','columnconfigure',fsetup,2,'-weight',0)
@@ -3771,8 +3801,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
         rC(widget,'configure','-state','disabled')
         widgetValues[widget] = 0
 
-    comboFg = rC(fsetup + '.ubuttons.name1','cget','-fg')
-    comboBg = rC(fsetup + '.ubuttons.name1','cget','-bg')
+    comboFg = rC(fsetup + '.r.ubuttons.name1','cget','-fg')
+    comboBg = rC(fsetup + '.r.ubuttons.name1','cget','-bg')
     for widget in wCombos:
         rC(widget,'configure','-selectforeground',comboFg)
         rC(widget,'configure','-selectbackground',comboBg)
