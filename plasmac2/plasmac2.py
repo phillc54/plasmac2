@@ -3849,20 +3849,24 @@ def user_hal_pins():
     comp.newpin('offset-set-scribe', hal.HAL_BIT, hal.HAL_OUT)
     # create some new signals and connect pins
     hal_data = [[0,'plasmac:arc-voltage-out','plasmac.arc-voltage-out','axisui.arc-voltage'],\
-                [1,'plasmac:axis-min-limit','ini.z.min_limit','plasmac.axis-z-min-limit'],\
-                [2,'plasmac:axis-max-limit','ini.z.max_limit','plasmac.axis-z-max-limit'],\
-                [3,'plasmac:arc-ok-out','plasmac.arc-ok-out','axisui.led-arc-ok'],\
-                [4,'plasmac:thc-enabled','plasmac.thc-enabled','axisui.led-thc-enabled'],\
-                [5,'plasmac:thc-active','plasmac.thc-active','axisui.led-thc-active'],\
-                [6,'plasmac:led-up','plasmac.led-up','axisui.led-up'],\
-                [7,'plasmac:led-down','plasmac.led-down','axisui.led-down'],\
-                [8,'plasmac:cornerlock-is-locked','plasmac.cornerlock-is-locked','axisui.led-corner-locked'],\
-                [9,'plasmac:kerfcross-is-locked','plasmac.kerfcross-is-locked','axisui.led-kerf-locked'],\
-                [10,'plasmac:offset-set-probe','plasmac.offset-set-probe','axisui.offset-set-probe'],\
-                [11,'plasmac:offset-set-scribe','plasmac.offset-set-scribe','axisui.offset-set-scribe'],\
+                [1,'plasmac:axis-x-min-limit','ini.x.min_limit','plasmac.axis-x-min-limit'],\
+                [2,'plasmac:axis-x-max-limit','ini.x.max_limit','plasmac.axis-x-max-limit'],\
+                [3,'plasmac:axis-y-min-limit','ini.y.min_limit','plasmac.axis-y-min-limit'],\
+                [4,'plasmac:axis-y-max-limit','ini.y.max_limit','plasmac.axis-y-max-limit'],\
+                [5,'plasmac:axis-z-min-limit','ini.z.min_limit','plasmac.axis-z-min-limit'],\
+                [6,'plasmac:axis-z-max-limit','ini.z.max_limit','plasmac.axis-z-max-limit'],\
+                [7,'plasmac:arc-ok-out','plasmac.arc-ok-out','axisui.led-arc-ok'],\
+                [8,'plasmac:thc-enabled','plasmac.thc-enabled','axisui.led-thc-enabled'],\
+                [9,'plasmac:thc-active','plasmac.thc-active','axisui.led-thc-active'],\
+                [10,'plasmac:led-up','plasmac.led-up','axisui.led-up'],\
+                [11,'plasmac:led-down','plasmac.led-down','axisui.led-down'],\
+                [11,'plasmac:cornerlock-is-locked','plasmac.cornerlock-is-locked','axisui.led-corner-locked'],\
+                [13,'plasmac:kerfcross-is-locked','plasmac.kerfcross-is-locked','axisui.led-kerf-locked'],\
+                [14,'plasmac:offset-set-probe','plasmac.offset-set-probe','axisui.offset-set-probe'],\
+                [15,'plasmac:offset-set-scribe','plasmac.offset-set-scribe','axisui.offset-set-scribe'],\
                 ]
     for line in hal_data:
-        if line[0] < 3:
+        if line[0] < 7:
             hal.new_sig(line[1],hal.HAL_FLOAT)
         else:
             hal.new_sig(line[1],hal.HAL_BIT)
