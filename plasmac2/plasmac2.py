@@ -1626,7 +1626,7 @@ def user_button_setup():
                 codes = bCode.strip().split()
                 outCode = {'code':'probe-test', 'time':10}
                 probeButton = str(n)
-                probeText = bName
+                probeText = bName.replace('\\', '\n')
                 if len(codes) == 2:
                     try:
                         value = int(float(codes[1]))
@@ -1638,7 +1638,7 @@ def user_button_setup():
                 codes = bCode.strip().split()
                 outCode = {'code':'torch-pulse', 'time':1.0}
                 torchButton = str(n)
-                torchText = bName
+                torchText = bName.replace('\\', '\n')
                 if len(codes) == 2:
                     try:
                         value = round(float(codes[1]), 1)
@@ -1756,9 +1756,11 @@ def user_button_setup():
             bhelp = bName.replace('\\',' ')
             bName = bName.split('\\')
             if len(bName) > 1:
+                rC('.fbuttons.button' + str(n),'configure','-height',2)
                 bLabel = bName[0] + '\n' + bName[1]
             else:
                 bLabel = bName[0]
+                rC('.fbuttons.button' + str(n),'configure','-height',1)
             rC('.fbuttons.button' + str(n),'configure','-text',bLabel)
             rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new')
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
@@ -1868,7 +1870,7 @@ def user_button_released(button, code):
                 rC('.fbuttons.button' + button,'configure','-bg',ourOrange,'-activebackground',ourOrangeDark,'-text',text)
             else:
                 comp['cut-type'] = 0
-                rC('.fbuttons.button' + button,'configure','-bg',buttonBackG,'-activebackground',buttonActBackG,'-text',code['text'])
+                rC('.fbuttons.button' + button,'configure','-bg',buttonBackG,'-activebackground',buttonActBackG,'-text',code['text'].replace('\\', '\n'))
             reload_file()
     elif code['code'] == 'single-cut':
         single_cut()
@@ -4138,12 +4140,12 @@ def user_live_update():
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
             elif buttonCodes[n]['code'] == 'single-cut':
-                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state') == 'normal':
+                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state').string == 'normal':
                     rC('.fbuttons.button' + str(n),'configure','-state','normal')
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
             elif buttonCodes[n]['code'] == 'manual-cut':
-                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state') == 'normal':
+                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state').string == 'normal':
                     rC('.fbuttons.button' + str(n),'configure','-state','normal')
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
