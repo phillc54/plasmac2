@@ -13,7 +13,6 @@ import signal
 import time
 
 def unload(e):
-    print('\nPreceding KeyboardInterrupt exception can be disregarded')
     raise SystemExit('{}\nunloading plasmac sim panel\n'.format(e))
 
 def time_out(signum, frame):
@@ -264,6 +263,8 @@ try:
     # start periodic running
     periodic()
     window.mainloop()
+except KeyboardInterrupt as e:
+    pass
 except Exception as e:
     unload(e)
 
