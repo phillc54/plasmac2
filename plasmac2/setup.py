@@ -36,7 +36,7 @@ class Setup:
         buttons.grid(row=1, column=0, sticky='ew', padx=4, pady=4)
 
     def install(self):
-        lcnc = os.path.expanduser('~/linuxcncs')
+        lcnc = os.path.expanduser('~/linuxcnc')
         b2tf = os.path.join(lcnc, 'plasmac2')
         if not os.path.isdir(lcnc):
             title = 'Path Error'
