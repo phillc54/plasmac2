@@ -11,20 +11,6 @@ from tkinter import *
 from tkinter import font
 from tkinter import messagebox
 from tkinter import filedialog
-import configparser
-
-iniP = configparser.ConfigParser
-class iniParse(iniP):
-    optionxform = str
-    types = {bool: iniP.getboolean,
-             float: iniP.getfloat,
-             int: iniP.getint,
-             str: iniP.get,
-             repr: lambda self, section, option: eval(iniP.get(self, section, option)),
-            }
-
-    def __init__(self):
-        iniP.__init__(self, strict=False, interpolation=None)
 
 class Setup:
     def __init__(self, master):
@@ -48,10 +34,9 @@ class Setup:
         quitB.grid(row=0, column=3)
         label.grid(row=0, column=0, sticky='ew', padx=4, pady=(4,0))
         buttons.grid(row=1, column=0, sticky='ew', padx=4, pady=4)
-        self.INI = iniParse()
 
     def install(self):
-        lcnc = os.path.expanduser('~/linuxcnc')
+        lcnc = os.path.expanduser('~/linuxcncs')
         b2tf = os.path.join(lcnc, 'plasmac2')
         if not os.path.isdir(lcnc):
             title = 'Path Error'
@@ -67,7 +52,7 @@ class Setup:
                 msg = 'plasmac2 directory is a link... ' \
                       'it should be updated at the source:'
                 messagebox.showinfo(title, msg + '\n' + path)
-                return
+                #return
             title = 'Path Exists'
             msg = 'plasmac2 already exists... Overwrite?'
             reply = messagebox.askyesno(title, msg)
@@ -76,7 +61,7 @@ class Setup:
         copytree(os.path.dirname(sys.argv[0]), b2tf, dirs_exist_ok=True)
         title = 'Success'
         msg = 'Files copied to '
-        reply = messagebox.askyesno(title, msg + b2tf)
+        messagebox.showinfo(title, msg + b2tf)
 
     def migrate(self):
         ini = filedialog.askopenfilename(
@@ -88,9 +73,7 @@ class Setup:
         iniFile = os.path.basename(ini)
         oldDir = os.path.dirname(ini)
         newDir = oldDir + '_plasmac2'
-        print(iniFile)
-        print(oldDir)
-        print(newDir)
+        newIni = os.path.join(newDir, iniFile)
         if os.path.exists(newDir):
             title = 'Path Exists'
             msg = ' already exists... Overwrite?'
@@ -98,46 +81,133 @@ class Setup:
             if not reply:
                 return
         copytree(oldDir, newDir, dirs_exist_ok=True)
-        self.INI.fn = os.path.join(newDir, iniFile)
-        self.INI.read(self.INI.fn)
-        mPath = self.getIni('RS274NGC', 'USER_M_PATH', './', str)
-        print(mPath)
-        self.putIni('DISPLAY', 'DISPLAY', 'axis', str)
-        self.putIni('DISPLAY', 'OPEN_FILE', '""', str)
-        self.putIni('DISPLAY', 'TOOL_EDITOR', 'tooledit x y', str)
-        self.putIni('DISPLAY', 'CYCLE_TIME', '100', str)
-        self.putIni('DISPLAY', 'USER_COMMAND_FILE', './plasmac2/plasmac2.py', str)
-        self.putIni('RS274NGC', 'USER_M_PATH', './plasmac2:' + mPath, str)
+        with open(newIni, 'r') as inFile:
+            config = inFile.readlines()
+        # [DISPLAY] section
+        section = {}
+        for lNum in range(config.index('[DISPLAY]\n') + 1, len(config)):
+            if config[lNum].startswith('['):
+                break
+            section[lNum] = config[lNum]
+        insert = lNum - 1 if config[lNum - 1] == '\n' else lNum
+        done = []
+        for lNum in section:
+            if section[lNum].startswith('DISPLAY') and 'd' not in done:
+                config[lNum] = 'DISPLAY = axis\n'
+                done.append('d')
+            elif section[lNum].startswith('OPEN_FILE') and 'o' not in done:
+                config[lNum] = 'OPEN_FILE = ""\n'
+                done.append('o')
+            elif section[lNum].startswith('TOOL_EDITOR') and 't' not in done:
+                config[lNum] = 'TOOL_EDITOR = tooledit x y\n'
+                done.append('t')
+            elif section[lNum].startswith('CYCLE_TIME') and 'c' not in done:
+                config[lNum] = 'CYCLE_TIME = 100\n'
+                done.append('c')
+            elif section[lNum].startswith('USER_COMMAND_FILE') and 'u' not in done:
+                config[lNum] = 'USER_COMMAND_FILE = ./plasmac2/plasmac2.py\n'
+                done.append('u')
+        for option in ['d','o','t','c','u']:
+            if option == 'd' and option not in done:
+                config.insert(insert,'DISPLAY = axis\n')
+            elif option == 'o' and option not in done:
+                config.insert(insert,'OPEN_FILE = ""\n')
+            elif option == 't' and option not in done:
+                config.insert(insert,'TOOL_EDITOR = tooledit x y\n')
+            elif option == 'c' and option not in done:
+                config.insert(insert,'CYCLE_TIME = 100\n')
+            elif option == 'u' and option not in done:
+                config.insert(insert,'USER_COMMAND_FILE = ./plasmac2/plasmac2.py\n')
+        # [RS274NGC] section
+        section = {}
+        for lNum in range(config.index('[RS274NGC]\n') + 1, len(config)):
+            if config[lNum].startswith('['):
+                break
+            section[lNum] = config[lNum]
+        insert = lNum - 1 if config[lNum - 1] == '\n' else lNum
+        done = []
+        for lNum in section:
+            if section[lNum].startswith('USER_M_PATH') and 'u' not in done:
+                mPath = config[lNum].split('=')[1].strip()
+                config[lNum] = 'USER_M_PATH = ./qtplasmac:{}\n'.format(mPath)
+                done.append('u')
+        for option in ['u']:
+            if option == 'u' and option not in done:
+                config.insert(insert,'USER_M_PATH = ./qtplasmac:./\n')
+        # [FILTER] section
+        section = {}
+        for lNum in range(config.index('[FILTER]\n') + 1, len(config)):
+            if config[lNum].startswith('['):
+                break
+            section[lNum] = config[lNum]
+        insert = lNum - 1 if config[lNum - 1] == '\n' else lNum
+        done = []
+        for lNum in section:
+            if section[lNum].startswith('PROGRAM_EXTENSION') and 'p' not in done:
+                config[lNum] = 'PROGRAM_EXTENSION = .ngc,.nc,.tap (filter gcode files)\n'
+                done.append('p')
+            if section[lNum].startswith('ngc') and 'g' not in done:
+                config[lNum] = 'ngc = qtplasmac_gcode\n'
+                done.append('g')
+            if section[lNum].startswith('nc') and 'c' not in done:
+                config[lNum] = 'nc = qtplasmac_gcode\n'
+                done.append('c')
+            if section[lNum].startswith('tap') and 'a' not in done:
+                config[lNum] = 'tap = qtplasmac_gcode\n'
+                done.append('a')
+        for option in ['a','c','g','p']:
+            if option == 'a' and option not in done:
+                config.insert(insert,'tap = qtplasmac_gcode\n')
+            elif option == 'c' and option not in done:
+                config.insert(insert,'nc = qtplasmac_gcode\n')
+            elif option == 'g' and option not in done:
+                config.insert(insert,'ngc = qtplasmac_gcode\n')
+            elif option == 'p' and option not in done:
+                config.insert(insert,'PROGRAM_EXTENSION = .ngc,.nc,.tap (filter gcode files)\n')
+        # [HAL] section
+        section = {}
+        sim = False
+        for lNum in range(config.index('[HAL]\n') + 1, len(config)):
+            if config[lNum].startswith('['):
+                break
+            section[lNum] = config[lNum]
+        for lNum in section:
+            if section[lNum].startswith('HALFILE') or section[lNum].startswith('POSTGUI_HALFILE'):
+                halFile = config[lNum].split('=')[1].strip()
+                if 'sim_postgui' in halFile:
+                    sim = True
+                if 'qtplasmac_comp.hal' not in halFile and 'sim_no_stepgen' not in halFile:
+                    if not os.path.dirname(halFile):
+                        halFile = os.path.join(newDir, halFile)
+                    with open(halFile, 'r') as halRead:
+                        if 'qtplasmac' in halRead.read():
+                            config[lNum] = '# {}'.format(config[lNum])
+                            title = 'HAL Error'
+                            msg0 = 'There are references to qtplasmac in '
+                            msg1 = 'The HAL file has been commented out in the ini file'
+                            messagebox.showerror(title, msg0 + halFile + '\n' + msg1)
+        if sim:
+            config.insert(0, '[APPLICATIONS]\n' \
+                             'DELAY = 1\n' \
+                             'APP = plasmac_sim.py\n')
+        # write the ini file
+        with open(newIni, 'w') as outFile:
+            for line in config:
+                outFile.write(line)
+        # create a link to plasmac2
+        if os.path.exists(os.path.join(newDir, 'plasmac2')):
+            os.remove(os.path.join(newDir, 'plasmac2'))
+        os.symlink(os.path.expanduser('~/linuxcnc/plasmac2'), os.path.join(newDir, 'plasmac2'))
+        # we made it...
+        title = 'Success'
+        msg = 'Ini file for PlasmaC2 config is '
+        messagebox.showinfo(title, msg + os.path.join(newDir, iniFile))
 
     def sim(self):
         print('CREATE A SIM')
 
     def shutdown(self):
         raise SystemExit
-
-    def getIni(self, section, option, default=False, type=bool):
-        m = self.INI.types.get(type)
-        if self.INI.has_section(section):
-            if self.INI.has_option(section, option):
-                return m(self.INI, section, option)
-            else:
-                self.INI.set(section, option, str(default))
-                self.INI.write(open(self.INI.fn, 'w'))
-                return default
-        else:
-            self.INI.add_section(section)
-            self.INI.set(section, option, str(default))
-            self.INI.write(open(self.INI.fn, 'w'))
-            return default
-
-    def putIni(self, section, option, value, type=bool):
-        if self.INI.has_section(section):
-            self.INI.set(section, option, str(type(value)))
-            self.INI.write(open(self.INI.fn, 'w'))
-        else:
-            self.INI.add_section(section)
-            self.INI.set(section.upper(), option, str(type(value)))
-            self.INI.write(open(self.INI.fn, 'w'))
 
 root = Tk()
 my_gui = Setup(root)
