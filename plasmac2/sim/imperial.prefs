@@ -10,7 +10,7 @@ Open file =
 Exit warning text = Did I turn the gas off?  ¯\_(ツ)_/¯
 Window last = 1024x603+355+282
 Jog speed = 300
-Table zoom = 2.6
+Table zoom = 1.3
 
 [LASER_OFFSET]
 X axis = 1.23
