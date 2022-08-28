@@ -73,6 +73,10 @@ class Setup:
             self.myMsg(title, ' '.join(msg), 2)
             if not self.reply[0]:
                 return
+            if os.path.isfile(self.b2tf) or os.path.islink(self.b2tf):
+                os.remove(self.b2tf)
+            elif os.path.isdir(self.b2tf):
+                rmtree(self.b2tf)
         try:
             copytree(os.path.dirname(sys.argv[0]), self.b2tf)
             title = 'Installation Complete'
@@ -82,6 +86,7 @@ class Setup:
             title = 'Installation Error'
             msg = ['Installation was unsuccessful']
             msg.append('\n\n')
+            msg.append('Error in line: {}\n'.format(sys.exc_info()[-1].tb_lineno))
             msg.append(str(e))
         self.myMsg(title, ' '.join(msg), 1)
 
@@ -111,6 +116,10 @@ class Setup:
             self.myMsg(title, ' '.join(msg), 2)
             if not self.reply[0]:
                 return
+            if os.path.isfile(newDir) or os.path.islink(newDir):
+                os.remove(newDir)
+            elif os.path.isdir(newDir):
+                rmtree(newDir)
         try:
             copytree(oldDir, newDir)
             with open(newIni, 'r') as inFile:
@@ -210,19 +219,26 @@ class Setup:
                     # if existing config is a sim
                     if 'sim_postgui' in halFile:
                         sim = True
-                    if 'qtplasmac_comp.hal' not in halFile and 'sim_no_stepgen' not in halFile:
+                        config[lNum] = ''
+                    elif 'sim_no_stepgen.tcl' in halFile:
+                        config[lNum] = 'HALFILE                 = ./plasmac2/sim/sim_no_stepgen.tcl\n'
+                        sim = True
+                    elif 'sim_stepgen.tcl' in halFile:
+                        config[lNum] = 'HALFILE                 = ./plasmac2/sim/sim_stepgen.tcl\n'
+                        sim = True
+                    elif 'qtplasmac_comp.hal' not in halFile:
                         if not os.path.dirname(halFile):
                             halFile = os.path.join(newDir, halFile)
                         # check for references to qtplasmac
                         with open(halFile, 'r') as halRead:
                             if 'qtplasmac' in halRead.read():
                                 qtplasmacHal.append(config[lNum].strip())
-                                config[lNum] = '# {}'.format(config[lNum])
+                                config[lNum] = '#{}'.format(config[lNum])
             # add sim panel if required
             if sim:
                 config.insert(0, '[APPLICATIONS]\n' \
-                                'DELAY = 1\n' \
-                                'APP = plasmac_sim.py\n')
+                                'DELAY = 2\n' \
+                                'APP = ./plasmac2/sim/sim_panel.py\n\n')
             # write the ini file
             with open(newIni, 'w') as outFile:
                 for line in config:
@@ -245,6 +261,7 @@ class Setup:
             title = 'Migration error'
             msg = ['Migration was unsuccessful']
             msg.append('\n\n')
+            msg.append('Error in line: {}\n'.format(sys.exc_info()[-1].tb_lineno))
             msg.append(str(e))
         self.myMsg(title, ' '.join(msg), 1)
 
