@@ -31,7 +31,7 @@ class Setup:
         buttons = Frame(master)
         installB = Button(buttons, text='Install or\nUpdate', width=10, command=lambda: self.install(), padx=0)
         migrateB = Button(buttons, text='Migrate\nQtPlasmaC', width=10, command=lambda: self.migrate(), padx=0)
-        simB = Button(buttons, text='Creat\nSimulation', width=10, command=lambda: self.sim(), padx=0)
+        simB = Button(buttons, text='Create\nSimulation', width=10, command=lambda: self.sim(), padx=0)
         quitB = Button(buttons, text='Quit', width=10, height=2, command=lambda: self.shutdown(), padx=0)
         installB.grid(row=0, column=0)
         migrateB.grid(row=0, column=1, padx=(4,2))
@@ -74,13 +74,13 @@ class Setup:
             if not self.reply[0]:
                 return
         try:
-            copytree(os.path.dirname(sys.argv[0]), self.b2tf, dirs_exist_ok=True)
+            copytree(os.path.dirname(sys.argv[0]), self.b2tf)
             title = 'Installation Complete'
             msg = ['Files successfully copied to:']
             msg.append(self.b2tf)
         except Exception as e:
             title = 'Installation Error'
-            msg = ['Installation was unsuccessfull']
+            msg = ['Installation was unsuccessful']
             msg.append('\n\n')
             msg.append(str(e))
         self.myMsg(title, ' '.join(msg), 1)
@@ -112,7 +112,7 @@ class Setup:
             if not self.reply[0]:
                 return
         try:
-            copytree(oldDir, newDir, dirs_exist_ok=True)
+            copytree(oldDir, newDir)
             with open(newIni, 'r') as inFile:
                 config = inFile.readlines()
             # [DISPLAY] section
