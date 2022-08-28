@@ -41,6 +41,11 @@ class Setup:
         buttons.grid(row=1, column=0, sticky='ew', padx=8, pady=(16,8))
         buttons.columnconfigure((0,1,2,3), weight=1)
         self.lcnc = os.path.expanduser('~/linuxcnc')
+        if 'root' in self.lcnc:
+            title = 'User Error'
+            msg = ['PlasmaC2 Setup can not be run as a root user']
+            self.myMsg(title, '\n'.join(msg), 1)
+            raise SystemExit
         self.configs=os.path.join(self.lcnc, 'configs')
         self.b2tf = os.path.join(self.lcnc, 'plasmac2')
         if not os.path.isdir(self.lcnc):
