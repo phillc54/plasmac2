@@ -883,7 +883,7 @@ def ignore_arc_ok_toggled():
 
 def laser_button_enable():
     if laserOffsets['X'] or laserOffsets['Y']:
-        rC('pack',fjogf + '.zerohome.laser','-side','left','-padx',(8,0))
+        rC('grid',fjogf + '.zerohome.laser','-column',3,'-row',0)
         rC('pack',fcutrecs + '.buttons.laser','-side','left')
     else:
         rC('pack','forget',fjogf + '.zerohome.laser')
@@ -969,6 +969,7 @@ def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
         widget = getattr(widgets, 'axis_%s' % vars.ja_rbutton.get())
         widget.focus()
+        rC(fjogf + '.zerohome.zero','configure','-text',vars.ja_rbutton.get().upper() + ' ' + _('Zero'))
     else:
         widget = getattr(widgets, 'joint_%s' % vars.ja_rbutton.get())
         widget.focus()
@@ -3068,10 +3069,10 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     if increments:
         rC(fjogf + '.jog.jogincr','list','insert','end',*increments)
     rC('labelframe',fjogf + '.zerohome','-text',_('Zero:'),'-relief','flat','-bd',0)
-    rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',3)
+    rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',6)
     rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
     rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
-    rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero'))
+    rC('setup_widget_accel',fjogf + '.zerohome.zero','X ' + _('Zero'))
     rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
     rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
     rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
@@ -3089,18 +3090,19 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('grid',fjogf + '.jog.jogincr','-row',0,'-column',1,'-sticky','nsew','-padx',8)
     rC('grid',fjogf + '.jog.jogplus','-row',0,'-column',2,'-sticky','nsew')
     rC('grid',fjogf + '.jog','-row',0,'-column',0,'-sticky','ew')
-    rC('pack',fjogf + '.zerohome.home','-side','left')
-    rC('pack',fjogf + '.zerohome.zero','-side','left','-padx',(8,0))
-    rC('pack',fjogf + '.zerohome.zeroxy','-side','left','-padx',(8,0))
-    rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','ew')
-    rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','ew')
+    rC('grid',fjogf + '.zerohome.home','-row',0,'-column',0,'-padx',(0,6))
+    rC('grid',fjogf + '.zerohome.zero','-row',0,'-column',1,'-padx',(0,6))
+    rC('grid',fjogf + '.zerohome.zeroxy','-row',0,'-column',2,'-padx',(0,6))
+    rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','w')
+    rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','w')
 
+    # make home button a home all button if required
     if homing_order_defined:
         if ja_name.startswith('A'):
             hbName = 'axes'
         else:
             hbName ='joints'
-        widgets.homebutton.configure(text = _('Home'), command = 'home_all_joints')
+        widgets.homebutton.configure(text = _('Home All'), command = 'home_all_joints')
 
     # add a spacer to keep the plasma widgets at the bottom
     rC('vspace',fmanual + '.vspace','-height',1)
@@ -3160,13 +3162,14 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
     rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock')
     # populate the frame
-    rC('grid',fplasma + '.thc','-column',1,'-row',0,'-sticky','w')
-    rC('grid',fplasma + '.thcL','-column',2,'-row',0,'-sticky','w')
-    rC('grid',fplasma + '.vel','-column',1,'-row',1,'-sticky','w')
-    rC('grid',fplasma + '.velL','-column',2,'-row',1,'-sticky','w')
-    rC('grid',fplasma + '.void','-column',1,'-row',2,'-sticky','w')
-    rC('grid',fplasma + '.voidL','-column',2,'-row',2,'-sticky','w')
+    rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','w')
+    rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','w')
+    rC('grid',fplasma + '.vel','-column',2,'-row',1,'-sticky','w')
+    rC('grid',fplasma + '.velL','-column',3,'-row',1,'-sticky','w')
+    rC('grid',fplasma + '.void','-column',2,'-row',2,'-sticky','w')
+    rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','w')
     rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','sew')
+    rC('grid','columnconfigure',fplasma,1,'-weight',1)
 
     # hide bottom pane until modified
     rC('pack','forget','.pane.bottom.t.text')
