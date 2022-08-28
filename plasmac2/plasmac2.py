@@ -1654,7 +1654,7 @@ def user_button_setup():
             if len(codes) > 1 and len(codes) < 5:
                 outCode = {'code':'change-consumables', 'X':None, 'Y':None, 'F':None}
                 for l in 'xyf':
-                    for c in range(2, len(codes)):
+                    for c in range(1, len(codes)):
                         if codes[c].startswith(l):
                             try:
                                 value = round(float(codes[c].replace(l,'')), 3)
