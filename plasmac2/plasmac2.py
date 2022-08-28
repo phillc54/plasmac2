@@ -1139,7 +1139,7 @@ def laser_button_toggled(state, button):
             comp['laser-on'] = 1
             return
         elif laserButtonState == 'setorigin':
-            comp['laser-on'] = 1
+            comp['laser-on'] = 0
         laserButtonState = sheet_align('laser', laserButtonState, laserOffsets['X'], laserOffsets['Y'])
 
 def sheet_align(mode, buttonState, offsetX, offsetY):
