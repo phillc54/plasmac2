@@ -1849,9 +1849,13 @@ def user_button_pressed(button, code):
         pass # actioned from button_release
     elif code['code'] == 'pulse-halpin' and hal.get_value('halui.program.is-idle'):
         hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
-        pulsePins[button]['text'] = rC('.fbuttons.button' + button,'cget','-text')
-        pulsePins[button]['timer'] = code['time']
-        pulsePins[button]['counter'] = time.time()
+        if not pulsePins[button]['timer']:
+            pulsePins[button]['text'] = rC('.fbuttons.button' + button,'cget','-text')
+            pulsePins[button]['timer'] = code['time']
+            pulsePins[button]['counter'] = time.time()
+        else:
+            pulsePins[button]['timer'] = 0
+            rC('.fbuttons.button' + button,'configure','-text',pulsePins[button]['text'])
     elif code['code'] == 'toggle-halpin' and hal.get_value('halui.program.is-idle'):
         hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
     else:
