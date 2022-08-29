@@ -1204,8 +1204,11 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
         ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: SEE (1) ABOVE
 #        if not boundsError['align']:
-#            ensure_mode(linuxcnc.MODE_MDI)
-#            c.mdi('G0 X0 Y0')
+        if 1:
+            ensure_mode(linuxcnc.MODE_MDI)
+            c.mdi('G0 X0 Y0')
+            c.wait_complete()
+            ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: NO CAMERA YET
 #        self.w.cam_goto.setEnabled(True)
     return buttonState
