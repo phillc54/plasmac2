@@ -3943,10 +3943,13 @@ def user_hal_pins():
     hal.connect('axisui.led-breakaway','plasmac:breakaway-switch-out')
     hal.connect('axisui.led-torch','plasmac:torch-on')
     # connect laser-on if it exists
-    try:
+    laser = False
+    for signal in hal.get_info_signals():
+        if signal['NAME'] == 'plasmac:laser-on':
+            laser = True
+            break
+    if laser:
         hal.connect('axisui.laser-on','plasmac:laser-on')
-    except:
-        pass
     # initialize halpin variables
     materialChangePin = comp['material-change']
     materialChangeNumberPin = comp['material-change-number']
