@@ -215,7 +215,8 @@ class Setup:
                 section[lNum] = config[lNum]
             for lNum in section:
                 if section[lNum].startswith('HALFILE') or section[lNum].startswith('POSTGUI_HALFILE'):
-                    halFile = config[lNum].split('=')[1].strip()
+                    halFileRaw = config[lNum].split('=')[1].strip()
+                    halFile = os.path.realpath(os.path.join(oldDir, halFileRaw))
                     # if existing config is a sim
                     if 'sim_postgui' in halFile:
                         sim = True
