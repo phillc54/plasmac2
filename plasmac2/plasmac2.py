@@ -969,7 +969,9 @@ def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
         widget = getattr(widgets, 'axis_%s' % vars.ja_rbutton.get())
         widget.focus()
-        rC(fjogf + '.zerohome.zero','configure','-text',vars.ja_rbutton.get().upper() + ' ' + _('Zero'))
+        rC(fjogf + '.zerohome.zero','configure','-text',_('Zero') + ' ' + vars.ja_rbutton.get().upper())
+        if not homing_order_defined:
+            widgets.homebutton.configure(text = _('Home') + ' ' + vars.ja_rbutton.get().upper() )
     else:
         widget = getattr(widgets, 'joint_%s' % vars.ja_rbutton.get())
         widget.focus()
@@ -3078,7 +3080,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',6)
     rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
     rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
-    rC('setup_widget_accel',fjogf + '.zerohome.zero','X ' + _('Zero'))
+    rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero') + ' X')
     rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
     rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
     rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
@@ -3109,6 +3111,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
         else:
             hbName ='joints'
         widgets.homebutton.configure(text = _('Home All'), command = 'home_all_joints')
+    else:
+        widgets.homebutton.configure(text = _('Home') + ' X' )
 
     # add a spacer to keep the plasma widgets at the bottom
     rC('vspace',fmanual + '.vspace','-height',1)
