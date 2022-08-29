@@ -3927,11 +3927,16 @@ def user_hal_pins():
             hal.new_sig(line[1],hal.HAL_BIT)
         hal.connect(line[2],line[1])
         hal.connect(line[3],line[1])
-    #connect pins to some existing signals
+    # connect pins to some existing signals
     hal.connect('axisui.led-ohmic','plasmac:ohmic-probe-out')
     hal.connect('axisui.led-float','plasmac:float-switch-out')
     hal.connect('axisui.led-breakaway','plasmac:breakaway-switch-out')
     hal.connect('axisui.led-torch','plasmac:torch-on')
+    # connect laser-on if it exists
+    try:
+        hal.connect('axisui.laser-on','plasmac:laser-on')
+    except:
+        pass
     # initialize halpin variables
     materialChangePin = comp['material-change']
     materialChangeNumberPin = comp['material-change-number']
