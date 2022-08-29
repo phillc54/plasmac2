@@ -1153,6 +1153,7 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
         c.mdi('G10 L2 P0 R0')
         c.wait_complete()
         live_plotter.clear()
+        ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: NO CAMERA YET
 #        self.w.cam_goto.setEnabled(False)
         pVars.laserText.set(_('Origin'))
@@ -1200,11 +1201,11 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
         c.wait_complete()
         if loaded_file:
             commands.reload_file(False)
+        ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: SEE (1) ABOVE
 #        if not boundsError['align']:
-        if 1:
-            ensure_mode(linuxcnc.MODE_MDI)
-            c.mdi('G0 X0 Y0')
+#            ensure_mode(linuxcnc.MODE_MDI)
+#            c.mdi('G0 X0 Y0')
 #FIXME: NO CAMERA YET
 #        self.w.cam_goto.setEnabled(True)
     return buttonState
@@ -1261,6 +1262,7 @@ def frame_job(feed, height):
             c.mdi('G53 G1 X{:0.2f}'.format(xMax))
             c.mdi('G53 G1 Y{:0.2f}'.format(yMin))
             c.mdi('G53 G1 X{:0.2f}'.format(xMin))
+            ensure_mode(linuxcnc.MODE_MANUAL)
             framingState = True
 
 
@@ -1867,6 +1869,7 @@ def user_button_pressed(button, code):
                 if manual_ok():
                     ensure_mode(linuxcnc.MODE_MDI)
                     commands.send_mdi_command(code[n])
+                    ensure_mode(linuxcnc.MODE_MANUAL)
 
 def user_button_released(button, code):
     global cutType, probePressed, torchPressed
@@ -4131,7 +4134,7 @@ def user_live_update():
         if laserTimer <= 0:
             comp['laser-on'] = 0
             laserButtonState = 'reset'
-            pVars.laserText.set(_('LASER'))
+            pVars.laserText.set(_('Laser'))
     # show cut recovery tab
     if s.paused and 'manual' in rC(ftabs,'pages'):
         rC(ftabs,'delete','manual',0)
