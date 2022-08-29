@@ -3852,18 +3852,18 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
             for p in PORTS.comports():
                 ports.append(p[0])
             if pmPort not in ports:
-                title = 'PORT ERROR'
-                msg0 = 'cannot be found'
-                msg1 = 'Powermax communications is disabled'
+                title = _('PORT ERROR')
+                msg0 = _('cannot be found')
+                msg1 = _('Powermax communications is disabled')
                 notifications.add('error', '{}:\n{} {}\n{}\n'.format(title, pmPort, msg0, msg1))
                 pmPort = None
             rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
             rC('grid',stats + '.arcL','-column',0,'-row',9,'-pady',(8,0))
             rC('grid',stats + '.arcT','-column',2,'-row',9,'-pady',(8,0))
         except:
-            title = 'MODULE ERROR'
-            msg0 = 'python3-serial cannot be found'
-            msg1 = 'Install python3-serial or linuxcnc-dev'
+            title = _('MODULE ERROR')
+            msg0 = _('python3-serial cannot be found')
+            msg1 = _('Install python3-serial or linuxcnc-dev')
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
     set_window_size()
@@ -3978,8 +3978,8 @@ def user_hal_pins():
             open_file_guts(openFile, False, addRecent)
             commands.set_view_z()
         else:
-            title = 'FILE ERROR'
-            msg0 = 'does not exist'
+            title = _('FILE ERROR')
+            msg0 = _('does not exist')
             notifications.add('error', '{}:\n"{}" {}\n'.format(title, os.path.realpath(openFile), msg0))
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
