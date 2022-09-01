@@ -865,8 +865,12 @@ def update_plasmac2():
         msg = 'Cannot open a git repository at ~/linuxcnc/PlasmaC2'
         messagebox.showerror('Repository Error', msg)
         return
-    current = repo.head.commit
-    repo.remotes.origin.pull()
+    try:
+        current = repo.head.commit
+        repo.remotes.origin.pull()
+    except:
+        msg = 'An error occurred while updating'
+        messagebox.showerror('Update Error', msg)
     if current == repo.head.commit:
         messagebox.showinfo('PlasmaC2 Update', 'PlasmaC2 was up to date')
     else:
