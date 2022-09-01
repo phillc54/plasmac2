@@ -1753,30 +1753,29 @@ def user_button_setup():
                         outCode['critical'] = True
                     togglePins[str(n)] = {'button':str(n), 'pin':outCode['pin'], 'state':hal.get_value(outCode['pin']), 'runcritical':outCode['critical']}
         elif bCode and bCode not in singleCodes:
-            codes = bCode.strip().split('/')
+            codes = bCode.strip().split('\\')
             codes = [x.strip() for x in codes]
-            outCode['code'] = '%Code'
-            nc = 0
-            for cd in codes:
-                nc += 1
-                if cd[0] == '%':
-                    outCode[nc] = cd
-                elif cd[:2].lower() == 'o<':
-                    outCode[nc] = cd
-                    outCode['code'] = 'gCode'
-                elif cd[0].lower() in 'gm':
-                    outCode['code'] = 'gCode'
-                    if not '{' in cd:
-                        outCode[nc] = cd
+            outCode['code'] = []
+            for cn in range(len(codes)):
+                if codes[cn][0] == '%':
+                    if WHICH(codes[cn].split()[0][1:]) is not None:
+                        outCode['code'].append(['shell', codes[cn][1:]])
                     else:
-                        reply = validate_ini_param(cd, n)
+                        outCode = {'code': None}
+                elif codes[cn][:2].lower() == 'o<':
+                    outCode['code'].append(['ocode', codes[cn]])
+                elif codes[cn][0].lower() in 'gm':
+                    if not '{' in codes[cn]:
+                        outCode['code'].append(['gcode', codes[cn]])
+                    else:
+                        reply = validate_ini_param(codes[cn], n)
                         if reply[0]:
-                            outCode[nc] = reply[1]
+                            outCode['code'].append(['gcode', reply[1]])
                         else:
-                            outCode = {'code':None}
+                            outCode = {'code': None}
                             break
                 else:
-                    outCode = {'code':None}
+                    outCode = {'code': None}
                     break
         else:
             outCode = {'code':None}
@@ -1886,13 +1885,13 @@ def user_button_pressed(button, code):
     elif code['code'] == 'toggle-halpin' and hal.get_value('halui.program.is-idle'):
         hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
     else:
-        for n in range(1, len(code)):
-            if code[n][0] == '%':
-                Popen(code[n][1:], stdout=PIPE, stderr=PIPE, shell=True)
-            else:
+        for n in range(len(code['code'])):
+            if code['code'][n][0] == 'shell':
+                Popen(code['code'][n][1], stdout=PIPE, stderr=PIPE, shell=True)
+            elif code['code'][n][0] in ['gcode', 'ocode']:
                 if manual_ok():
                     ensure_mode(linuxcnc.MODE_MDI)
-                    commands.send_mdi_command(code[n])
+                    commands.send_mdi_command(code['code'][n][1])
 
 def user_button_released(button, code):
     global cutType, probePressed, torchPressed
@@ -2568,6 +2567,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/PlasmaC2/plasmac2/lib')):
     from collections import OrderedDict
     from glob import glob as GLOB
     from shutil import copy as COPY
+    from shutil import which as WHICH
     from importlib import reload
     from plasmac import run_from_line as RFL
     import conversational
