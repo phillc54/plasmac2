@@ -283,7 +283,6 @@ def wcs_rotation(mode):
         c.wait_complete()
         if currentRot != s.rotation_xy:
             reload_file()
-        ensure_mode(linuxcnc.MODE_MANUAL)
 
 def preview_toggle(conv=False):
     if pVars.previewLarge.get() or conv:
@@ -975,22 +974,23 @@ def ja_button_activated():
     else:
         widget = getattr(widgets, 'joint_%s' % vars.ja_rbutton.get())
         widget.focus()
-    commands.axis_activated
+    commands.axis_activated()
 
-def joint_mode_switch(a,b,c):
+def joint_mode_switch(a, b, c):
+    global lastMotionMode
     if vars.motion_mode.get() == linuxcnc.TRAJ_MODE_FREE and s.kinematics_type != linuxcnc.KINEMATICS_IDENTITY:
         rC('grid','forget',fmanual + '.axes')
         rC('grid',fmanual + '.joints','-column','0','-row','0','-padx','2','-sticky','ew')
         widget = getattr(widgets, 'joint_%d' % 0)
         widget.focus()
         vars.ja_rbutton.set(0)
-    else:
+    elif lastMotionMode == linuxcnc.TRAJ_MODE_FREE or not lastMotionMode:
         rC('grid','forget',fmanual + '.joints')
         rC('grid',fmanual + '.axes','-column','0','-row','0','-padx','2','-sticky','ew')
         widget = getattr(widgets, 'axis_%s' % first_axis)
         widget.focus()
         vars.ja_rbutton.set(first_axis)
-
+    lastMotionMode = vars.motion_mode.get()
 
 ##############################################################################
 # MANUAL CUT                                                                 #
@@ -1155,7 +1155,6 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
         c.mdi('G10 L2 P0 R0')
         c.wait_complete()
         live_plotter.clear()
-        ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: NO CAMERA YET
 #        self.w.cam_goto.setEnabled(False)
         pVars.laserText.set(_('Origin'))
@@ -1203,16 +1202,15 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
         c.wait_complete()
         if loaded_file:
             commands.reload_file(False)
-        ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: SEE (1) ABOVE
 #        if not boundsError['align']:
         if 1:
             ensure_mode(linuxcnc.MODE_MDI)
             c.mdi('G0 X0 Y0')
             c.wait_complete()
-            ensure_mode(linuxcnc.MODE_MANUAL)
 #FIXME: NO CAMERA YET
 #        self.w.cam_goto.setEnabled(True)
+        live_plotter.clear()
     return buttonState
 
 
@@ -1267,7 +1265,6 @@ def frame_job(feed, height):
             c.mdi('G53 G1 X{:0.2f}'.format(xMax))
             c.mdi('G53 G1 Y{:0.2f}'.format(yMin))
             c.mdi('G53 G1 X{:0.2f}'.format(xMin))
-            ensure_mode(linuxcnc.MODE_MANUAL)
             framingState = True
 
 
@@ -1291,7 +1288,7 @@ def bounds_check(boundsType, xOffset , yOffset):
         xMin = xMax = xOffset
         yMin = yMax = yOffset
 #FIXME: CAN WE USE VARS.METRIC.GET() INSTEAD OF GCUNITS ABOVE
-    print("vars.metric:{}  gcUnits:{}".format(vars.metric.get(), gcUnits))
+    #print("vars.metric:{}  gcUnits:{}".format(vars.metric.get(), gcUnits))
     if s.linear_units == 1 and gcUnits == 'in':
         reportMultipler = 0.03937
     elif s.linear_units != 1 and gcUnits == 'mm':
@@ -1874,7 +1871,6 @@ def user_button_pressed(button, code):
                 if manual_ok():
                     ensure_mode(linuxcnc.MODE_MDI)
                     commands.send_mdi_command(code[n])
-                    ensure_mode(linuxcnc.MODE_MANUAL)
 
 def user_button_released(button, code):
     global cutType, probePressed, torchPressed
@@ -2739,6 +2735,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     singleCut = {'state':False, 'G91':False}
     framingState = False
     runState = False
+    lastMotionMode = None
     torchEnable = {}
     torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
     torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
@@ -4040,7 +4037,6 @@ def user_live_update():
         if singleCut['G91']:
             ensure_mode(linuxcnc.MODE_MDI)
             c.mdi('G91')
-            ensure_mode(linuxcnc.MODE_MANUAL)
     # override standard tool info
     if current_tool.id != currentTool:
         currentTool = current_tool.id
