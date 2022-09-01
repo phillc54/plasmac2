@@ -871,6 +871,7 @@ def update_plasmac2():
     except:
         msg = 'An error occurred while updating'
         messagebox.showerror('Update Error', msg)
+        return
     if current == repo.head.commit:
         messagebox.showinfo('PlasmaC2 Update', 'PlasmaC2 was up to date')
     else:
