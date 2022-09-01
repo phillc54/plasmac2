@@ -857,6 +857,23 @@ def save_setup_clicked():
 ##############################################################################
 # GENERAL FUNCTIONS                                                          #
 ##############################################################################
+
+def update_plasmac2():
+    try:
+        repo = git.Repo(os.path.expanduser('~/linuxcnc/PlasmaC2'))
+    except:
+        msg = 'Cannot open a git repository at ~/linuxcnc/PlasmaC2'
+        messagebox.showerror('Repository Error', msg)
+        return
+    current = repo.head.commit
+    repo.remotes.origin.pull()
+    if current == repo.head.commit:
+        messagebox.showinfo('PlasmaC2 Update', 'PlasmaC2 was up to date')
+    else:
+        msg = ['PlasmaC2 was updated']
+        msg.append('A restart may be needed')
+        messagebox.showinfo('PlasmaC2 Update', '\n'.join(msg))
+
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
     putPrefs(PREF,'ENABLE_OPTIONS','THC enable', pVars.thcEnable.get(), bool)
@@ -2535,8 +2552,8 @@ pmx485FaultName = {
 # SETUP                                                                      #
 ##############################################################################
 firstRun = 'valid'
-if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
-    libPath = os.path.expanduser('~/linuxcnc/plasmac2/lib')
+if os.path.isdir(os.path.expanduser('~/linuxcnc/PlasmaC2/plasmac2/lib')):
+    libPath = os.path.expanduser('~/linuxcnc/PlasmaC2/plasmac2/lib')
     sys.path.append(libPath)
 
     import tarfile
@@ -2550,6 +2567,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     from plasmac import run_from_line as RFL
     import conversational
     import set_offsets
+    import git
 
     configPath = os.getcwd()
     imagePath = os.path.join(libPath, 'images') # our own images
@@ -2846,6 +2864,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     TclCommands.pmx485_mesh_enable_toggled = pmx485_mesh_enable_toggled
     TclCommands.reset_all_stats = reset_all_stats
     TclCommands.set_peripheral_offsets = set_peripheral_offsets
+    TclCommands.update_plasmac2 = update_plasmac2
     commands = TclCommands(root_window)
 
 
@@ -3259,6 +3278,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/lib')):
     rC('setup_menu_accel','.menu','end',_('_Setup'))
     rC('.menu','add','cascade','-menu','.menu.help')
     rC('setup_menu_accel','.menu','end',_('_Help'))
+    rC('.menu.help','add','separator')
+    rC('.menu.help','add','command','-command','update_plasmac2')
+    rC('setup_menu_accel','.menu.help','end',_('_Update'))
 
     # rework the status bar
     rC('grid','forget',ftop + '.gcodel')

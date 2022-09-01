@@ -6,6 +6,7 @@ setup.py
 
 import sys
 import os
+import git
 from shutil import *
 from tkinter import *
 from tkinter import filedialog
@@ -15,31 +16,27 @@ class Setup:
         self.master = master
         master.title('PlasmaC2 Setup')
         text = ['Setup utility for PlasmaC2\n']
-        text.append('Install or Update:\n'
-                    'will copy the PlasmaC2 extensions to ~/linuxcnc/plasmac2\n')
-        text.append('Migrate QtPlasmaC:\n'
-                    'will copy an existing QtPlasmaC config and make any\n'
-                    'required modifications for PlasmaC2\n')
-        text.append('Create Simulation:\n'
-                    'will make a new sim using supplied parameters\n'
-                    'name is mandatory\n'
-                    'other missing parameters will the following applied\n'
-                    'X = 1200mm or 48"\n'
-                    'Y = 1200mm or 48"\n'
-                    'Z = 100mm or 4"\n')
+        text.append('Migration:\n'
+                    ' - will copy an existing QtPlasmaC config and make any\n'
+                    '   required modifications for PlasmaC2\n')
+        text.append('Simulation:\n'
+                    '- will make a new sim using supplied parameters\n'
+                    '- name is mandatory\n'
+                    '- other missing parameters will have the following applied\n'
+                    '  X = 1200mm or 48"\n'
+                    '  Y = 1200mm or 48"\n'
+                    '  Z = 100mm or 4"\n')
         label = Label(master, text='\n'.join(text), justify='left')
         buttons = Frame(master)
-        installB = Button(buttons, text='Install or\nUpdate', width=10, command=lambda: self.install(), padx=0)
-        migrateB = Button(buttons, text='Migrate\nQtPlasmaC', width=10, command=lambda: self.migrate(), padx=0)
-        simB = Button(buttons, text='Create\nSimulation', width=10, command=lambda: self.sim(), padx=0)
-        quitB = Button(buttons, text='Quit', width=10, height=2, command=lambda: self.shutdown(), padx=0)
-        installB.grid(row=0, column=0)
-        migrateB.grid(row=0, column=1, padx=(4,2))
-        simB.grid(row=0, column=2, padx=(2,4))
-        quitB.grid(row=0, column=3)
+        migrateB = Button(buttons, text='Migration', width=10, command=lambda: self.migrate(), padx=0)
+        simB = Button(buttons, text='Simulation', width=10, command=lambda: self.sim(), padx=0)
+        quitB = Button(buttons, text='Quit', width=10, command=lambda: self.shutdown(), padx=0)
+        migrateB.grid(row=0, column=0)
+        simB.grid(row=0, column=1)
+        quitB.grid(row=0, column=2)
         label.grid(row=0, column=0, sticky='ew', padx=8, pady=(8,0))
         buttons.grid(row=1, column=0, sticky='ew', padx=8, pady=(16,8))
-        buttons.columnconfigure((0,1,2,3), weight=1)
+        buttons.columnconfigure((0,1,2), weight=1)
         self.lcnc = os.path.expanduser('~/linuxcnc')
         if 'root' in self.lcnc:
             title = 'User Error'
@@ -47,7 +44,8 @@ class Setup:
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
         self.configs=os.path.join(self.lcnc, 'configs')
-        self.b2tf = os.path.join(self.lcnc, 'plasmac2')
+        b2tf = os.path.expanduser('~/linuxcnc/PlasmaC2')
+        self.b2tf = os.path.join(b2tf, 'plasmac2')
         if not os.path.isdir(self.lcnc):
             title = 'Directory Error'
             msg = ['The directory ~/linuxcnc does not exist']
@@ -55,47 +53,21 @@ class Setup:
             msg.append('to ensure that the structure is correct')
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
+        if not os.path.isdir(b2tf):
+            title = 'Repository Error'
+            msg = ['The git repository ~/PlasmaC2 does not exist']
+            self.myMsg(title, '\n'.join(msg), 1)
+            raise SystemExit
+        try:
+            repo = git.Repo(b2tf)
+        except:
+            title = 'Repository Error'
+            msg = ['The directory ~/PlasmaC2 is not a git repository']
+            self.myMsg(title, '\n'.join(msg), 1)
+            raise SystemExit
         self.reply = [False, None]
 
-    def install(self):
-        if os.path.exists(self.b2tf):
-            if os.path.islink(self.b2tf):
-                title = 'Directory Is A Link'
-                msg = ['plasmac2 is a link and cannot be overwritten']
-                self.myMsg(title, '\n'.join(msg), 1)
-                return
-            title = 'Directory Exists'
-            msg = ['plasmac2 already exists at:']
-            msg.append(self.b2tf)
-            msg.append('\n\n')
-            msg.append('Overwrite?')
-            self.reply[0] = False
-            self.myMsg(title, ' '.join(msg), 2)
-            if not self.reply[0]:
-                return
-            if os.path.isfile(self.b2tf) or os.path.islink(self.b2tf):
-                os.remove(self.b2tf)
-            elif os.path.isdir(self.b2tf):
-                rmtree(self.b2tf)
-        try:
-            copytree(os.path.dirname(sys.argv[0]), self.b2tf)
-            title = 'Installation Complete'
-            msg = ['Files successfully copied to:']
-            msg.append(self.b2tf)
-        except Exception as e:
-            title = 'Installation Error'
-            msg = ['Installation was unsuccessful']
-            msg.append('\n\n')
-            msg.append('Error in line: {}\n'.format(sys.exc_info()[-1].tb_lineno))
-            msg.append(str(e))
-        self.myMsg(title, ' '.join(msg), 1)
-
     def migrate(self):
-        if not os.path.exists(self.b2tf):
-            title = 'Directory Error'
-            msg = ['plasmac2 is not installed']
-            self.myMsg(title, ' '.join(msg), 1)
-            return
         ini = filedialog.askopenfilename(
             title='QtPlasmaC INI File',
             initialdir=self.configs,
@@ -248,7 +220,7 @@ class Setup:
             if os.path.exists(os.path.join(newDir, 'plasmac2')):
                 os.remove(os.path.join(newDir, 'plasmac2'))
             # create a link to plasmac2
-            os.symlink(os.path.join(self.lcnc, 'plasmac2'), os.path.join(newDir, 'plasmac2'))
+            os.symlink(os.path.join(self.b2tf), os.path.join(newDir, 'plasmac2'))
             # we made it...
             title = 'Migration Complete'
             msg = ['Ini file for PlasmaC2 config is:']
@@ -312,7 +284,7 @@ class Setup:
         else:
             os.mkdir(simDir)
         for file in ['custom.hal', 'sim_no_stepgen.tcl', 'sim_panel.py', 'sim_stepgen.tcl', \
-                     'sim.tcl', 'user_commands.py', 'user_hal.py', 'user_periodic.py']:
+                     'user_commands.py', 'user_hal.py', 'user_periodic.py']:
             copy(os.path.join(self.b2tf, 'sim', file), os.path.join(simDir, file))
         for file in ['{}.ini'.format(simUnits), '{}_material.cfg'.format(simUnits), \
                      '{}.prefs'.format(simUnits), '{}_tool.tbl'.format(simUnits)]:
@@ -353,7 +325,7 @@ class Setup:
         if os.path.exists(os.path.join(simDir, 'plasmac2')):
             os.remove(os.path.join(simDir, 'plasmac2'))
         # create a link to plasmac2
-        os.symlink(os.path.join(self.lcnc, 'plasmac2'), os.path.join(simDir, 'plasmac2'))
+        os.symlink(os.path.join(self.b2tf), os.path.join(simDir, 'plasmac2'))
         title = 'Sim Creation Complete'
         msg = ['Ini file for {} sim config is: {}'.format(simUnits, os.path.join(simDir, simName))]
         msg.append('X={}   Y={}   Z={}'.format(simX, simY, simZ))
