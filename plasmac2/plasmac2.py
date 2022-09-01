@@ -1980,22 +1980,14 @@ def user_button_save():
     else:
         rC('.fbuttons.torch-enable','configure','-text',torchEnable['disabled'].replace('\\','\n'),'-bg',ourRed,'-activebackground',ourRed)
     for n in range(1, 21):
-        if rC(fsetup + '.r.ubuttons.name' + str(n),'get') and rC(fsetup + '.r.ubuttons.code' + str(n),'get'):
-            putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.name' + str(n),'get'), str)
-            putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.r.ubuttons.code' + str(n),'get'), str)
-            rC('grid','forget',fsetup + '.r.ubuttons.num' + str(n))
-            rC('grid','forget',fsetup + '.r.ubuttons.name' + str(n))
-            rC('grid','forget',fsetup + '.r.ubuttons.code' + str(n))
-            rC('grid','forget','.fbuttons.button' + str(n))
-            rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
-            rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
-        elif (rC(fsetup + '.r.ubuttons.name' + str(n),'get') and not rC(fsetup + '.r.ubuttons.code' + str(n),'get')) or \
-             (not rC(fsetup + '.r.ubuttons.name' + str(n),'get') and rC(fsetup + '.r.ubuttons.code' + str(n),'get')):
-            title = _('USER BUTTON ERROR')
-            msg0 = _('code or name missing from user button')
-            notifications.add('error', '{}:\n{} #{}'.format(title, msg0, n))
-            rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
-            rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
+        putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.name' + str(n),'get'), str)
+        putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.r.ubuttons.code' + str(n),'get'), str)
+        rC('grid','forget',fsetup + '.r.ubuttons.num' + str(n))
+        rC('grid','forget',fsetup + '.r.ubuttons.name' + str(n))
+        rC('grid','forget',fsetup + '.r.ubuttons.code' + str(n))
+        rC('grid','forget','.fbuttons.button' + str(n))
+        rC(fsetup + '.r.ubuttons.name' + str(n),'delete',0,'end')
+        rC(fsetup + '.r.ubuttons.code' + str(n),'delete',0,'end')
     user_button_setup()
 
 
