@@ -30,7 +30,7 @@ When the installation is complete then either a migration or simulator creation 
 
 ### To update PlasmaC2 there are two options:
 
-From the PlasmaC2 GUI:  *
+From the PlasmaC2 GUI:  
 click **Help** then click **Update**
 
 From a terminal:
