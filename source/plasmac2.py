@@ -2424,7 +2424,7 @@ def pmx485_status_changed(state):
             pmx485['connected'] = False
             pmx485['retryTimer'] = 3
 
-#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT IN PERIODIC
+#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT IN PERIODIC (user_live_update)
 #def pmx485_arc_time_changed(time):
 #    print('pmx485_arc_time_changed', time)
 #    if pmx485['connected']:
@@ -2543,6 +2543,72 @@ pmx485FaultName = {
             '3700': _('Internal serial communications fault'),
             }
 
+
+##############################################################################
+# EXTERNAL HAL PINS                                                          #
+##############################################################################
+
+# called during setup
+def ext_hal_create():
+    global extHalPins
+    extHalPins = {}
+    for pin in ['abort', 'power', 'run', 'pause', 'run-pause', 'touchoff', 'probe-test',
+                'torch-pulse', 'frame-job']:
+        comp.newpin('ext.{}'.format(pin), hal.HAL_BIT, hal.HAL_IN)
+        extHalPins[pin] = {'state': False, 'last': False}
+
+# called every cycle by user_live_update
+def ext_hal_watch():
+    global extHalPins, isIdle, isIdleHomed, isPaused, isRunning, probePressed, torchPressed
+    for pin in extHalPins:
+        state = comp['ext.{}'.format(pin)]
+        if state != extHalPins[pin]['last']:
+            extHalPins[pin]['last'] = state
+            # pressed commands
+            if state:
+                if pin == 'abort':
+                    commands.task_stop()
+                elif pin == 'power':
+                    commands.onoff_clicked()
+                elif pin == 'run' and isIdleHomed:
+                    commands.task_run()
+                elif pin == 'pause':
+                    if isRunning:
+                        commands.task_pause()
+                    elif isPaused:
+                        commands.task_resume()
+                elif pin == 'run-pause':
+                    if isIdleHomed:
+                        commands.task_run()
+                    elif isRunning:
+                        commands.task_pause()
+                    elif isPaused:
+                        commands.task_resume()
+                elif pin == 'touchoff':
+                    touch_off_xy('1', '0', '0')
+                elif pin == 'probe-test' and probeButton:
+                    user_button_pressed(probeButton, buttonCodes[int(probeButton)])
+                elif pin == 'torch-pulse' and torchButton:
+                    user_button_pressed(torchButton, buttonCodes[int(torchButton)])
+            # released commands
+            else:
+                if pin == 'touchoff':
+                    touch_off_xy('0', '0', '0')
+                elif pin == 'probe-test' and probeButton:
+                    user_button_released(probeButton, buttonCodes[int(probeButton)])
+                elif pin == 'torch-pulse' and torchButton:
+                    user_button_released(torchButton, buttonCodes[int(torchButton)])
+                elif pin == 'frame-job':
+                    num = get_button_num('framing')
+                    if num:
+                        user_button_released(str(num), buttonCodes[num])
+
+def get_button_num(name):
+    num = None
+    for num in buttonCodes:
+        if buttonCodes[num]['code'] == name:
+            break
+    return num
 
 ##############################################################################
 # SETUP                                                                      #
@@ -3928,6 +3994,7 @@ def user_hal_pins():
     comp.newpin('conv-block-loaded', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('offset-set-probe', hal.HAL_BIT, hal.HAL_OUT)
     comp.newpin('offset-set-scribe', hal.HAL_BIT, hal.HAL_OUT)
+    ext_hal_create()
     # create some new signals and connect pins
     hal_data = [[0,'plasmac:arc-voltage-out','plasmac.arc-voltage-out','axisui.arc-voltage'],\
                 [1,'plasmac:axis-x-min-limit','ini.x.min_limit','plasmac.axis-x-min-limit'],\
@@ -4027,11 +4094,13 @@ def user_live_update():
     global materialChangePin, materialChangeNumberPin
     global materialReloadPin, materialTempPin
     global materialChangeTimeoutPin
-    #set machine state variables
+    # set machine state variables
     isIdle = s.task_state == linuxcnc.STATE_ON and s.interp_state == linuxcnc.INTERP_IDLE
     isIdleHomed = isIdle and all_homed()
     isPaused = s.task_state == linuxcnc.STATE_ON and s.paused
     isRunning = not s.interp_state == linuxcnc.INTERP_IDLE and not s.paused
+    # check external hal pins
+    ext_hal_watch()
     # set current x and y relative positions
     relPos['X'] = round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 6)
     relPos['Y'] = round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 6)
@@ -4333,7 +4402,7 @@ def user_live_update():
             pmx485_fault_changed(pmx485['compFault'])
         if pmx485['compArcTime'] != hal.get_value('pmx485.arcTime'):
             pmx485['compArcTime'] = hal.get_value('pmx485.arcTime')
-#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT DIRECTLY, HERE IN PERIODIC
+#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT DIRECTLY, HERE IN PERIODIC (user_live_update)
             #pmx485_arc_time_changed(pmx485['compArcTime'])
             pVars.arcT.set(secs_to_hms(pmx485['compArcTime']))
         if pmx485['compMinC'] != hal.get_value('pmx485.current_min'):
