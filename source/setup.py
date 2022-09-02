@@ -14,11 +14,11 @@ from tkinter import filedialog
 class Setup:
     def __init__(self, master):
         self.master = master
-        master.title('PlasmaC2 Setup')
-        text = ['Setup utility for PlasmaC2\n']
+        master.title('plasmac2 Setup')
+        text = ['Setup utility for plasmac2\n']
         text.append('Migration:\n'
                     ' - will copy an existing QtPlasmaC config and make any\n'
-                    '   required modifications for PlasmaC2\n')
+                    '   required modifications for plasmac2\n')
         text.append('Simulation:\n'
                     '- will make a new sim using supplied parameters\n'
                     '- name is mandatory\n'
@@ -40,12 +40,12 @@ class Setup:
         self.lcnc = os.path.expanduser('~/linuxcnc')
         if 'root' in self.lcnc:
             title = 'User Error'
-            msg = ['PlasmaC2 Setup can not be run as a root user']
+            msg = ['plasmac2 setup can not be run as a root user']
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
         self.configs=os.path.join(self.lcnc, 'configs')
-        b2tf = os.path.expanduser('~/linuxcnc/PlasmaC2')
-        self.b2tf = os.path.join(b2tf, 'plasmac2')
+        b2tf = os.path.expanduser('~/linuxcnc/plasmac2')
+        self.b2tf = os.path.join(b2tf, 'source')
         if not os.path.isdir(self.lcnc):
             title = 'Directory Error'
             msg = ['The directory ~/linuxcnc does not exist']
@@ -55,14 +55,14 @@ class Setup:
             raise SystemExit
         if not os.path.isdir(b2tf):
             title = 'Repository Error'
-            msg = ['The git repository ~/PlasmaC2 does not exist']
+            msg = ['The git repository ~/plasmac2 does not exist']
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
         try:
             repo = git.Repo(b2tf)
         except:
             title = 'Repository Error'
-            msg = ['The directory ~/PlasmaC2 is not a git repository']
+            msg = ['The directory ~/plasmac2 is not a git repository']
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
         self.reply = [False, None]
@@ -223,7 +223,7 @@ class Setup:
             os.symlink(os.path.join(self.b2tf), os.path.join(newDir, 'plasmac2'))
             # we made it...
             title = 'Migration Complete'
-            msg = ['Ini file for PlasmaC2 config is:']
+            msg = ['Ini file for plasmac2 config is:']
             msg.append(os.path.join(newDir, iniFile))
             if qtplasmacHal:
                 msg.append('\n\n')

@@ -860,9 +860,9 @@ def save_setup_clicked():
 
 def update_plasmac2():
     try:
-        repo = git.Repo(os.path.expanduser('~/linuxcnc/PlasmaC2'))
+        repo = git.Repo(os.path.expanduser('~/linuxcnc/plasmac2'))
     except:
-        msg = 'Cannot open a git repository at ~/linuxcnc/PlasmaC2'
+        msg = 'Cannot open a git repository at ~/linuxcnc/plasmac2'
         messagebox.showerror('Repository Error', msg)
         return
     try:
@@ -873,11 +873,11 @@ def update_plasmac2():
         messagebox.showerror('Update Error', msg)
         return
     if current == repo.head.commit:
-        messagebox.showinfo('PlasmaC2 Update', 'PlasmaC2 was up to date')
+        messagebox.showinfo('plasmac2 Update', 'plasmac2 was up to date')
     else:
-        msg = ['PlasmaC2 was updated']
+        msg = ['plasmac2 was updated']
         msg.append('A restart may be needed')
-        messagebox.showinfo('PlasmaC2 Update', '\n'.join(msg))
+        messagebox.showinfo('plasmac2 Update', '\n'.join(msg))
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
@@ -2548,8 +2548,8 @@ pmx485FaultName = {
 # SETUP                                                                      #
 ##############################################################################
 firstRun = 'valid'
-if os.path.isdir(os.path.expanduser('~/linuxcnc/PlasmaC2/plasmac2/lib')):
-    libPath = os.path.expanduser('~/linuxcnc/PlasmaC2/plasmac2/lib')
+if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
+    libPath = os.path.expanduser('~/linuxcnc/plasmac2/source/lib')
     sys.path.append(libPath)
 
     import tarfile
@@ -3888,7 +3888,7 @@ else:
     firstRun = 'invalid'
     title = _('LOAD ERROR')
     msg0 = _('Cannot find valid library directory')
-    msg1 = _('PlasmaC2 extensions are not loaded')
+    msg1 = _('plasmac2 extensions are not loaded')
     notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.expanduser('~/linuxcnc/plasmac2/lib'), msg1))
 
 
