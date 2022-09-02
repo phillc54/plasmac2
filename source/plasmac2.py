@@ -1922,6 +1922,8 @@ def user_button_released(button, code):
     elif code['code'] == 'change-consumables':
         pass
     elif code['code'] == 'framing':
+        if not code['F']:
+            code['F'] = int(rC('.runs.material.cut-feed-rate', 'get'))
         frame_job(code['F'], code['Z'])
     elif code['code'] == 'load':
         commands.open_file_name(code['file'])
