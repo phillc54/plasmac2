@@ -50,8 +50,31 @@ def button_changed(event, button, pin):
     except Exception as e:
         unload(e)
 
+def mode_change(mode):
+    arcF.pack_forget()
+    switchF.pack_forget()
+    okF.pack_forget()
+    moveF.pack_forget()
+    if mode == 0:
+        arcF.pack(padx=2,pady=2,fill='x')
+        switchF.pack(padx=2,pady=2,fill='x')
+    if mode == 1:
+        arcF.pack(padx=2,pady=2,fill='x')
+        switchF.pack(padx=2,pady=2,fill='x')
+        okF.pack(padx=2,pady=2,fill='x')
+    if mode == 2:
+        switchF.pack(padx=2,pady=2,fill='x')
+        okF.pack(padx=2,pady=2,fill='x')
+        moveF.pack(padx=2,pady=2,fill='x')#, expand=True)
+
 def periodic():
     try:
+        global mode
+    # handle window updates on mode changes
+        current_mode = hal.get_value('plasmac.mode')
+        if mode != current_mode:
+            mode = current_mode
+            mode_change(mode)
     # activate float or ohmic when probing
         if hal.get_value('plasmac.state-out') == 2 and \
            hal.get_value('plasmac-sim.z-position') < probeHeight:
@@ -149,7 +172,7 @@ try:
     # set python variables
     arcOkPressed = False
     buttonStart = 0.0
-    mode = hal.get_value('plasmac.mode')
+    mode = None
     units = I.find('TRAJ','LINEAR_UNITS') or 'mm'
     if units == 'inch':
         probeHeight = hal.get_value('ini.z.min_limit') + 0.4
@@ -157,16 +180,14 @@ try:
         probeHeight = hal.get_value('ini.z.min_limit') + 10
     # set tkinter variables
     selectedSensor = IntVar()
-    # arc voltage frame
-    if mode < 2:
-        arcF = LabelFrame(window)
-        arcF.configure(relief='groove',text='Arc Voltage Offset',highlightbackground='#5e5e5e')
-        arc_voltage = Scale(arcF, from_=-10, to=10, resolution=0.1)
-        arc_voltage.configure(length='160',orient='horizontal',command=arc_voltage_changed, \
-                              foreground='#0000dd',font='arial 14')
-        arc_voltage.pack(padx=2,pady=2,fill='x')
-        arcF.pack(padx=2,pady=2,fill='x')
-    # sensor switch frame
+    # set up arc voltage frame
+    arcF = LabelFrame(window)
+    arcF.configure(relief='groove',text='Arc Voltage Offset',highlightbackground='#5e5e5e')
+    arc_voltage = Scale(arcF, from_=-10, to=10, resolution=0.1)
+    arc_voltage.configure(length='160',orient='horizontal',command=arc_voltage_changed, \
+                          foreground='#0000dd',font='arial 14')
+    arc_voltage.pack(padx=2,pady=2,fill='x')
+    # set up sensor switch frame
     switchF = LabelFrame(window)
     switchF.configure(relief='groove',text='Switches')
     ohmicB = Button(switchF)
@@ -195,34 +216,29 @@ try:
     switchF.columnconfigure(0,weight=1)
     switchF.columnconfigure(1,weight=1)
     switchF.columnconfigure(2,weight=1)
-    switchF.pack(padx=2,pady=2,fill='x')
-    # arc ok frame
-    if mode > 0:
-        okF = LabelFrame(window)
-        okF.configure(relief='groove',text='Arc OK')
-        arcOkB = Button(okF)
-        arcOkB.configure(borderwidth='2',compound='left',text='ARC OK')
-        arcOkB.pack(fill='x')
-        arcOkB.bind('<Button-1>',lambda e:button_changed(e,arcOkB,'db_arc-ok.in'))
-        arcOkB.bind('<ButtonRelease-1>',lambda e:button_changed(e,arcOkB,'db_arc-ok.in'))
-        okF.pack(padx=2,pady=2,fill='x')
-    # external thc frame
-    if mode == 2:
-        moveF = LabelFrame(window)
-        moveF.configure(relief='groove',text='Move')
-        upB = Button(moveF)
-        upB.configure(borderwidth='2',compound='left',text='UP',width=4)
-        upB.grid(row=0,column=0,sticky='ew')
-        upB.bind('<Button-1>',lambda e:button_changed(e,upB,'plasmac.move-up'))
-        upB.bind('<ButtonRelease-1>',lambda e:button_changed(e,upB,'plasmac.move-up'))
-        downB = Button(moveF)
-        downB.configure(borderwidth='2',compound='left',text='DOWN',width=4)
-        downB.grid(row=0,column=1,sticky='ew')
-        downB.bind('<Button-1>',lambda e:button_changed(e,downB,'plasmac.move-down'))
-        downB.bind('<ButtonRelease-1>',lambda e:button_changed(e,downB,'plasmac.move-down'))
-        moveF.columnconfigure(0,weight=1)
-        moveF.columnconfigure(1,weight=1)
-        moveF.pack(padx=2,pady=2,fill='x')#, expand=True)
+    # set up arc ok frame
+    okF = LabelFrame(window)
+    okF.configure(relief='groove',text='Arc OK')
+    arcOkB = Button(okF)
+    arcOkB.configure(borderwidth='2',compound='left',text='ARC OK')
+    arcOkB.pack(fill='x')
+    arcOkB.bind('<Button-1>',lambda e:button_changed(e,arcOkB,'db_arc-ok.in'))
+    arcOkB.bind('<ButtonRelease-1>',lambda e:button_changed(e,arcOkB,'db_arc-ok.in'))
+    # set up external thc frame
+    moveF = LabelFrame(window)
+    moveF.configure(relief='groove',text='Move')
+    upB = Button(moveF)
+    upB.configure(borderwidth='2',compound='left',text='UP',width=4)
+    upB.grid(row=0,column=0,sticky='ew')
+    upB.bind('<Button-1>',lambda e:button_changed(e,upB,'plasmac.move-up'))
+    upB.bind('<ButtonRelease-1>',lambda e:button_changed(e,upB,'plasmac.move-up'))
+    downB = Button(moveF)
+    downB.configure(borderwidth='2',compound='left',text='DOWN',width=4)
+    downB.grid(row=0,column=1,sticky='ew')
+    downB.bind('<Button-1>',lambda e:button_changed(e,downB,'plasmac.move-down'))
+    downB.bind('<ButtonRelease-1>',lambda e:button_changed(e,downB,'plasmac.move-down'))
+    moveF.columnconfigure(0,weight=1)
+    moveF.columnconfigure(1,weight=1)
     # convoluted estop for qtplasmac
     if 'qtvcp' in I.find('DISPLAY','DISPLAY').lower():
         estopF = LabelFrame(window)
