@@ -124,8 +124,14 @@ def mode_changed():
         rC('grid','forget',fleds + '.lKLlab')
         rC('grid','forget','.runs.check.av')
         rC('grid','forget','.runs.check.avL')
+        rC('grid','forget',fparam + '.c2.thc.thc-auto')
+        rC('grid','forget',fparam + '.c2.thc.thc-autoL')
         rC('grid','forget',fparam + '.c2.thc.thc-delay')
         rC('grid','forget',fparam + '.c2.thc.thc-delayL')
+        rC('grid','forget',fparam + '.c2.thc.thc-sample-counts')
+        rC('grid','forget',fparam + '.c2.thc.thc-sample-countsL')
+        rC('grid','forget',fparam + '.c2.thc.thc-sample-threshold')
+        rC('grid','forget',fparam + '.c2.thc.thc-sample-thresholdL')
         rC('grid','forget',fparam + '.c2.thc.thc-threshold')
         rC('grid','forget',fparam + '.c2.thc.thc-thresholdL')
         rC('grid','forget',fparam + '.c2.thc.pid-i-gain')
@@ -148,10 +154,10 @@ def mode_changed():
         rC('grid','forget',fparam + '.c3.arc.arc-ok-low')
         rC('grid','forget',fparam + '.c3.arc.arc-ok-lowL')
     else:
-        rC('grid',fparam + '.c3.arc.arc-ok-highL','-column',0,'-row',5,'-sticky','e')
-        rC('grid',fparam + '.c3.arc.arc-ok-high','-column',1,'-row',5)
-        rC('grid',fparam + '.c3.arc.arc-ok-lowL','-column',0,'-row',6,'-sticky','e')
-        rC('grid',fparam + '.c3.arc.arc-ok-low','-column',1,'-row',6)
+        rC('grid',fparam + '.c3.arc.arc-ok-highL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-ok-high','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-ok-lowL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-ok-low','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,0))
     if pVars.plasmacMode.get() < 2:
         rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','w')
         rC('grid',fplasma + '.arcvl','-column',0,'-row',0,'-sticky','nw')
@@ -160,20 +166,34 @@ def mode_changed():
         rC('grid',fleds + '.lKLlab',         '-column',5,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
         rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
         rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
-        rC('grid',fparam + '.c2.thc.thc-delayL','-column',0,'-row',0,'-sticky','e')
-        rC('grid',fparam + '.c2.thc.thc-delay','-column',1,'-row',0)
-        rC('grid',fparam + '.c2.thc.thc-thresholdL','-column',0,'-row',1,'-sticky','e')
-        rC('grid',fparam + '.c2.thc.thc-threshold','-column',1,'-row',1)
-        rC('grid',fparam + '.c2.thc.pid-i-gainL','-column',0,'-row',3,'-sticky','e')
-        rC('grid',fparam + '.c2.thc.pid-i-gain','-column',1,'-row',3)
-        rC('grid',fparam + '.c2.thc.pid-d-gainL','-column',0,'-row',4,'-sticky','e')
-        rC('grid',fparam + '.c2.thc.pid-d-gain','-column',1,'-row',4)
-        rC('grid',fparam + '.c2.thc.kerfcross-overrideL','-column',0,'-row',6,'-sticky','e')
-        rC('grid',fparam + '.c2.thc.kerfcross-override','-column',1,'-row',6)
-        rC('grid',fparam + '.c3.arc.arc-voltage-scaleL','-column',0,'-row',3,'-sticky','e')
-        rC('grid',fparam + '.c3.arc.arc-voltage-scale','-column',1,'-row',3)
-        rC('grid',fparam + '.c3.arc.arc-voltage-offsetL','-column',0,'-row',4,'-sticky','e')
-        rC('grid',fparam + '.c3.arc.arc-voltage-offset','-column',1,'-row',4)
+        rC('grid',fparam + '.c2.thc.thc-autoL','-column',0,'-row',0,'-sticky','e')
+        rC('grid',fparam + '.c2.thc.thc-auto','-column',1,'-row',0,'-sticky','e','-padx',(0,4))
+        if pVars.thcAuto.get():
+            rC('grid','forget',fparam + '.c2.thc.thc-delay')
+            rC('grid','forget',fparam + '.c2.thc.thc-delayL')
+            rC('grid',fparam + '.c2.thc.thc-sample-countsL','-column',0,'-row',2,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fparam + '.c2.thc.thc-sample-counts','-column',1,'-row',2,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+            rC('grid',fparam + '.c2.thc.thc-sample-thresholdL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fparam + '.c2.thc.thc-sample-threshold','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        else:
+            rC('grid','forget',fparam + '.c2.thc.thc-sample-counts')
+            rC('grid','forget',fparam + '.c2.thc.thc-sample-countsL')
+            rC('grid','forget',fparam + '.c2.thc.thc-sample-threshold')
+            rC('grid','forget',fparam + '.c2.thc.thc-sample-thresholdL')
+            rC('grid',fparam + '.c2.thc.thc-delayL','-column',0,'-row',1,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+            rC('grid',fparam + '.c2.thc.thc-delay','-column',1,'-row',1,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.thc-thresholdL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.thc-threshold','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.pid-i-gainL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.pid-i-gain','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.pid-d-gainL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.pid-d-gain','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.kerfcross-overrideL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.kerfcross-override','-column',1,'-row',9,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-voltage-scaleL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-voltage-scale','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-voltage-offsetL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c3.arc.arc-voltage-offset','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,0))
     hal.set_p('plasmac.mode', str(pVars.plasmacMode.get()))
 
 def cone_size_changed():
@@ -730,8 +750,9 @@ def param_changed(widget, value):
 
 def validate_spinbox(widget, spinType, resolution, value, original):
     dbPrint = True if (not firstRun and comp['development']) else False
+    if dbPrint: print('validating', widget)
     if value == '':
-        if comp['development']: print('blank = still valid')
+        if dbPrint: print('blank = still valid')
         return True
     minval = float(rC(widget,'cget','-from')) if spinType == 'flt' else int(rC(widget,'cget','-from'))
     maxval = float(rC(widget,'cget','-to')) if spinType == 'flt' else int(rC(widget,'cget','-to'))
@@ -790,10 +811,14 @@ def load_param_clicked():
             title = _('Parameter Error')
             msg = _('Invalid parameter for')
             messagebox.showerror(title, '{}:\n\n{}'.format(msg, widget[8]))
+            continue
         # convert to int here if required
         value = value if widget[2] > 0 else int(value)
         rC(fparam + widget[0] + '.' + widget[1],'set',value)
         widgetValues[fparam + widget[0] + '.' + widget[1]] = value
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', False, bool)
+    pVars.thcAuto.set(value)
+    mode_changed()
 
 def save_param_clicked():
     for widget in cpList:
@@ -802,6 +827,8 @@ def save_param_clicked():
             putPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), value, float)
         else:
             putPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), value, int)
+    value = pVars.thcAuto.get()
+    putPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', value, bool)
 
 def load_setup_clicked():
     rC(fsetup + '.l.jog.speed','set',restoreSetup['jogSpeed'])
@@ -2721,6 +2748,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     # tk widget variables
     pVars = nf.Variables(root_window,
              ('plasmatool', StringVar),
+             ('thcAuto', BooleanVar),
              ('thcEnable', BooleanVar),
              ('cornerEnable', BooleanVar),
              ('kerfEnable', BooleanVar),
@@ -3468,6 +3496,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('labelframe',fparam + '.c3.arc','-text','Arc','-relief','groove')
     rC('labelframe',fparam + '.c4.scribe','-text','Scribe','-relief','groove')
     rC('labelframe',fparam + '.c4.spotting','-text','Spotting','-relief','groove')
+    rC('label',fparam + '.c2.thc.thc-autoL','-text','Auto','-width',15,'-anchor','e')
+    rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC(fparam + '.c2.thc.thc-auto','configure','-variable','thcAuto','-command','mode_changed')
     #  (parent, name, label text, prefs option)
     cp1=['.c1.probe','float-switch-travel','Float Travel','Float Switch Travel']
     # decimals, value, min, max, increment,
@@ -3489,8 +3520,10 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     cpList = [cp1, cp2, cp3, cp4, \
               ['.c1.probe','ohmic-max-attempts',0,0,0,10,1,'Ohmic Retries','Ohmic Maximum Attempts'], \
               cp5, cp6, \
-              ['.c2.thc','thc-delay',1,0.5,0,9,0.1,'Delay','THC Delay'], \
-              ['.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Threshold (V)','THC Threshold'], \
+              ['.c2.thc','thc-delay',1,0.5,0,9,0.1,'Start Delay','THC Delay'], \
+              ['.c2.thc','thc-sample-counts',0,50,10,1000,1,'Auto Counts','THC Sample Counts'], \
+              ['.c2.thc','thc-sample-threshold',1,1,0.1,9,0.1,'Auto Threshold (V)','THC Sample Threshold'], \
+              ['.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Cut Threshold (V)','THC Threshold'], \
               ['.c2.thc','pid-p-gain',0,10,0,1000,1,'PID P Gain (Speed)','Pid P Gain'], \
               ['.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
               ['.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
@@ -3516,6 +3549,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
         if cpItem[0] != cpFrame:
             cpFrame = cpItem[0]
             cpRow = 0
+        if cpItem[1] == 'thc-delay':
+            cpRow += 1
         cpName = fparam + cpItem[0] + '.' + cpItem[1]
         cpType = 'flt' if cpItem[2] > 0 else 'int'
         rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
@@ -3524,7 +3559,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
         rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
         rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
-        if cpItem[7] == 'Setup Speed':
+        if cpItem[1] == 'setup-feed-rate':
             rC('label',fparam + cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
             rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',10,'-anchor','e')
             rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
@@ -3848,6 +3883,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     hal.set_p('plasmac.thc-feed-rate', '{}'.format(thcFeedRate))
     pVars.previewLarge.set(False)
     pVars.laserText.set(_('Laser'))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', False, bool)
+    pVars.thcAuto.set(value)
     value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC enable', False, bool)
     pVars.thcEnable.set(value)
     hal.set_p('plasmac.thc-enable', str(value))
