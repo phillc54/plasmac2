@@ -386,6 +386,7 @@ def conv_toggle(state, convSent=False):
                 if 'shape.ngc' in loaded_file:
                     COPY(preConvFile, loaded_file)
                 open_file_guts(loaded_file, True, False)
+                commands.set_view_z()
             else:
                 clear_program()
         root_window.update_idletasks()
@@ -476,12 +477,7 @@ def enable_menus(state):
 ##############################################################################
 def open_file_name(f):
     open_file_guts(f)
-    if str(widgets.view_z['relief']) == 'sunken':
-        commands.set_view_z()
-    elif str(widgets.view_t['relief']) == 'sunken':
-        commands.set_view_t()
-    else:
-        commands.set_view_p()
+    commands.set_view_z()
     if o.canon is not None:
         x = (o.canon.min_extents[0] + o.canon.max_extents[0])/2
         y = (o.canon.min_extents[1] + o.canon.max_extents[1])/2
@@ -1132,6 +1128,7 @@ def single_cut():
     if loaded_file != scFile:
         pVars.preRflFile.set(loaded_file)
     open_file_guts(scFile, False, False)
+    commands.set_view_z()
 
 
 ##############################################################################
@@ -1549,6 +1546,7 @@ def reload_file(refilter=True):
     else:
         tempfile = os.path.join(tempdir, os.path.basename(f))
         open_file_guts(tempfile, True, False)
+    commands.set_view_z()
     if line:
         o.set_highlight_line(line)
 
@@ -1597,6 +1595,7 @@ def task_run_line():
             if loaded_file != os.path.join(tmpPath, 'rfl.ngc'):
                 pVars.preRflFile.set(loaded_file)
             open_file_guts(os.path.join(tmpPath, 'rfl.ngc'), False, False)
+            commands.set_view_z()
 
 def task_stop(*event):
     if s.task_mode == linuxcnc.MODE_AUTO and vars.running_line.get() != 0:
