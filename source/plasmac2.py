@@ -1029,13 +1029,13 @@ def joint_mode_switch(a, b, c):
     global lastMotionMode
     if vars.motion_mode.get() == linuxcnc.TRAJ_MODE_FREE and s.kinematics_type != linuxcnc.KINEMATICS_IDENTITY:
         rC('grid','forget',fmanual + '.axes')
-        rC('grid',fmanual + '.joints','-column','0','-row','0','-padx','2','-sticky','ew')
+        rC('grid',fmanual + '.joints','-column','0','-row','0','-padx','2','-sticky','w')
         widget = getattr(widgets, 'joint_%d' % 0)
         widget.focus()
         vars.ja_rbutton.set(0)
     elif lastMotionMode == linuxcnc.TRAJ_MODE_FREE or not lastMotionMode:
         rC('grid','forget',fmanual + '.joints')
-        rC('grid',fmanual + '.axes','-column','0','-row','0','-padx','2','-sticky','ew')
+        rC('grid',fmanual + '.axes','-column','0','-row','0','-padx','2','-sticky','w')
         widget = getattr(widgets, 'axis_%s' % first_axis)
         widget.focus()
         vars.ja_rbutton.set(first_axis)
@@ -3140,6 +3140,11 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('grid',stats + '.runB','-column',3,'-row',8,'-padx',(16,0),'-pady',(8,0))
     rC('pack',stats,'-fill','both','-expand',True,'-padx',2,'-pady',2)
 
+    # reduce margins on manual/mdi tabs
+    rC(ftabs,'configure','-internalborderwidth',1)
+    rC('grid','columnconfigure',fmanual,0,'-weight',1)
+    rC('grid','columnconfigure',fmanual,99,'-weight',0)
+
     # destroy existing axes and joints
     rC('destroy',faxes)
     rC('destroy',fjoints)
@@ -3211,7 +3216,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('grid',fjogf + '.zerohome.zero','-row',0,'-column',1,'-padx',(0,6))
     rC('grid',fjogf + '.zerohome.zeroxy','-row',0,'-column',2,'-padx',(0,6))
     rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','w')
-    rC('grid',fjogf,'-column','0','-row',1,'-padx',2,'-pady',(0,0),'-sticky','w')
+    rC('grid',fjogf,'-column',0,'-row',1,'-padx',2,'-pady',(0,0),'-sticky','w')
 
     # make home button a home all button if required
     if homing_order_defined:
@@ -3275,19 +3280,19 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
     rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg',ourBlue)
     rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
-    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable')
+    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',14)
     rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
-    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock')
+    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',14)
     rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
-    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock')
+    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',14)
     # populate the frame
-    rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','w')
-    rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','w')
-    rC('grid',fplasma + '.vel','-column',2,'-row',1,'-sticky','w')
-    rC('grid',fplasma + '.velL','-column',3,'-row',1,'-sticky','w')
-    rC('grid',fplasma + '.void','-column',2,'-row',2,'-sticky','w')
-    rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','w')
-    rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','sew')
+    rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e')
+    rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','e')
+    rC('grid',fplasma + '.vel','-column',2,'-row',1,'-sticky','e')
+    rC('grid',fplasma + '.velL','-column',3,'-row',1,'-sticky','e')
+    rC('grid',fplasma + '.void','-column',2,'-row',2,'-sticky','e')
+    rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','e')
+    rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','ew')
     rC('grid','columnconfigure',fplasma,1,'-weight',1)
 
     # hide bottom pane until modified
