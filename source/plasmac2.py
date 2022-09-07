@@ -541,14 +541,14 @@ def gcode_properties(event=None, reply=None):
 
 def get_view():
     x,y,z,p = 0,1,2,3
-    if str(widgets.view_x['relief']) == "sunken":
+    if str(widgets.view_x['relief']) == 'sunken':
         view = x
-    elif (str(widgets.view_y['relief']) == "sunken" or
-         str(widgets.view_y2['relief']) == "sunken"):
+    elif (str(widgets.view_y['relief']) == 'sunken' or
+         str(widgets.view_y2['relief']) == 'sunken'):
         view = y
-    elif (str(widgets.view_z['relief']) == "sunken" or
-          str(widgets.view_z2['relief']) == "sunken" or
-          str(widgets.view_t['relief']) == "sunken"):
+    elif (str(widgets.view_z['relief']) == 'sunken' or
+          str(widgets.view_z2['relief']) == 'sunken' or
+          str(widgets.view_t['relief']) == 'sunken'):
         view = z
     else:
         view = p
@@ -556,35 +556,35 @@ def get_view():
 
 def set_view_z(event=None):
     widgets.view_z.configure(relief='sunken')
-    widgets.view_z2.configure(relief="link")
-    widgets.view_x.configure(relief="link")
-    widgets.view_y.configure(relief="link")
-    widgets.view_y2.configure(relief="link")
+    widgets.view_z2.configure(relief='link')
+    widgets.view_x.configure(relief='link')
+    widgets.view_y.configure(relief='link')
+    widgets.view_y2.configure(relief='link')
     widgets.view_t.configure(relief='link')
     widgets.view_p.configure(relief='link')
     vars.view_type.set(1)
     o.set_view_z()
 
 def set_view_p(event=None):
-    widgets.view_z.configure(relief="link")
-    widgets.view_z2.configure(relief="link")
-    widgets.view_x.configure(relief="link")
-    widgets.view_y.configure(relief="link")
-    widgets.view_y2.configure(relief="link")
+    widgets.view_z.configure(relief='link')
+    widgets.view_z2.configure(relief='link')
+    widgets.view_x.configure(relief='link')
+    widgets.view_y.configure(relief='link')
+    widgets.view_y2.configure(relief='link')
     widgets.view_t.configure(relief='link')
-    widgets.view_p.configure(relief="sunken")
+    widgets.view_p.configure(relief='sunken')
     vars.view_type.set(5)
     o.set_view_p()
 
 def set_view_t(event=None, scale=None):
     zoomScale = scale if scale else float(rC(fsetup + '.l.gui.zoom','get'))
     widgets.view_z.configure(relief='link')
-    widgets.view_z2.configure(relief="link")
-    widgets.view_x.configure(relief="link")
-    widgets.view_y.configure(relief="link")
-    widgets.view_y2.configure(relief="link")
+    widgets.view_z2.configure(relief='link')
+    widgets.view_x.configure(relief='link')
+    widgets.view_y.configure(relief='link')
+    widgets.view_y2.configure(relief='link')
     widgets.view_t.configure(relief='sunken')
-    widgets.view_p.configure(relief="link")
+    widgets.view_p.configure(relief='link')
     vars.view_type.set(5)
     mult = 1/25.4 if s.linear_units == 1 else 1
     xLen = machineBounds['xLen'] * mult
@@ -615,15 +615,15 @@ def draw_grid():
             inverse_permutations[2])
 
 def get_view_type():
-    if str(widgets.view_x['relief']) == "sunken":
+    if str(widgets.view_x['relief']) == 'sunken':
         view = 'x'
-    elif (str(widgets.view_y['relief']) == "sunken" or
-         str(widgets.view_y2['relief']) == "sunken"):
+    elif (str(widgets.view_y['relief']) == 'sunken' or
+         str(widgets.view_y2['relief']) == 'sunken'):
         view = 'y'
-    elif (str(widgets.view_z['relief']) == "sunken" or
-          str(widgets.view_z2['relief']) == "sunken"):
+    elif (str(widgets.view_z['relief']) == 'sunken' or
+          str(widgets.view_z2['relief']) == 'sunken'):
         view = 'z'
-    elif (str(widgets.view_t['relief']) == "sunken"):
+    elif (str(widgets.view_t['relief']) == 'sunken'):
         view = 't'
     else:
         view = 'p'
@@ -864,7 +864,7 @@ def save_setup_clicked():
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Mode', restoreSetup['plasmacMode'], int)
     restoreSetup['closeDialog'] = pVars.closeDialog.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Exit warning', restoreSetup['closeDialog'], str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Exit warning', restoreSetup['closeDialog'], bool)
     restoreSetup['winSize'] = pVars.winSize.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Window size', restoreSetup['winSize'], str)
     restoreSetup['fontSize'] = pVars.fontSize.get()
@@ -1337,7 +1337,7 @@ def bounds_check(boundsType, xOffset , yOffset):
         xMin = xMax = xOffset
         yMin = yMax = yOffset
 #FIXME: CAN WE USE VARS.METRIC.GET() INSTEAD OF GCUNITS ABOVE
-    #print("vars.metric:{}  gcUnits:{}".format(vars.metric.get(), gcUnits))
+    #print('vars.metric:{}  gcUnits:{}'.format(vars.metric.get(), gcUnits))
     if s.linear_units == 1 and gcUnits == 'in':
         reportMultipler = 0.03937
     elif s.linear_units != 1 and gcUnits == 'mm':
@@ -3625,7 +3625,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC(fsetup + '.l.jog.speed','configure','-format','%0.0f')
     rC(fsetup + '.l.jog.speed','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'int',0))
     spinBoxes.append(fsetup + '.l.jog.speed')
-    # populate plasmac frame
+    # populate jog frame
     rC('grid',fsetup + '.l.jog.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.l.jog.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.jog',0,'-weight',1)
@@ -4115,7 +4115,7 @@ def user_hal_pins():
 
 
 ##############################################################################
-# UPDATE FUNCTION - CALLED FROM AXIS EVERY CYCLE                             #
+# PERIODIC FUNCTION - CALLED FROM AXIS EVERY CYCLE                             #
 ##############################################################################
 def user_live_update():
     # don't do any updates until first run is complete.
