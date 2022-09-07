@@ -844,6 +844,9 @@ def load_setup_clicked():
     if pVars.matDefault.get() != restoreSetup['matDefault']:
         pVars.matDefault.set(restoreSetup['matDefault'])
         display_selected_material(restoreSetup['matDefault'])
+    if pVars.kbShortcuts.get() != restoreSetup['kbShortcuts']:
+        pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
+        keyboard_shortcuts_changed(restoreSetup['kbShortcuts'])
     if int(rC(fsetup + '.l.cr.speed','get')) == restoreSetup['crPercent']:
         rC(fcutrec + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     else:
@@ -874,6 +877,8 @@ def save_setup_clicked():
     restoreSetup['crPercent'] = rC(fsetup + '.l.cr.speed','get')
     putPrefs(PREF,'GUI_OPTIONS', 'Cut recovery speed %', restoreSetup['crPercent'], int)
     rC(fcutrec + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
+    restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
     user_button_save()
 
 
@@ -2638,6 +2643,196 @@ def get_button_num(name):
             break
     return num
 
+
+##############################################################################
+# HELP TEXT                                                                      #
+##############################################################################
+def set_help_text():
+    global help1, help2
+    help1 = [
+        ('ESC', _('Abort')),
+        ('', ''),
+        ('F1', _('Emergency stop')),
+        ('F2', _('Machine on/off')),
+        ('F3', _('Manual tab')),
+        ('F4', _('Cycle through right side tabs')),
+        ('F5', _('MDI tab')),
+        ('F9', _('Manual cut start/stop')),
+        ('', ''),
+        ('X', _('Activate first axis')),
+        ('Y', _('Activate second axis')),
+        ('Z', _('Activate third axis')),
+        ('A', _('Activate fourth axis')),
+        ('B', _('Activate fifth axis')),
+        ('', ''),
+        ('C', _('Select continuous jog')),
+        (_('I or Shift+ I'), _('Select jog increment')),
+        (_('Left or Right'), _('Jog first axis or joint')),
+        (_('Up or Down'), _('Jog second axis or joint')),
+        (_('Pg Up, Pg Dn'), _('Jog third axis or joint')),
+        ('[ or ]', _('Jog fourth axis or joint')),
+        ('; or \'', _('Jog fifth axis or joint')),
+        (_('Shift+ above jog'), _('Jog at traverse speed')),
+    ]
+    help2 = [
+        ('Joint Mode:', ''),
+        ('` or 0 ~ 8', _('Activate joints 1 thru 9')),
+        ('', ''),
+        ('World Mode:', ''),
+        ('` or 1 ~ 0', _('Feed override from 0% to 100%')),
+        ('Ctrl+ ` or 1 ~ 0', _('Rapid oOverride from 0% to 100%')),
+        ('Alt+ ` or 1 ~ 0', _('Jog speed from 0% to 100%')),
+
+        ('', ''),
+        (_('Home'), _('Home active joint')),
+         (_('Ctrl+ Home'), _('Emulate GUI home button')),
+        (_('End'), _('Touchoff X and Y to zero')),
+        (_('Shift+ End'), _('Touchoff active axis to zero')),
+        (_('Ctrl+ End'), _('Set touchoff for current axis')),
+        (_('Del'), _('Emulate GUI laser button')),
+        ('', ''),
+        ('O', _('Open program')),
+        ('R', _('Run program')),
+        ('T', _('Step program')),
+        ('P', _('Pause program')),
+        ('S', _('Resume program')),
+        (_('Ctrl-R'), _('Reload program')),
+        (_('Ctrl-S'), _('Save G-code as')),
+        ('', ''),
+        (_('Ctrl-K'), _('Clear live plot')),
+        (_('Ctrl-Space'), _('Clear notifications')),
+    ]
+
+##############################################################################
+# KEYBOARD BINDINGS                                                                      #
+##############################################################################
+def key_pressed(key):
+    global keyDelay
+    if keyDelay[key]:
+        root_window.after_cancel(keyDelay[key])
+        keyDelay[key] = None
+        return
+    if key == 'delete':
+        commands.laser_button_toggled('1', 1)
+
+def key_off(key):
+    global keyDelay
+    keyDelay[key] = None
+    if key == 'delete':
+        commands.laser_button_toggled('0', 1)
+
+def key_released(key):
+    global keyDelay
+    if keyDelay[key]:
+        return
+    keyDelay[key] = root_window.after_idle(lambda: key_off(key))
+
+def kb_shortcuts_changed():
+    keyboard_shortcuts_changed(pVars.kbShortcuts.get())
+
+def keyboard_shortcuts_changed(state):
+    if firstRun:
+        set_help_text()
+    # delete kb shortcuts from help menu
+    rC('.menu.help','delete','last')
+    # remove current bindings
+    root_window.unbind_class('all', '<Key-F1>')
+    for k in range(1, 13):
+        root_window.unbind('<Key-F{}>'.format(k))
+    for k in range(10):
+        root_window.unbind(k)
+    for k in ['a','b','c','d','i','l','o','p','r','s','t','v','x','y','z','B','F','I','R','`','!','@','#','$']:
+        root_window.unbind(k)
+    for k in ['<Home>','<End>','<Key-Return>','<KeyPress-minus>','<KeyPress-equal>','<KP_Home>',
+              '<KP_End>','<Key-KP_Enter>','<KeyPress-KP_Begin>''<KeyPress-KP_Insert>']:
+        root_window.unbind(k)
+    for k in ['Left','Right','Down','Up','Next','Prior','KP_Left','KP_Right','KP_Down','KP_Up','KP_Next',
+              'KP_Prior','KP_4','KP_6','KP_2','KP_8','KP_3','KP_9','bracketleft','bracketright']:
+        root_window.unbind('<KeyPress-{}>'.format(k))
+        root_window.unbind('<KeyRelease-{}>'.format(k))
+        root_window.unbind('<Shift-KeyPress-{}>'.format(k))
+    for k in ['<Alt-p>','<Shift-Home>','<Shift-KP_Home>','<Control-Shift-H>']:
+        root_window.unbind(k)
+    for k in ['e','h','k','m','r','s','Home','End','KP_Home']:
+        root_window.unbind('<Control-{}>'.format(k))
+    # create new key bindings if enabled
+    if state:
+        # Escape
+        root_window.bind('<Escape>', commands.task_stop)
+        # F keys
+        root_window.bind_class('all', '<Key-F1>', commands.estop_clicked)
+        root_window.bind('<Key-F2>', commands.onoff_clicked)
+        root_window.bind('<Key-F3>', pane_top + '.tabs raise manual')
+        root_window.bind('<Key-F4>', commands.next_tab)
+        root_window.bind('<Key-F5>', pane_top + '.tabs raise mdi')
+        root_window.bind('<Key-F5>', '+' + tabs_mdi + '.command selection range 0 end')
+        root_window.bind('<Key-F9>', commands.manual_cut)
+        # axis selection
+        root_window.bind('x', lambda event: activate_ja_widget('x'))
+        root_window.bind('y', lambda event: activate_ja_widget('y'))
+        root_window.bind('z', lambda event: activate_ja_widget('z'))
+        root_window.bind('a', lambda event: activate_ja_widget('a'))
+        root_window.bind('b', lambda event: activate_ja_widget('b'))
+        #jogging
+        root_window.bind("c", lambda event: jogspeed_continuous())
+        root_window.bind("i", lambda event: jogspeed_incremental())
+        root_window.bind("I", lambda event: jogspeed_incremental(-1))
+        bind_axis('Left', 'Right', 0)
+        bind_axis('Down', 'Up', 1)
+        bind_axis('Next', 'Prior', 2)
+        bind_axis('KP_Left', 'KP_Right', 0)
+        bind_axis('KP_Down', 'KP_Up', 1)
+        bind_axis('KP_Next', 'KP_Prior', 2)
+        bind_axis('KP_4', 'KP_6', 0)
+        bind_axis('KP_2', 'KP_8', 1)
+        bind_axis('KP_3', 'KP_9', 2)
+        bind_axis('bracketleft', 'bracketright', 3)
+        bind_axis('semicolon', 'quoteright', 4)
+        # sliders
+        root_window.bind('`', lambda event: activate_ja_widget_or_set_feedrate(0))
+        root_window.bind('<Control-Key-quoteleft>',lambda event: set_rapidrate(0))
+        root_window.bind('<Alt-Key-quoteleft>',lambda event: set_jog_slider(0.0))
+        for n in range(10):
+            rate = n if n > 0 else 10
+            def make_lambda(func, value):
+                return lambda event:func(value)
+            root_window.bind('{}'.format(n), make_lambda(activate_ja_widget_or_set_feedrate, rate))
+            root_window.bind('<Control-Key-{}>'.format(n), make_lambda(set_rapidrate, rate * 10))
+            root_window.bind('<Alt-Key-{}>'.format(n), make_lambda(set_jog_slider, rate * 0.1))
+        # homing
+        root_window.bind('<Home>', commands.home_joint)
+        root_window.bind('<Shift-Home>', '#nothing')
+        if homing_order_defined:
+            root_window.bind('<Control-Home>', commands.home_all_joints)
+            root_window.bind('<Key-KP_Home>', kp_wrap(commands.home_all_joints, 'KeyPress'))
+        else:
+            root_window.bind('<Control-Home>', commands.home_joint)
+            root_window.bind('<Key-KP_Home>', kp_wrap(commands.home_joint, 'KeyPress'))
+        # touchoff
+        root_window.bind('<End>', lambda event: commands.touch_off_xy('0', 0, 0))
+        root_window.bind('<KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
+        root_window.bind('<Control-End>', commands.touch_off_system)
+        root_window.bind('<Shift-End>', commands.set_axis_offset)
+        root_window.bind('<Key-KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
+        root_window.bind('<Key-Delete>', lambda event: commands.key_pressed('delete'))
+        root_window.bind('<KeyRelease-Delete>', lambda event: commands.key_released('delete'))
+        root_window.bind('<Key-KP_Delete>', lambda event: commands.key_pressed('delete'))
+        root_window.bind('<KeyRelease-KP_Delete>', lambda event: commands.key_released('delete'))
+        # program
+        root_window.bind('o', commands.open_file)
+        root_window.bind('r', commands.task_run)
+        root_window.bind('p', commands.task_pause)
+        root_window.bind('s', commands.task_resume)
+        root_window.bind('<Control-r>', commands.reload_file)
+        root_window.bind('<Control-s>', commands.save_gcode)
+
+        root_window.bind('<Control-k>', commands.clear_live_plot)
+        root_window.bind('<Control-space>', lambda event: notifications.clear())
+        # add kb shortcuts to help menu
+        rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
+        rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
+
+
 ##############################################################################
 # SETUP                                                                      #
 ##############################################################################
@@ -2756,6 +2951,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
              ('meshEnable', BooleanVar),
              ('ignorArcOk', BooleanVar),
              ('closeDialog', BooleanVar),
+             ('kbShortcuts', BooleanVar),
              ('winSize', StringVar),
              ('startLine', IntVar),
              ('rflActive', BooleanVar),
@@ -2876,6 +3072,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     convViewOptions = {}
     lastViewType = None
     preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
+    keyDelay = {'delete': None}
     pmx485 = {'exists':False}
     spinBoxes = []
     widgetValues = {}
@@ -2957,6 +3154,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     TclCommands.reset_all_stats = reset_all_stats
     TclCommands.set_peripheral_offsets = set_peripheral_offsets
     TclCommands.update_plasmac2 = update_plasmac2
+    TclCommands.kb_shortcuts_changed = kb_shortcuts_changed
+    TclCommands.key_pressed = key_pressed
+    TclCommands.key_released = key_released
     commands = TclCommands(root_window)
 
 
@@ -3375,9 +3575,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('setup_menu_accel','.menu','end',_('_Setup'))
     rC('.menu','add','cascade','-menu','.menu.help')
     rC('setup_menu_accel','.menu','end',_('_Help'))
-    rC('.menu.help','add','separator')
-    rC('.menu.help','add','command','-command','update_plasmac2')
-    rC('setup_menu_accel','.menu.help','end',_('_Update'))
+    rC('.menu.help','insert',0,'command','-command','update_plasmac2')
+    rC('setup_menu_accel','.menu.help',0,_('_Update'))
+    rC('.menu.help','insert',1,'separator')
 
     # rework the status bar
     rC('grid','forget',ftop + '.gcodel')
@@ -3606,6 +3806,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite,'-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
     spinBoxes.append(fsetup + '.l.gui.zoom')
+    rC('label',fsetup + '.l.gui.kbShortcutsL','-text','Use KB Shortcuts','-anchor','e')
+    rC('checkbutton',fsetup + '.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
     # populate gui frame
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
@@ -3617,6 +3819,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.kbShortcutsL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.kbShortcuts','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
 #    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
@@ -3821,51 +4025,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     # change jog slider resolution
     rC('.pane.top.jogspeed.s', 'configure','-resolution',0.00001)
 
-    # change some existing help text
-    dels = [24,23,22,20,19,18,17]
-    for d in dels:
-        del help1[d]
-    del help1[4]
-    help1.insert(10,('Control+ `,1..9,0', _('Set Rapid Override from 0% to 100%')),)
-    help1.insert(11,('Alt+ `,1..9,0', _('Set Jog Speed from 0% to 100%')),)
-
-    # remove redundant bindings
-    root_window.unbind('R') # reverse
-    root_window.unbind('F') # forward
-    root_window.unbind('<Key-F7>') # mist toggle
-    root_window.unbind('<Key-F8>') # flood toggle
-    root_window.unbind('<Key-F9>') # spindle forward toggle
-    root_window.unbind('<Key-F10>') # spindle backward toggle
-    root_window.unbind('<Key-F11>') # spindle decrease
-    root_window.unbind('<Key-F12>') # spindle increase
-    root_window.unbind('B') # brake on
-    root_window.unbind('b') # brake off
-
-    # new key bindings
-    root_window.bind('<Escape>', commands.task_stop)
-    root_window.bind('<Key-F9>', commands.manual_cut)
-    root_window.bind('<Control-Key-quoteleft>',lambda event: set_rapidrate(0))
-    root_window.bind('<Control-Key-1>',lambda event: set_rapidrate(10))
-    root_window.bind('<Control-Key-2>',lambda event: set_rapidrate(20))
-    root_window.bind('<Control-Key-3>',lambda event: set_rapidrate(30))
-    root_window.bind('<Control-Key-4>',lambda event: set_rapidrate(40))
-    root_window.bind('<Control-Key-5>',lambda event: set_rapidrate(50))
-    root_window.bind('<Control-Key-6>',lambda event: set_rapidrate(60))
-    root_window.bind('<Control-Key-7>',lambda event: set_rapidrate(70))
-    root_window.bind('<Control-Key-8>',lambda event: set_rapidrate(80))
-    root_window.bind('<Control-Key-9>',lambda event: set_rapidrate(90))
-    root_window.bind('<Control-Key-0>',lambda event: set_rapidrate(100))
-    root_window.bind('<Alt-Key-quoteleft>',lambda event: set_jog_slider(0.0))
-    root_window.bind('<Alt-Key-1>',lambda event: set_jog_slider(0.1))
-    root_window.bind('<Alt-Key-2>',lambda event: set_jog_slider(0.2))
-    root_window.bind('<Alt-Key-3>',lambda event: set_jog_slider(0.3))
-    root_window.bind('<Alt-Key-4>',lambda event: set_jog_slider(0.4))
-    root_window.bind('<Alt-Key-5>',lambda event: set_jog_slider(0.5))
-    root_window.bind('<Alt-Key-6>',lambda event: set_jog_slider(0.6))
-    root_window.bind('<Alt-Key-7>',lambda event: set_jog_slider(0.7))
-    root_window.bind('<Alt-Key-8>',lambda event: set_jog_slider(0.8))
-    root_window.bind('<Alt-Key-9>',lambda event: set_jog_slider(0.9))
-    root_window.bind('<Alt-Key-0>',lambda event: set_jog_slider(1.0))
 
     # remove all tooltips
     rC('DynamicHelp::delete','ftabs_manual.axes.axisx')
@@ -3926,6 +4085,10 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
     restoreSetup['crPercent'] = value
     rC(fsetup + '.l.cr.speed','set',value)
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
+    pVars.kbShortcuts.set(value)
+    restoreSetup['kbShortcuts'] = value
+    keyboard_shortcuts_changed(value)
     statDivisor = 1000 if unitsPerMm == 1 else 1
     statSuffix = 'M' if unitsPerMm == 1 else '"'
     # we bring in some ints as floats so we can read QtPlasmaC statistics
