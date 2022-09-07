@@ -3606,19 +3606,19 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.wsizeL','-column',0,'-row',1,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','w','-padx',(0,4),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','e','-padx',(0,4),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.fsizeL','-column',0,'-row',2,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.coneL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
-    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
+#    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
     # jog frame
     rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
-    rC('label',fsetup + '.l.jog.speedL','-width', 13,'-text','Units Per Minute','-anchor','e')
+    rC('label',fsetup + '.l.jog.speedL','-width', 14,'-text','Units Per Minute','-anchor','e')
     rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
@@ -3627,9 +3627,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     spinBoxes.append(fsetup + '.l.jog.speed')
     # populate jog frame
     rC('grid',fsetup + '.l.jog.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.jog.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.jog.speed','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.jog',0,'-weight',1)
-    rC('grid','columnconfigure',fsetup + '.l.jog',1,'-weight',1)
+#    rC('grid','columnconfigure',fsetup + '.l.jog',1,'-weight',1)
 
     # plasmac frame
     rC('labelframe',fsetup + '.l.plasmac','-text','Plasmac','-relief','groove')
@@ -3638,9 +3638,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC(fsetup + '.l.plasmac.mode','configure','-values',[0,1,2])
     # populate plasmac frame
     rC('grid',fsetup + '.l.plasmac.modeL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.plasmac',0,'-weight',1)
-    rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
+#    rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
 
     # material frame
     rC('labelframe',fsetup + '.l.mats','-text','Material','-relief','groove')
@@ -3648,9 +3648,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',10,'-justify','right','-editable',0)
     # populate material frame
     rC('grid',fsetup + '.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.mats',0,'-weight',1)
-    rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
+#    rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
 
     # cut recovery frame
     rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
@@ -3663,9 +3663,9 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     spinBoxes.append(fsetup + '.l.cr.speed')
     # populate cut recovery frame
     rC('grid',fsetup + '.l.cr.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.cr.speed','-column',1,'-row',0,'-sticky','w','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.cr.speed','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.cr',0,'-weight',1)
-    rC('grid','columnconfigure',fsetup + '.l.cr',1,'-weight',1)
+#    rC('grid','columnconfigure',fsetup + '.l.cr',1,'-weight',1)
     #populate left panel
     rC('grid',fsetup + '.l.gui','-column',0,'-row',0,'-sticky','new')
     rC('grid',fsetup + '.l.jog','-column',0,'-row',1,'-sticky','new')
