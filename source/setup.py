@@ -93,7 +93,7 @@ class Setup:
             elif os.path.isdir(newDir):
                 rmtree(newDir)
         try:
-            copytree(oldDir, newDir)
+            copytree(oldDir, newDir, ignore=ignore_patterns('qtplasmac'))
             with open(newIni, 'r') as inFile:
                 config = inFile.readlines()
             # [DISPLAY] section
