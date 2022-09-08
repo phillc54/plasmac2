@@ -93,7 +93,9 @@ class Setup:
             elif os.path.isdir(newDir):
                 rmtree(newDir)
         try:
-            copytree(oldDir, newDir, ignore=ignore_patterns('qtplasmac'))
+            ignores = ignore_patterns('qtplasmac','backups','machine_log*.txt', \
+                                      '*.qss','*.py','*.bak','qtvcp.prefs','M190')
+            copytree(oldDir, newDir, ignore=ignores)
             with open(newIni, 'r') as inFile:
                 config = inFile.readlines()
             # [DISPLAY] section
@@ -142,11 +144,11 @@ class Setup:
             for lNum in section:
                 if section[lNum].startswith('USER_M_PATH') and 'u' not in done:
                     mPath = config[lNum].split('=')[1].strip()
-                    config[lNum] = 'USER_M_PATH = ./qtplasmac:{}\n'.format(mPath)
+                    config[lNum] = 'USER_M_PATH = ./plasmac2:{}\n'.format(mPath)
                     done.append('u')
             for option in ['u']:
                 if option == 'u' and option not in done:
-                    config.insert(insert,'USER_M_PATH = ./qtplasmac:./\n')
+                    config.insert(insert,'USER_M_PATH = ./plasmac2:./\n')
             # [FILTER] section
             section = {}
             for lNum in range(config.index('[FILTER]\n') + 1, len(config)):
@@ -221,6 +223,8 @@ class Setup:
                 os.remove(os.path.join(newDir, 'plasmac2'))
             # create a link to plasmac2
             os.symlink(os.path.join(self.b2tf), os.path.join(newDir, 'plasmac2'))
+            # copy user custom files
+            self.copy_custom_files(newDir)
             # we made it...
             title = 'Migration Complete'
             msg = ['Ini file for plasmac2 config is:']
@@ -324,12 +328,19 @@ class Setup:
         # remove any existing plasmac2
         if os.path.exists(os.path.join(simDir, 'plasmac2')):
             os.remove(os.path.join(simDir, 'plasmac2'))
+        # copy user custom files
+        self.copy_custom_files(simDir)
         # create a link to plasmac2
         os.symlink(os.path.join(self.b2tf), os.path.join(simDir, 'plasmac2'))
         title = 'Sim Creation Complete'
         msg = ['Ini file for {} sim config is: {}'.format(simUnits, os.path.join(simDir, simName))]
         msg.append('X={}   Y={}   Z={}'.format(simX, simY, simZ))
         self.myMsg(title, '\n\n'.join(msg), 1)
+
+    def copy_custom_files(self, dir):
+        for f in ['commands', 'hal', 'periodic']:
+            src = os.path.join(self.b2tf, 'sim', 'user_{}.py'.format(f))
+            copy(src, os.path.join(dir, '.'))
 
     def myMsg(self, title, text, buttons=1, justify='center', entry=False):
         reply = self.msgBox(title, text, buttons, justify, entry)
