@@ -1611,6 +1611,18 @@ def task_stop(*event):
     time.sleep(0.3)
     comp['abort'] = False
 
+def get_jog_speed(a):
+    if vars.teleop_mode.get():
+        if axis_type[a] == "LINEAR" :
+            return vars.jog_speed.get() / 60 * pVars.jogMultiplier.get()
+        else:
+            return vars.jog_aspeed.get() / 60 * pVars.jogMultiplier.get()
+    else:
+        if joint_type[a] == 'LINEAR':
+            return vars.jog_speed.get() / 60 * pVars.jogMultiplier.get()
+        else:
+            return vars.jog_aspeed.get() / 60 * pVars.jogMultiplier.get()
+
 
 ##############################################################################
 # USER BUTTON FUNCTIONS                                                      #
@@ -2684,7 +2696,7 @@ def set_help_text():
         ('Alt+ ` or 1 ~ 0', _('Jog speed from 0% to 100%')),
 
         ('', ''),
-        (_('Home'), _('Home active joint')),
+        (_('Shift+ Home'), _('Home active joint')),
          (_('Ctrl+ Home'), _('Emulate GUI home button')),
         (_('End'), _('Touchoff X and Y to zero')),
         (_('Shift+ End'), _('Touchoff active axis to zero')),
@@ -2706,6 +2718,17 @@ def set_help_text():
 ##############################################################################
 # KEYBOARD BINDINGS                                                                      #
 ##############################################################################
+
+
+# TEMP FOR KB TESTING ********************
+def key_is_pressed(event):              #*
+    print("Dn", event.keysym)           #*
+                                        #*
+def key_is_released(event):             #*
+    print("Up", event.keysym)           #*
+# TEMP FOR KB TESTING ********************
+
+
 def key_pressed(key):
     global keyDelay
     if keyDelay[key]:
@@ -2714,12 +2737,18 @@ def key_pressed(key):
         return
     if key == 'delete':
         commands.laser_button_toggled('1', 1)
+    elif key == 'jogfast':
+        pVars.jogMultiplier.set(10)
+    elif key == 'jogslow':
+        pVars.jogMultiplier.set(0.1)
 
 def key_off(key):
     global keyDelay
     keyDelay[key] = None
     if key == 'delete':
         commands.laser_button_toggled('0', 1)
+    elif key in ['jogfast', 'jogslow']:
+        pVars.jogMultiplier.set(1)
 
 def key_released(key):
     global keyDelay
@@ -2774,9 +2803,9 @@ def keyboard_shortcuts_changed(state):
         root_window.bind('a', lambda event: activate_ja_widget('a'))
         root_window.bind('b', lambda event: activate_ja_widget('b'))
         #jogging
-        root_window.bind("c", lambda event: jogspeed_continuous())
-        root_window.bind("i", lambda event: jogspeed_incremental())
-        root_window.bind("I", lambda event: jogspeed_incremental(-1))
+        root_window.bind('c', lambda event: jogspeed_continuous())
+        root_window.bind('i', lambda event: jogspeed_incremental())
+        root_window.bind('I', lambda event: jogspeed_incremental(-1))
         bind_axis('Left', 'Right', 0)
         bind_axis('Down', 'Up', 1)
         bind_axis('Next', 'Prior', 2)
@@ -2788,6 +2817,10 @@ def keyboard_shortcuts_changed(state):
         bind_axis('KP_3', 'KP_9', 2)
         bind_axis('bracketleft', 'bracketright', 3)
         bind_axis('semicolon', 'quoteright', 4)
+        root_window.bind('<Key-KP_Add>', lambda event: commands.key_pressed('jogfast'))
+        root_window.bind('<KeyRelease-KP_Add>', lambda event: commands.key_released('jogfast'))
+        root_window.bind('<Key-KP_Subtract>', lambda event: commands.key_pressed('jogslow'))
+        root_window.bind('<KeyRelease-KP_Subtract>', lambda event: commands.key_released('jogslow'))
         # sliders
         root_window.bind('`', lambda event: activate_ja_widget_or_set_feedrate(0))
         root_window.bind('<Control-Key-quoteleft>',lambda event: set_rapidrate(0))
@@ -2800,20 +2833,18 @@ def keyboard_shortcuts_changed(state):
             root_window.bind('<Control-Key-{}>'.format(n), make_lambda(set_rapidrate, rate * 10))
             root_window.bind('<Alt-Key-{}>'.format(n), make_lambda(set_jog_slider, rate * 0.1))
         # homing
-        root_window.bind('<Home>', commands.home_joint)
-        root_window.bind('<Shift-Home>', '#nothing')
+        root_window.bind('<Shift-Home>', commands.home_joint)
         if homing_order_defined:
             root_window.bind('<Control-Home>', commands.home_all_joints)
-            root_window.bind('<Key-KP_Home>', kp_wrap(commands.home_all_joints, 'KeyPress'))
         else:
             root_window.bind('<Control-Home>', commands.home_joint)
-            root_window.bind('<Key-KP_Home>', kp_wrap(commands.home_joint, 'KeyPress'))
         # touchoff
-        root_window.bind('<End>', lambda event: commands.touch_off_xy('0', 0, 0))
-        root_window.bind('<KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
+        root_window.bind('<Key-End>', lambda event: commands.touch_off_xy('1', 0, 0))
+        root_window.bind('<Key-KP_End>', lambda event: commands.touch_off_xy('1', 0, 0))
+        root_window.bind('<KeyRelease-End>', lambda event: commands.touch_off_xy('0', 0, 0))
+        root_window.bind('<KeyRelease-KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
         root_window.bind('<Control-End>', commands.touch_off_system)
         root_window.bind('<Shift-End>', commands.set_axis_offset)
-        root_window.bind('<Key-KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
         root_window.bind('<Key-Delete>', lambda event: commands.key_pressed('delete'))
         root_window.bind('<KeyRelease-Delete>', lambda event: commands.key_released('delete'))
         root_window.bind('<Key-KP_Delete>', lambda event: commands.key_pressed('delete'))
@@ -2831,6 +2862,11 @@ def keyboard_shortcuts_changed(state):
         # add kb shortcuts to help menu
         rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
         rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
+
+# TEMP FOR KB TESTING ***********************************************************
+        root_window.bind('<Key>', lambda event: key_is_pressed(event))         #*
+        root_window.bind('<KeyRelease>', lambda event: key_is_released(event)) #*
+# TEMP FOR KB TESTING ***********************************************************
 
 
 ##############################################################################
@@ -3003,6 +3039,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
              ('matDefault', IntVar),
              ('jogInhibitOvr', IntVar),
              ('limitOvr', IntVar),
+             ('jogMultiplier', DoubleVar),
              )
     restoreSetup = {}
     pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
@@ -3072,7 +3109,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     convViewOptions = {}
     lastViewType = None
     preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
-    keyDelay = {'delete': None}
+    keyDelay = {'delete': None, 'jogfast': None, 'jogslow': None}
     pmx485 = {'exists':False}
     spinBoxes = []
     widgetValues = {}
@@ -3099,7 +3136,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     TclCommands.gcode_properties = gcode_properties
     TclCommands.set_view_p = set_view_p
     TclCommands.set_view_z = set_view_z
-    # tcl functions hijacked from axis.tcl
+    TclCommands.get_jog_speed = get_jog_speed
+        # tcl functions hijacked from axis.tcl
     TclCommands.update_title = update_title
     TclCommands.update_jog_slider_vel = update_jog_slider_vel
     # new functions
@@ -3157,6 +3195,12 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     TclCommands.kb_shortcuts_changed = kb_shortcuts_changed
     TclCommands.key_pressed = key_pressed
     TclCommands.key_released = key_released
+
+# TEMP FOR KB TESTING ******************************
+    TclCommands.key_is_pressed = key_is_pressed   #*
+    TclCommands.key_is_released = key_is_released #*
+# TEMP FOR KB TESTING ******************************
+
     commands = TclCommands(root_window)
 
 
@@ -4040,6 +4084,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     font_size_changed()
     update_title()
     o.show_overlay = False
+    pVars.jogMultiplier.set(1)
     hal.set_p('plasmac.mode', '{}'.format(pVars.plasmacMode.get()))
     hal.set_p('plasmac.torch-enable', '0')
     hal.set_p('plasmac.height-override', '{:0.3f}'.format(torchHeight))
