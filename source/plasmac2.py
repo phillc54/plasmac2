@@ -3053,6 +3053,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     isIdleHomed = False
     isPaused = False
     isRunning = False
+    homeInProgress = False
     getMaterialBusy = False
     materialFileDict = {}
     materialNumList = []
@@ -4341,7 +4342,7 @@ def user_live_update():
     global torchText, torchPressed, torchColor
     global laserTimer, laserButtonState
     global framingState, activeFunction
-    global currentTool, pmx485
+    global currentTool, pmx485, homeInProgress
     global materialChangePin, materialChangeNumberPin
     global materialReloadPin, materialTempPin
     global materialChangeTimeoutPin
@@ -4677,7 +4678,13 @@ def user_live_update():
                 pmx485_retry_timeout()
     # hide/show override limits checkbox
     if vars.on_any_limit.get() and not rC('winfo','ismapped',flimitovr):
-        rC('grid',flimitovr,'-row',1,'-column',0,'-columnspan',3,'-sticky','nsew')
+        homeInProgress = False
+        for j in range(jointcount):
+            if hal.get_value('joint.{}.homing'.format(j)):
+                homeInProgress = True
+                break
+        if not homeInProgress:
+            rC('grid',flimitovr,'-row',1,'-column',0,'-columnspan',3,'-sticky','nsew')
     elif not vars.on_any_limit.get() and rC('winfo','ismapped',flimitovr):
         rC(flimitovr + '.button','invoke')
         rC('grid','forget',flimitovr)
