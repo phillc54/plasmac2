@@ -43,9 +43,6 @@ class Setup:
             msg = ['plasmac2 setup can not be run as a root user']
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
-        self.configs=os.path.join(self.lcnc, 'configs')
-        b2tf = os.path.expanduser('~/linuxcnc/plasmac2')
-        self.b2tf = os.path.join(b2tf, 'source')
         if not os.path.isdir(self.lcnc):
             title = 'Directory Error'
             msg = ['The directory ~/linuxcnc does not exist']
@@ -53,17 +50,14 @@ class Setup:
             msg.append('to ensure that the structure is correct')
             self.myMsg(title, '\n'.join(msg), 1)
             raise SystemExit
-        if not os.path.isdir(b2tf):
-            title = 'Repository Error'
-            msg = ['The git repository ~/plasmac2 does not exist']
-            self.myMsg(title, '\n'.join(msg), 1)
-            raise SystemExit
+        self.configs = os.path.join(self.lcnc, 'configs')
+        self.b2tf = os.path.dirname(os.path.realpath(sys.argv[0]))
         try:
-            repo = git.Repo(b2tf)
+            repo = git.Repo(os.path.join(self.b2tf, '../'))
         except:
             title = 'Repository Error'
-            msg = ['The directory ~/plasmac2 is not a git repository']
-            self.myMsg(title, '\n'.join(msg), 1)
+            msg = ' is not a git repository'
+            self.myMsg(title, os.path.join(self.b2tf, '../') + msg, 1)
             raise SystemExit
         self.reply = [False, None]
 
@@ -219,7 +213,9 @@ class Setup:
                 for line in config:
                     outFile.write(line)
             # remove any existing plasmac2
-            if os.path.exists(os.path.join(newDir, 'plasmac2')):
+            if os.path.islink(os.path.join(newDir, 'plasmac2')):
+                os.remove(os.path.join(newDir, 'plasmac2'))
+            elif os.path.exists(os.path.join(newDir, 'plasmac2')):
                 os.remove(os.path.join(newDir, 'plasmac2'))
             # create a link to plasmac2
             os.symlink(os.path.join(self.b2tf), os.path.join(newDir, 'plasmac2'))
@@ -231,9 +227,10 @@ class Setup:
             msg.append(os.path.join(newDir, iniFile))
             if qtplasmacHal:
                 msg.append('\n\n')
-                msg.append('\nThe following contain references to qtplasmac and were commented out in the ini file')
+                msg.append('\nThe following hal files contain references to qtplasmac and were commented out in the ini file')
                 for file in qtplasmacHal:
-                    msg.append('\n\n{}'.format(file))
+                    msg.append('\n\n{}'.format(file.split('=')[1].strip()))
+                msg.append('\n\nIf the files are required then you will need to edit them to suit this config then uncomment them')
         except Exception as e:
             title = 'Migration error'
             msg = ['Migration was unsuccessful']
@@ -327,7 +324,9 @@ class Setup:
                     line = 'HOME_OFFSET             = {}\n'.format(simZ)
                 outFile.write(line)
         # remove any existing plasmac2
-        if os.path.exists(os.path.join(simDir, 'plasmac2')):
+        if os.path.islink(os.path.join(simDir, 'plasmac2')):
+            os.remove(os.path.join(simDir, 'plasmac2'))
+        elif os.path.exists(os.path.join(simDir, 'plasmac2')):
             os.remove(os.path.join(simDir, 'plasmac2'))
         # copy user custom files
         self.copy_custom_files(simDir)

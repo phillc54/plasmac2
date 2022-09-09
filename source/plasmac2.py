@@ -858,10 +858,10 @@ def save_setup_clicked():
 
 def update_plasmac2():
     try:
-        repo = git.Repo(os.path.expanduser('~/linuxcnc/plasmac2'))
+        repo = git.Repo(repoPath)
     except:
-        msg = 'Cannot open a git repository at ~/linuxcnc/plasmac2'
-        messagebox.showerror('Repository Error', msg)
+        msg = 'Cannot open a git repository at '
+        messagebox.showerror('Repository Error', msg + repoPath)
         return
     try:
         current = repo.head.commit
@@ -2937,8 +2937,10 @@ def keyboard_shortcuts_changed(state):
 # SETUP                                                                      #
 ##############################################################################
 firstRun = 'valid'
-if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
-    libPath = os.path.expanduser('~/linuxcnc/plasmac2/source/lib')
+configPath = os.getcwd()
+repoPath = os.path.abspath(os.path.realpath(os.path.join(configPath, 'plasmac2', '../')))
+if os.path.isdir(os.path.join(repoPath, 'source/lib')):
+    libPath = os.path.join(repoPath, 'source/lib')
     sys.path.append(libPath)
 
     import tarfile
@@ -2955,7 +2957,6 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     import set_offsets
     import git
 
-    configPath = os.getcwd()
     imagePath = os.path.join(libPath, 'images') # our own images
     imageAxis = os.path.join(BASE, 'share', 'axis', 'images') # images pinched from Axis
     if not os.path.isdir('/tmp/plasmac'):
@@ -4272,7 +4273,7 @@ else:
     title = _('LOAD ERROR')
     msg0 = _('Cannot find valid library directory')
     msg1 = _('plasmac2 extensions are not loaded')
-    notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.expanduser('~/linuxcnc/plasmac2/lib'), msg1))
+    notifications.add('error', '{}:\n{}\n{}\n{}\n'.format(title, msg0, os.path.join(repoPath, 'source/lib'), msg1))
 
 
 ##############################################################################
