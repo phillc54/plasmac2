@@ -21,10 +21,14 @@ sudo apt install python3-git
 ### To install plasmac2, from a terminal enter:  
 ```console
 git clone https://github.com/phillc54/plasmac2 ~/linuxcnc/plasmac2
+```
+
+### To create a plasmac2 configuration, from a terminal enter;
+```console
 python3 ~/linuxcnc/plasmac2/source/setup.py
 ```
-From the setup application click **Install**  
-When the installation is complete then either a migration or simulator creation may be done.
+
+From the setup application either a migration or simulator creation may be done.
   * click **Migration** to create a new plasmac2 config based on an existing QtPlasmaC config.
   * click **Simulation** to create a new plasmac2 simulator config.
 
@@ -35,6 +39,6 @@ click **Help** then click **Update**
 
 From a terminal:
 ```console
-cd ~/plasmac2
+cd ~/linuxcnc/plasmac2
 git pull
 ```
