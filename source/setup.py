@@ -257,18 +257,19 @@ class Setup:
             self.myMsg(title, '\n'.join(msg), 1)
             return
         simUnits = self.reply[1][1]
+        safe = 0.01 if simUnits == 'metric' else 0.001
         try:
-            simX = float(self.reply[1][2])
+            simX = float(self.reply[1][2]) + safe
         except:
-            simX = 1200 if simUnits == 'metric' else 48
+            simX = 1200.01 if simUnits == 'metric' else 48.001
         try:
-            simY = float(self.reply[1][3])
+            simY = float(self.reply[1][3]) + safe
         except:
-            simY = 1200 if simUnits == 'metric' else 48
+            simY = 1200.01 if simUnits == 'metric' else 48.001
         try:
-            simZ = float(self.reply[1][4])
+            simZ = float(self.reply[1][4]) + safe
         except:
-            simZ = 100 if simUnits == 'metric' else 4
+            simZ = 100.01 if simUnits == 'metric' else 4.001
         if not simName:
             title = 'Name Error'
             msg = ['Name is required for sim']
