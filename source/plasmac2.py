@@ -1627,6 +1627,66 @@ def draw_grid():    # from glcanon.py
     o.draw_grid_permuted(rotation, permutations[2],
             inverse_permutations[2])
 
+def posstrs():
+    s = o.stat
+    limit = list(s.limit[:])
+    homed = list(s.homed[:])
+    spd = o.to_internal_linear_unit(s.current_vel)
+    if not o.get_joints_mode() or o.no_joint_display:
+        if o.get_show_commanded():
+            positions = s.position
+        else:
+            positions = s.actual_position
+        if o.get_show_relative():
+            positions = [(i-j) for i, j in zip(positions, s.tool_offset)]
+            positions = [(i-j) for i, j in zip(positions, s.g5x_offset)]
+            t = -s.rotation_xy
+            t = math.radians(t)
+            x = positions[0]
+            y = positions[1]
+            positions[0] = x * math.cos(t) - y * math.sin(t)
+            positions[1] = x * math.sin(t) + y * math.cos(t)
+            positions = [(i-j) for i, j in zip(positions, s.g92_offset)]
+        else:
+            positions = list(positions)
+        if o.get_a_axis_wrapped():
+            positions[3] = math.fmod(positions[3], 360.0)
+            if positions[3] < 0: positions[3] += 360.0
+        if o.get_b_axis_wrapped():
+            positions[4] = math.fmod(positions[4], 360.0)
+            if positions[4] < 0: positions[4] += 360.0
+        if o.get_c_axis_wrapped():
+            positions[5] = math.fmod(positions[5], 360.0)
+            if positions[5] < 0: positions[5] += 360.0
+        positions = o.to_internal_units(positions)
+        axisdtg = o.to_internal_units(s.dtg)
+        g5x_offset = o.to_internal_units(s.g5x_offset)
+        g92_offset = o.to_internal_units(s.g92_offset)
+        tlo_offset = o.to_internal_units(s.tool_offset)
+        dtg = o.to_internal_linear_unit(s.distance_to_go)
+        if o.get_show_metric():
+            positions = o.from_internal_units(positions, 1)
+            axisdtg = o.from_internal_units(axisdtg, 1)
+            g5x_offset = o.from_internal_units(g5x_offset, 1)
+            g92_offset = o.from_internal_units(g92_offset, 1)
+            tlo_offset = o.from_internal_units(tlo_offset, 1)
+            dtg *= 25.4
+            spd = spd * 25.4
+        spd = spd * 60
+        # show height above material probed height
+        if s.linear_units == 1 and not vars.metric.get():
+            scale = 1 / 25.4
+        elif s.linear_units != 1 and vars.metric.get():
+            scale = 25.4
+        else:
+            scale = 1
+        if hal.get_value('plasmac.offsets-active') or isPaused:
+            positions[2] = hal.get_value('plasmac.z-height') * scale
+        return o.dro_format(o.stat,spd,dtg,limit,homed,positions,
+                axisdtg,g5x_offset,g92_offset,tlo_offset)
+    else:
+        return o.joint_dro_format(s,spd,o.get_num_joints(),limit, homed)
+
 
 ##############################################################################
 # USER BUTTON FUNCTIONS                                                      #
@@ -3133,6 +3193,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     # monkeypatched functions
     o.get_view = get_view       # from axis.py
     o.draw_grid = draw_grid     # from glcanon.py
+    o.posstrs = posstrs         # from glcanon.py
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
     TclCommands.task_run_line = task_run_line
