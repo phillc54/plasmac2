@@ -595,36 +595,6 @@ def set_view_t(event=None, scale=None):
     glRotateScene(o, 1.0, mid[0], mid[1], mid[2], 0, 0, 0, 0)
     o._redraw()
 
-def draw_grid():
-    x,y,z,p = 0,1,2,3
-    view = get_view()
-    rotation = math.radians(s.rotation_xy % 90)
-    permutations = [
-            lambda x_y_z: (x_y_z[2], x_y_z[1], x_y_z[0]),  # YZ X
-            lambda x_y_z1: (x_y_z1[2], x_y_z1[0], x_y_z1[1]),  # ZX Y
-            lambda x_y_z2: (x_y_z2[0], x_y_z2[1], x_y_z2[2])]  # XY Z
-    inverse_permutations = [
-            lambda z_y_x: (z_y_x[2], z_y_x[1], z_y_x[0]),  # YZ X
-            lambda z_x_y: (z_x_y[1], z_x_y[2], z_x_y[0]),  # ZX Y
-            lambda x_y_z3: (x_y_z3[0], x_y_z3[1], x_y_z3[2])]  # XY Z
-    o.draw_grid_permuted(rotation, permutations[2],
-            inverse_permutations[2])
-
-def get_view_type():
-    if str(widgets.view_x['relief']) == 'sunken':
-        view = 'x'
-    elif (str(widgets.view_y['relief']) == 'sunken' or
-         str(widgets.view_y2['relief']) == 'sunken'):
-        view = 'y'
-    elif (str(widgets.view_z['relief']) == 'sunken' or
-          str(widgets.view_z2['relief']) == 'sunken'):
-        view = 'z'
-    elif (str(widgets.view_t['relief']) == 'sunken'):
-        view = 't'
-    else:
-        view = 'p'
-    return view
-
 
 ##############################################################################
 # STATISTICS FUNCTIONS                                                       #
@@ -1622,6 +1592,40 @@ def get_jog_speed(a):
             return vars.jog_speed.get() / 60 * pVars.jogMultiplier.get()
         else:
             return vars.jog_aspeed.get() / 60 * pVars.jogMultiplier.get()
+
+
+##############################################################################
+# MONKEYPATCHED FUNCTIONS                                                       #
+##############################################################################
+def get_view_type():    # from axis.py
+    if str(widgets.view_x['relief']) == 'sunken':
+        view = 'x'
+    elif (str(widgets.view_y['relief']) == 'sunken' or
+         str(widgets.view_y2['relief']) == 'sunken'):
+        view = 'y'
+    elif (str(widgets.view_z['relief']) == 'sunken' or
+          str(widgets.view_z2['relief']) == 'sunken'):
+        view = 'z'
+    elif (str(widgets.view_t['relief']) == 'sunken'):
+        view = 't'
+    else:
+        view = 'p'
+    return view
+
+def draw_grid():    # from glcanon.py
+    x,y,z,p = 0,1,2,3
+    view = get_view()
+    rotation = math.radians(s.rotation_xy % 90)
+    permutations = [
+            lambda x_y_z: (x_y_z[2], x_y_z[1], x_y_z[0]),  # YZ X
+            lambda x_y_z1: (x_y_z1[2], x_y_z1[0], x_y_z1[1]),  # ZX Y
+            lambda x_y_z2: (x_y_z2[0], x_y_z2[1], x_y_z2[2])]  # XY Z
+    inverse_permutations = [
+            lambda z_y_x: (z_y_x[2], z_y_x[1], z_y_x[0]),  # YZ X
+            lambda z_x_y: (z_x_y[1], z_x_y[2], z_x_y[0]),  # ZX Y
+            lambda x_y_z3: (x_y_z3[0], x_y_z3[1], x_y_z3[2])]  # XY Z
+    o.draw_grid_permuted(rotation, permutations[2],
+            inverse_permutations[2])
 
 
 ##############################################################################
@@ -3127,8 +3131,8 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
     # monkeypatched functions
-    o.get_view = get_view # axis.py
-    o.draw_grid = draw_grid # glcanon.py
+    o.get_view = get_view       # from axis.py
+    o.draw_grid = draw_grid     # from glcanon.py
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
     TclCommands.task_run_line = task_run_line
@@ -3138,7 +3142,7 @@ if os.path.isdir(os.path.expanduser('~/linuxcnc/plasmac2/source/lib')):
     TclCommands.set_view_p = set_view_p
     TclCommands.set_view_z = set_view_z
     TclCommands.get_jog_speed = get_jog_speed
-        # tcl functions hijacked from axis.tcl
+    # tcl functions hijacked from axis.tcl
     TclCommands.update_title = update_title
     TclCommands.update_jog_slider_vel = update_jog_slider_vel
     # new functions
