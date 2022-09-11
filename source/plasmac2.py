@@ -339,7 +339,6 @@ def setup_toggle(state):
         rC('grid','forget','.toolsetup')
         rC('grid','forget',fsetup)
         show_default()
-        keyboard_bindings(pVars.kbShortcuts.get())
  
 def param_toggle(state):
     if int(state):
@@ -352,7 +351,6 @@ def param_toggle(state):
         rC('grid','forget','.toolparam')
         rC('grid','forget',fparam)
         show_default()
-        keyboard_bindings(pVars.kbShortcuts.get())
  
 def conv_toggle(state, convSent=False):
     global CONV, convFirstRun, preConvFile, loaded_file, lastViewType
@@ -401,7 +399,6 @@ def conv_toggle(state, convSent=False):
             commands.set_view_t()
         else:
             commands.set_view_z()
-        keyboard_bindings(pVars.kbShortcuts.get())
  
 def clear_program():
     file = os.path.join(tmpPath, 'clear.ngc')
@@ -470,6 +467,8 @@ def show_default():
         rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
         rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
     enable_menus(True)
+    keyboard_bindings(pVars.kbShortcuts.get())
+    rC('focus','.')
 
 def enable_menus(state):
     state = 'normal' if state else 'disabled'
