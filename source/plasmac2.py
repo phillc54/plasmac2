@@ -4493,9 +4493,9 @@ def user_live_update():
                 else:
                     rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',buttonBackG)
         if togglePins[key]['runcritical']:
-            if togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'normal' and isIdleHomed:
+            if togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'normal':
                 rC('.toolbar.program_run','configure','-state','normal')
-            elif not togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'disabled':
+            elif not togglePins[key]['state'] and isIdleHomed and rC('.toolbar.program_run','cget','-state') != 'disabled' and isIdleHomed:
                 rC('.toolbar.program_run','configure','-state','disabled')
     # halpin pulse
     for key in pulsePins:
