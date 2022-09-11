@@ -334,22 +334,26 @@ def setup_toggle(state):
         enable_menus(False)
         rC('grid','.toolsetup','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
         rC('grid',fsetup,'-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
+        keyboard_bindings(False)
     else:
         rC('grid','forget','.toolsetup')
         rC('grid','forget',fsetup)
         show_default()
-
+        keyboard_bindings(pVars.kbShortcuts.get())
+ 
 def param_toggle(state):
     if int(state):
         hide_default()
         enable_menus(False)
         rC('grid','.toolparam','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
         rC('grid',fparam,'-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
+        keyboard_bindings(False)
     else:
         rC('grid','forget','.toolparam')
         rC('grid','forget',fparam)
         show_default()
-
+        keyboard_bindings(pVars.kbShortcuts.get())
+ 
 def conv_toggle(state, convSent=False):
     global CONV, convFirstRun, preConvFile, loaded_file, lastViewType
     if int(state):
@@ -372,6 +376,7 @@ def conv_toggle(state, convSent=False):
         if loaded_file:
             COPY(loaded_file, preConvFile)
         CONV.start(materialFileDict, matIndex, vars.taskfile.get(), s.g5x_index, commands.set_view_z)
+        keyboard_bindings(False)
     else:
         preview_toggle()
         rC('grid','forget','.toolconv')
@@ -396,7 +401,8 @@ def conv_toggle(state, convSent=False):
             commands.set_view_t()
         else:
             commands.set_view_z()
-
+        keyboard_bindings(pVars.kbShortcuts.get())
+ 
 def clear_program():
     file = os.path.join(tmpPath, 'clear.ngc')
     with open(file, 'w') as outFile:
@@ -816,7 +822,7 @@ def load_setup_clicked():
         display_selected_material(restoreSetup['matDefault'])
     if pVars.kbShortcuts.get() != restoreSetup['kbShortcuts']:
         pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
-        keyboard_shortcuts_changed(restoreSetup['kbShortcuts'])
+        keyboard_bindings(restoreSetup['kbShortcuts'])
     if int(rC(fsetup + '.l.cr.speed','get')) == restoreSetup['crPercent']:
         rC(fcutrec + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     else:
@@ -2825,7 +2831,7 @@ def key_released(key):
     keyDelay[key] = root_window.after_idle(lambda: key_off(key))
 
 def kb_shortcuts_changed():
-    keyboard_shortcuts_changed(pVars.kbShortcuts.get())
+    keyboard_bindings(pVars.kbShortcuts.get())
 
 def make_lambda(func, value, state=None):
     if state is not None:
@@ -2833,7 +2839,7 @@ def make_lambda(func, value, state=None):
     else:
         return lambda event:func(value)
 
-def keyboard_shortcuts_changed(state):
+def keyboard_bindings(state):
     if firstRun:
         set_help_text()
     # delete kb shortcuts from help menu
@@ -4185,7 +4191,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     value = getPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
     pVars.kbShortcuts.set(value)
     restoreSetup['kbShortcuts'] = value
-    keyboard_shortcuts_changed(value)
+    keyboard_bindings(value)
     statDivisor = 1000 if unitsPerMm == 1 else 1
     statSuffix = 'M' if unitsPerMm == 1 else '"'
     # we bring in some ints as floats so we can read QtPlasmaC statistics
