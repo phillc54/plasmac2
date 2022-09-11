@@ -2782,40 +2782,44 @@ def set_help_text():
 ##############################################################################
 # KEYBOARD BINDINGS                                                                      #
 ##############################################################################
-
-
-# TEMP FOR KB TESTING ********************
-def key_is_pressed(event):              #*
-    print("Dn", event.keysym)           #*
-                                        #*
-def key_is_released(event):             #*
-    print("Up", event.keysym)           #*
-# TEMP FOR KB TESTING ********************
-
-
 def key_pressed(key):
     global keyDelay
+    if key not in keyDelay:
+        keyDelay[key] = None
     if keyDelay[key]:
         root_window.after_cancel(keyDelay[key])
         keyDelay[key] = None
         return
-    if key == 'delete':
-        commands.laser_button_toggled('1', 1)
+    if key == 'Delete':
+        laser_button_toggled('1', 1)
+    if key == 'End':
+        touch_off_xy('1', 0, 0)
+    if key == 'Home':
+        if homing_order_defined:
+            commands.home_all_joints()
+        else:
+            commands.home_joint()
     elif key == 'jogfast':
         pVars.jogMultiplier.set(10)
     elif key == 'jogslow':
         pVars.jogMultiplier.set(0.1)
+    print(key, 'down')
 
 def key_off(key):
     global keyDelay
     keyDelay[key] = None
-    if key == 'delete':
-        commands.laser_button_toggled('0', 1)
+    if key == 'Delete':
+        laser_button_toggled('0', 1)
+    if key == 'End':
+        touch_off_xy('0', 0, 0)
     elif key in ['jogfast', 'jogslow']:
         pVars.jogMultiplier.set(1)
+    print(key, 'up')
 
 def key_released(key):
     global keyDelay
+    if key not in keyDelay:
+        keyDelay[key] = None
     if keyDelay[key]:
         return
     keyDelay[key] = root_window.after_idle(lambda: key_off(key))
@@ -2823,31 +2827,20 @@ def key_released(key):
 def kb_shortcuts_changed():
     keyboard_shortcuts_changed(pVars.kbShortcuts.get())
 
+def make_lambda(func, value, state=None):
+    if state is not None:
+        return lambda event:func(value, state)
+    else:
+        return lambda event:func(value)
+
 def keyboard_shortcuts_changed(state):
     if firstRun:
         set_help_text()
     # delete kb shortcuts from help menu
     rC('.menu.help','delete','last')
     # remove current bindings
-    root_window.unbind_class('all', '<Key-F1>')
-    for k in range(1, 13):
-        root_window.unbind('<Key-F{}>'.format(k))
-    for k in range(10):
-        root_window.unbind(k)
-    for k in ['a','b','c','d','i','l','o','p','r','s','t','v','x','y','z','B','F','I','R','`','!','@','#','$']:
-        root_window.unbind(k)
-    for k in ['<Home>','<End>','<Key-Return>','<KeyPress-minus>','<KeyPress-equal>','<KP_Home>',
-              '<KP_End>','<Key-KP_Enter>','<KeyPress-KP_Begin>''<KeyPress-KP_Insert>']:
-        root_window.unbind(k)
-    for k in ['Left','Right','Down','Up','Next','Prior','KP_Left','KP_Right','KP_Down','KP_Up','KP_Next',
-              'KP_Prior','KP_4','KP_6','KP_2','KP_8','KP_3','KP_9','bracketleft','bracketright']:
-        root_window.unbind('<KeyPress-{}>'.format(k))
-        root_window.unbind('<KeyRelease-{}>'.format(k))
-        root_window.unbind('<Shift-KeyPress-{}>'.format(k))
-    for k in ['<Alt-p>','<Shift-Home>','<Shift-KP_Home>','<Control-Shift-H>']:
-        root_window.unbind(k)
-    for k in ['e','h','k','m','r','s','Home','End','KP_Home']:
-        root_window.unbind('<Control-{}>'.format(k))
+    for key in root_window.bind():
+        root_window.unbind(key)
     # create new key bindings if enabled
     if state:
         # Escape
@@ -2876,9 +2869,9 @@ def keyboard_shortcuts_changed(state):
         bind_axis('KP_Left', 'KP_Right', 0)
         bind_axis('KP_Down', 'KP_Up', 1)
         bind_axis('KP_Next', 'KP_Prior', 2)
-        bind_axis('KP_4', 'KP_6', 0)
-        bind_axis('KP_2', 'KP_8', 1)
-        bind_axis('KP_3', 'KP_9', 2)
+#        bind_axis('KP_4', 'KP_6', 0)
+#        bind_axis('KP_2', 'KP_8', 1)
+#        bind_axis('KP_3', 'KP_9', 2)
         bind_axis('bracketleft', 'bracketright', 3)
         bind_axis('semicolon', 'quoteright', 4)
         root_window.bind('<Key-KP_Add>', lambda event: commands.key_pressed('jogfast'))
@@ -2891,8 +2884,6 @@ def keyboard_shortcuts_changed(state):
         root_window.bind('<Alt-Key-quoteleft>',lambda event: set_jog_slider(0.0))
         for n in range(10):
             rate = n if n > 0 else 10
-            def make_lambda(func, value):
-                return lambda event:func(value)
             root_window.bind('{}'.format(n), make_lambda(activate_ja_widget_or_set_feedrate, rate))
             root_window.bind('<Control-Key-{}>'.format(n), make_lambda(set_rapidrate, rate * 10))
             root_window.bind('<Alt-Key-{}>'.format(n), make_lambda(set_jog_slider, rate * 0.1))
@@ -2904,15 +2895,11 @@ def keyboard_shortcuts_changed(state):
             root_window.bind('<Control-Home>', commands.home_joint)
         # touchoff
         root_window.bind('<Key-End>', lambda event: commands.touch_off_xy('1', 0, 0))
-        root_window.bind('<Key-KP_End>', lambda event: commands.touch_off_xy('1', 0, 0))
         root_window.bind('<KeyRelease-End>', lambda event: commands.touch_off_xy('0', 0, 0))
-        root_window.bind('<KeyRelease-KP_End>', lambda event: commands.touch_off_xy('0', 0, 0))
         root_window.bind('<Control-End>', commands.touch_off_system)
         root_window.bind('<Shift-End>', commands.set_axis_offset)
-        root_window.bind('<Key-Delete>', lambda event: commands.key_pressed('delete'))
-        root_window.bind('<KeyRelease-Delete>', lambda event: commands.key_released('delete'))
-        root_window.bind('<Key-KP_Delete>', lambda event: commands.key_pressed('delete'))
-        root_window.bind('<KeyRelease-KP_Delete>', lambda event: commands.key_released('delete'))
+        root_window.bind('<Key-Delete>', lambda event: commands.key_pressed('Delete'))
+        root_window.bind('<KeyRelease-Delete>', lambda event: commands.key_released('Delete'))
         # program
         root_window.bind('o', commands.open_file)
         root_window.bind('r', commands.task_run)
@@ -2920,17 +2907,21 @@ def keyboard_shortcuts_changed(state):
         root_window.bind('s', commands.task_resume)
         root_window.bind('<Control-r>', commands.reload_file)
         root_window.bind('<Control-s>', commands.save_gcode)
-
+        # clearing 
         root_window.bind('<Control-k>', commands.clear_live_plot)
         root_window.bind('<Control-space>', lambda event: notifications.clear())
+        # whacky keypad stuff
+        keys1 = ['Decimal', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        # Down, Next, Left, Right, Up, and Prior are done in the jogging section above
+        keys2 = ['Delete', 'Insert', 'End', None, None, None, 'Begin', None, 'Home', None, None]
+        for k in range(len(keys2)):
+            if keys2[k]:
+                root_window.bind('<Key-KP_{}>'.format(keys2[k]), make_lambda(key_pressed, keys2[k]))
+                root_window.bind('<KeyRelease-KP_{}>'.format(keys2[k]), make_lambda(key_released, keys2[k]))
+                root_window.bind('<Mod2-KeyRelease-KP_{}>'.format(keys2[k]), make_lambda(key_released, keys1[k]))
         # add kb shortcuts to help menu
         rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
         rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
-
-# TEMP FOR KB TESTING ***********************************************************
-        root_window.bind('<Key>', lambda event: key_is_pressed(event))         #*
-        root_window.bind('<KeyRelease>', lambda event: key_is_released(event)) #*
-# TEMP FOR KB TESTING ***********************************************************
 
 
 ##############################################################################
@@ -3175,7 +3166,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     convViewOptions = {}
     lastViewType = None
     preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
-    keyDelay = {'delete': None, 'jogfast': None, 'jogslow': None}
+    keyDelay = {}
     pmx485 = {'exists':False}
     spinBoxes = []
     widgetValues = {}
@@ -3262,12 +3253,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.kb_shortcuts_changed = kb_shortcuts_changed
     TclCommands.key_pressed = key_pressed
     TclCommands.key_released = key_released
-
-# TEMP FOR KB TESTING ******************************
-    TclCommands.key_is_pressed = key_is_pressed   #*
-    TclCommands.key_is_released = key_is_released #*
-# TEMP FOR KB TESTING ******************************
-
     commands = TclCommands(root_window)
 
 
