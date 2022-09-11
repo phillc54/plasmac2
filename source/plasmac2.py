@@ -4567,7 +4567,7 @@ def user_live_update():
     if not s.paused and  hal.get_value('plasmac.laser-recovery-state') and hal.get_value('plasmac.laser-recovery-start'):
         hal.set_p('plasmac.laser-recovery-start', '0')
     # reset framing when complete
-    if framingState and isIdle:
+    if framingState and not hal.get_value('motion.motion-type'):
         comp['laser-on'] = 0
         framingState = False
         activeFunction = False
