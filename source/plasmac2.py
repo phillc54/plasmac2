@@ -703,9 +703,7 @@ def param_changed(widget, value):
     if item in ['x-single-cut','y-single-cut']:
         return
     widgetValues[widget] = value
-    if item == 'kerf-width':
-        comp['kerf-width'] = value
-    elif item == 'cut-amps':
+    if item == 'cut-amps':
         if pmx485['exists']:
             pmx485_current_changed(int(value))
     elif item == 'cut-mode':
@@ -4292,7 +4290,6 @@ def user_hal_pins():
     comp.newpin('material-change-timeout', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('material-reload', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('material-temp', hal.HAL_S32, hal.HAL_IN)
-    comp.newpin('kerf-width', hal.HAL_FLOAT, hal.HAL_OUT)
     comp.newpin('cut-type', hal.HAL_S32, hal.HAL_IN)
     comp.newpin('thc-enable-out', hal.HAL_BIT, hal.HAL_OUT)
     comp.newpin('program-is-idle', hal.HAL_BIT, hal.HAL_IN)
