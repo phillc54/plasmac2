@@ -488,6 +488,8 @@ def open_file_name(f):
         y = (o.canon.min_extents[1] + o.canon.max_extents[1])/2
         z = (o.canon.min_extents[2] + o.canon.max_extents[2])/2
         o.set_centerpoint(x, y, z)
+    live_plotter.clear()
+
 
 def gcode_properties(event=None, reply=None):
     props = {}
@@ -1527,6 +1529,7 @@ def reload_file(refilter=True):
     commands.set_view_z()
     if line:
         o.set_highlight_line(line)
+    live_plotter.clear()
 
 def task_run_line():
     if vars.highlight_line.get() == 0:
