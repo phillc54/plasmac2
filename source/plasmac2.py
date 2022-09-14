@@ -208,7 +208,7 @@ def font_size_changed():
     ngcFont = str(int(fontSize) - 1)
     rC('font','configure','TkDefaultFont','-family', fontName, '-size', fontSize)
     rC(fplasma + '.arc-voltage','configure','-font',arcFont)
-    rC('.pane.bottom.t.text','configure','-height',8,'-font',font, '-foreground',ourBlue)
+    rC('.pane.bottom.t.text','configure','-height',8,'-font',font)
     rC('.info.gcodef.gcodes','configure','-font',font)
     if s.paused:
         rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery')
@@ -823,7 +823,7 @@ def load_setup_clicked():
         pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
         keyboard_bindings(restoreSetup['kbShortcuts'])
     if int(rC(fsetup + '.l.cr.speed','get')) == restoreSetup['crPercent']:
-        rC(fcutrec + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
+        rC(fcrspeed + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     else:
         rC(fsetup + '.l.cr.speed','set',restoreSetup['crPercent'])
     pVars.closeDialog.set(restoreSetup['closeDialog'])
@@ -851,7 +851,7 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Default material', restoreSetup['matDefault'], int)
     restoreSetup['crPercent'] = rC(fsetup + '.l.cr.speed','get')
     putPrefs(PREF,'GUI_OPTIONS', 'Cut recovery speed %', restoreSetup['crPercent'], int)
-    rC(fcutrec + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
+    rC(fcrspeed + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
     user_button_save()
@@ -908,10 +908,10 @@ def ignore_arc_ok_toggled():
 def laser_button_enable():
     if laserOffsets['X'] or laserOffsets['Y']:
         rC('grid',fjogf + '.zerohome.laser','-column',3,'-row',0)
-        rC('pack',fcutrecs + '.buttons.laser','-side','left')
+        rC('grid',fcrbuttons + '.laser','-column',0,'-row',0)
     else:
-        rC('pack','forget',fjogf + '.zerohome.laser')
-        rC('pack','forget',fcutrecs + '.buttons.laser')
+        rC('grid','forget',fjogf + '.zerohome.laser')
+        rC('grid','forget',fcrbuttons + '.laser')
 
 def set_probe_offset_pins():
     hal.set_p('plasmac.offset-probe-x', '{}'.format(probeOffsets['X']))
@@ -958,12 +958,8 @@ def backup_clicked():
     messagebox.showinfo(title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2))
 
 def torch_enable():
-    if hal.get_value('plasmac.torch-enable'):
-        hal.set_p('plasmac.torch-enable','0')
-        rC('.fbuttons.torch-enable','configure','-text',torchEnable['disabled'].replace('\\','\n'),'-bg',ourRed,'-activebackground',ourRed)
-    else:
-        hal.set_p('plasmac.torch-enable','1')
-        rC('.fbuttons.torch-enable','configure','-text',torchEnable['enabled'].replace('\\','\n'),'-bg',ourGreen,'-activebackground',ourGreen)
+    hal.set_p('plasmac.torch-enable',str(not hal.get_value('plasmac.torch-enable')))
+    color_torch()
 
 #FIXME: KEEP THE PREVIEW UPDATING WHILE CODE IS BEING RUN
 # this is a kludge, cannot Esc to abort...
@@ -987,7 +983,7 @@ def update_preview(clear):
 def ja_button_setup(widget, button, text):
     rC('radiobutton', widget,'-value',button,'-text',text,'-anchor','center', \
        '-variable','ja_rbutton','-command','ja_button_activated','-padx',10,'-pady',6, \
-       '-indicatoron',0,'-bd',2,'-highlightthickness',0,'-selectcolor',ourGreen)
+       '-indicatoron',0,'-bd',2,'-highlightthickness',0,'-selectcolor',colorActive)
 
 def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
@@ -1369,14 +1365,14 @@ def height_reset():
 # CUT RECOVERY FUNCTIONS                                                     #
 ##############################################################################
 def cut_rec_default_changed(percent):
-    rC(fcutrec + '.display.cut-rec-speed','set',percent)
+    rC(fcrspeed + '.display.cut-rec-speed','set',percent)
 
 def cut_rec_slider_changed(percent):
     pVars.crSpeed.set('{:0.0f}'.format(int(widgetValues['.runs.material.cut-feed-rate']) * int(percent) * 0.01, 0))
 
 def cut_rec_motion(direction):
     if int(direction):
-        speed = float(rC(fcutrec + '.display.cut-rec-speed','get')) * 0.01
+        speed = float(rC(fcrspeed + '.display.cut-rec-speed','get')) * 0.01
         hal.set_p('plasmac.paused-motion-speed','%f' % (speed * int(direction)))
     else:
         hal.set_p('plasmac.paused-motion-speed','0')
@@ -1760,10 +1756,8 @@ def user_button_setup():
             outCode = {'code':'cut-type', 'text':bName}
         elif bCode.strip() == 'single-cut' and not 'single-cut' in buttonCodes:
             outCode['code'] = 'single-cut'
-            criticalButtons.append(n)
         elif bCode.strip() == 'manual-cut' and not 'manual-cut' in buttonCodes:
             outCode['code'] = 'manual-cut'
-            criticalButtons.append(n)
         elif bCode.startswith('probe-test') and not 'probe-test' in [(v['code']) for k, v in buttonCodes.items()]:
             if bCode.split()[0].strip() == 'probe-test' and len(bCode.split()) < 3:
                 codes = bCode.strip().split()
@@ -1864,6 +1858,7 @@ def user_button_setup():
                     outCode['pin'] = codes[1]
                     if len(codes) == 3 and codes[2] == 'runcritical':
                         outCode['critical'] = True
+                        criticalButtons.append(n)
                     togglePins[str(n)] = {'button':str(n), 'pin':outCode['pin'], 'state':hal.get_value(outCode['pin']), 'runcritical':outCode['critical']}
         elif bCode and bCode not in singleCodes:
             codes = bCode.strip().split('\\')
@@ -1899,7 +1894,7 @@ def user_button_setup():
             if type(bName) == list:
                 if '\\' in bName[0] or '\\' in bName[1]:
                     bHeight = 2
-                if rC('.fbuttons.button' + str(n),'cget','-bg') != buttonBackG:
+                if rC('.fbuttons.button' + str(n),'cget','-bg') != colorBack:
                     bName = bName[1]
                 else:
                     bName = bName[0]
@@ -1911,8 +1906,6 @@ def user_button_setup():
             rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new')
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
-            if bCode.startswith('toggle-halpin ') and togglePins[str(n)]['runcritical']:
-                rC('.fbuttons.button' + str(n),'configure','-bg',ourRed)
             row += 1
         elif bName or bCode:
             title = _('USER BUTTON ERROR')
@@ -1925,7 +1918,7 @@ def user_button_setup():
     user_button_load()
 
 def user_button_pressed(button, code):
-    global buttonBackG, activeFunction
+    global colorBack, activeFunction
     global probePressed, probeStart, probeTimer, probeButton
     global torchPressed, torchStart, torchTimer, torchButton
 
@@ -1952,7 +1945,7 @@ def user_button_pressed(button, code):
             probeTimer = code['time']
             hal.set_p('plasmac.probe-test','1')
             rC('.fbuttons.button' + probeButton,'configure','-text',str(int(probeTimer)))
-            rC('.fbuttons.button' + probeButton,'configure','-bg',ourRed)
+            rC('.fbuttons.button' + probeButton,'configure','-bg',colorActive)
     elif code['code'] == 'torch-pulse':
         if torchTimer:
             torchTimer = 0
@@ -1963,13 +1956,13 @@ def user_button_pressed(button, code):
             hal.set_p('plasmac.torch-pulse-time','{}'.format(torchTimer))
             hal.set_p('plasmac.torch-pulse-start','1')
             rC('.fbuttons.button' + torchButton,'configure','-text',str(int(torchTimer)))
-            rC('.fbuttons.button' + torchButton,'configure','-bg',ourRed)
+            rC('.fbuttons.button' + torchButton,'configure','-bg',colorActive)
     elif code['code'] == 'change-consumables' and not hal.get_value('plasmac.breakaway'):
         if hal.get_value('axis.x.eoffset-counts') or hal.get_value('axis.y.eoffset-counts'):
             hal.set_p('plasmac.consumable-change', '0')
             hal.set_p('plasmac.x-offset', '0')
             hal.set_p('plasmac.y-offset', '0')
-            rC('.fbuttons.button' + button,'configure','-bg',buttonBackG)
+            rC('.fbuttons.button' + button,'configure','-bg',colorBack)
             activeFunction = False
         else:
             activeFunction = True
@@ -1979,7 +1972,7 @@ def user_button_pressed(button, code):
             hal.set_p('plasmac.x-offset', '{:.0f}'.format((xPos - s.position[0]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.y-offset', '{:.0f}'.format((yPos - s.position[1]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.consumable-change', '1')
-            rC('.fbuttons.button' + button,'configure','-bg',ourOrange)
+            rC('.fbuttons.button' + button,'configure','-bg',colorOrange)
     elif code['code'] == 'framing':
         pass # actioned from button_release
     elif code['code'] == 'load':
@@ -2017,11 +2010,11 @@ def user_button_released(button, code):
             if cutType:
                 comp['cut-type'] = 1
                 text = code['text'][1].replace('\\', '\n')
-                color = ourOrange
+                color = colorOrange
             else:
                 comp['cut-type'] = 0
                 text = code['text'][0].replace('\\', '\n')
-                color = buttonBackG
+                color = colorBack
             rC('.fbuttons.button' + button,'configure','-bg',color,'-text',text)
             reload_file()
     elif code['code'] == 'single-cut':
@@ -2076,9 +2069,7 @@ def user_button_load():
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
-            fg = ourBlack if buttonNames[n]['name'] else ourRed
-            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',fg)
-            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',fg)
+            color_user_buttons()
 
 def user_button_save():
     global torchEnable
@@ -2090,10 +2081,7 @@ def user_button_save():
         rC('.fbuttons.torch-enable','configure','-height',2)
     else:
         rC('.fbuttons.torch-enable','configure','-height',1)
-    if hal.get_value('plasmac.torch-enable'):
-        rC('.fbuttons.torch-enable','configure','-text',torchEnable['enabled'].replace('\\','\n'),'-bg',ourGreen,'-activebackground',ourGreen)
-    else:
-        rC('.fbuttons.torch-enable','configure','-text',torchEnable['disabled'].replace('\\','\n'),'-bg',ourRed,'-activebackground',ourRed)
+    color_torch()
     for n in range(1, 21):
         putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'get'), str)
         putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'get'), str)
@@ -2430,10 +2418,10 @@ def pmx485_startup(port):
         pmx485[parm] = 0.0
     for parm in ['oldMode']:
         pmx485[parm] = 0
-    rC('grid','.runs.material.cut-mode','-column',0,'-row',20)
-    rC('grid','.runs.material.cut-modeL','-column',1,'-row',20,'-sticky','W')
-    rC('grid','.runs.material.gas-pressure','-column',0,'-row',21)
-    rC('grid','.runs.material.gas-pressureL','-column',1,'-row',21,'-sticky','W')
+    rC('grid','.runs.material.cut-mode','-column',0,'-row',20,'-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.material.cut-modeL','-column',1,'-row',20,'-sticky','W','-pady',(0,2))
+    rC('grid','.runs.material.gas-pressure','-column',0,'-row',21,'-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.material.gas-pressureL','-column',1,'-row',21,'-sticky','W','-pady',(0,2))
     rC('grid','.runs.pmx','-column',0,'-row',10,'-sticky','new','-padx',2,'-pady',(0,2))
     if pmx485_load(port):
         return
@@ -2809,7 +2797,6 @@ def key_pressed(key):
         pVars.jogMultiplier.set(10)
     elif key == 'jogslow':
         pVars.jogMultiplier.set(0.1)
-    print(key, 'down')
 
 def key_off(key):
     global keyDelay
@@ -2820,7 +2807,6 @@ def key_off(key):
         touch_off_xy('0', 0, 0)
     elif key in ['jogfast', 'jogslow']:
         pVars.jogMultiplier.set(1)
-    print(key, 'up')
 
 def key_released(key):
     global keyDelay
@@ -2931,6 +2917,124 @@ def keyboard_bindings(state):
 
 
 ##############################################################################
+# COLOR CHANGE                                                               #
+##############################################################################
+def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
+    for b in criticalButtons:
+        rC('.fbuttons.button' + str(b),'configure','-bg',colorWarning)
+    # user button entries in setup frame
+    for n in range(1, 21):
+        if buttonNames[n]['name']:
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorFore)
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-bg',colorBack)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorFore)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-bg',colorBack)
+        else:
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorBack)
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-bg',colorFore)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorBack)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-bg',colorFore)
+
+def color_torch():
+    if hal.get_value('plasmac.torch-enable'):
+        rC('.fbuttons.torch-enable','configure','-bg',colorActive,'-activebackground',colorActive,'-text',torchEnable['enabled'].replace('\\','\n'))
+    else:
+        rC('.fbuttons.torch-enable','configure','-bg',colorWarning,'-activebackground',colorWarning,'-text',torchEnable['disabled'].replace('\\','\n'))
+
+def get_all_children(parent):
+    _list = []
+    _tup = rC('winfo','children',parent)
+    for item in _tup:
+        _list.append(item)
+    for item in _list:
+        if rC('winfo','children',item):
+            _tup = (rC('winfo','children',item))
+            for item in _tup:
+                _list.append(item)
+    return _list
+
+def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
+    widgetTypes = []
+    for child in get_all_children('.'):
+        if child in ['.fbuttons.torch-enable']:
+            continue
+        w = rC('winfo','class',child)
+        # all widgets
+        try:
+            rC(child,'configure','-fg',colorFore)
+        except:
+            pass
+        try:
+#FIXME: I am sitting on the fence with this
+#            if w in ['Spinbox'] or (w == 'Entry' and child[:-2] in comboEntries):
+#                rC(child,'configure','-bg',ourWhite)
+#            else:
+#                rC(child,'configure','-bg',bgc)
+            rC(child,'configure','-bg',colorBack)
+        except:
+            pass
+        try:
+            rC(child,'configure','-disabledforeground',colorDisabled)
+        except:
+            pass
+        try:
+            rC(child,'configure','-activebackground',colorBack)
+        except:
+            pass
+        try:
+            rC(child,'configure','-highlightthickness',0)
+        except:
+            pass
+        try:
+            rC(child,'configure','-highlightbackground',colorBack)
+        except:
+            pass
+        try:
+            rC(child,'configure','-selectcolor',colorActive)
+        except:
+            pass
+        # the jog increment combobox
+        if '.pane.top.tabs.fmanual.jogf.jog.jogincr' in child:
+            # ComboBox, Entry, Label, TopLevel, Listbox, and Scrollbar
+#FIXME: try to get rid of the arrow and also in the bwidget comboboxes
+            if w == 'Entry': 
+                rC(child,'configure','-disabledforeground',colorFore)
+        # all checkbuttons
+        if w in ['Checkbutton']:
+            rC(child,'configure','-relief','raised','-overrelief','raised','-bd',1)
+    # notebook tabs - cutrecs is also done each time it is raised
+    if isPaused:
+        rC(ftabs,'itemconfigure','cutrecs','-background',colorBack,'-foreground',colorFore)
+    else:
+        for tab in ['manual', 'mdi']:
+            rC(ftabs,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
+    for tab in ['numbers', 'preview', 'stats']:
+        rC(fright,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
+    # leds
+    for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','kerf-locked']:
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-disabledfill',colorBack)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-outline',colorDisabled)
+    for led in ['breakaway','kerf-locked','corner-locked']:
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorWarning)
+    for led in ['thc-enabled','thc-active']:
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorActive)
+    for led in ['ohmic','float','up','down']:
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorYellow)
+    rC(fleds + '.led-arc-ok','itemconfigure',1,'-fill',colorActive)
+    rC(fleds + '.led-torch','itemconfigure',1,'-fill',colorOrange)
+    # arc voltage
+    rC(fplasma + '.arc-voltage','configure','-fg',colorBlue)
+    color_user_buttons()
+    color_torch()
+#FIXME: I am sitting on the fence with this
+    # gcode view
+#    rC('.pane.bottom.t.text','configure','-foreground',colorBlue)
+#FIXME: I am sitting on the fence with this
+    # dro
+#    rC('.pane.top.right.fnumbers.text','configure','-foreground',colorActive,'-background',ourBlack)
+
+
+##############################################################################
 # SETUP                                                                      #
 ##############################################################################
 firstRun = 'valid'
@@ -2977,15 +3081,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # set the default font
     fontName = 'sans'
     fontSize = startFontSize = '10'
-    # some color names
-    ourRed = '#DD0000'
-    ourGreen = '#00CC00'
-    ourOrange = '#FFAA00'
-    ourYellow = '#FFFF00'
-    ourBlue = '#0000FF'
-    ourWhite = '#FFFFFF'
-    ourGray = '#AAAAAA'
-    ourBlack = '#000000'
     # make some widget names to save typing
     ftop = '.pane.top'
     ftabs = ftop + '.tabs'
@@ -3004,8 +3099,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     ft = '.pane.bottom.t'
     fleds = '.pane.bottom.leds'
     fcutrecs = ftabs + '.fcutrecs'
-    fcutrec = fcutrecs + '.pm'
-    fleadins = fcutrecs + '.leadins'
+    fcrspeed = fcutrecs + '.pm'
+    fcrbuttons = fcutrecs + '.buttons'
+    fcrleadin = fcutrecs + '.leadins'
     fparam = '.param'
     fsetup = '.setup'
     wLeds = [fleds + '.led-arc-ok',\
@@ -3020,10 +3116,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              fleds + '.led-corner-locked',\
              fleds + '.led-kerf-locked',\
             ]
-    wCombos = [fsetup + '.l.gui.wsize',\
-               fsetup + '.l.mats.default',\
-               '.runs.materials',\
-              ]
     # recreate widget list to move active gcodes and add new widgets
     widget_list_new = []
     for l in widget_list:
@@ -3108,6 +3200,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
     restoreSetup['fontSize'] = pVars.fontSize.get()
+    colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
+    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#d9d9d9', str)
+    colorDisabled = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a3a3a3', str)
+    colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
+    colorWarning = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
+    colorOrange = '#FFAA00'
+    colorYellow = '#FFFF00'
+    colorBlue = '#0000FF'
     thcFeedRate = round((float(inifile.find('AXIS_Z', 'MAX_VELOCITY')) * float(inifile.find('AXIS_Z', 'OFFSET_AV_RATIO'))) * 60, 3)
     maxHeight = round(hal.get_value('ini.z.max_limit') - hal.get_value('ini.z.min_limit'), 3)
     unitsPerMm = hal.get_value('halui.machine.units-per-mm')
@@ -3178,9 +3278,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     widgetValues = {}
     statValues = {'length':0, 'pierce':0, 'rapid':0, 'probe':0, 'torch':0, 'cut':0, 'paused':0, 'run':0}
     gcodeProperties = None
-    # get the default button background colors
-    buttonBackG = rC(fjogf + '.jog.jogminus','cget','-bg')
-    buttonActBackG = rC(fjogf + '.jog.jogminus','cget','-activebackground')
     toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
                     'program_step','program_pause','program_stop','program_blockdelete',
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
@@ -3265,12 +3362,17 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 ##############################################################################
 # GUI ALTERATIONS AND ADDITIONS                                              #
 ##############################################################################
-    # change dro screen colors
-    rC('.pane.top.right.fnumbers.text','configure','-foreground',ourGreen,'-background',ourBlack)
-
     # keep tab label sizes the same
     rC(ftabs,'configure','-homogeneous',True)
     rC(fright,'configure','-homogeneous',True)
+
+    # reduce margins on manual/mdi tabs
+    rC(ftabs,'configure','-internalborderwidth',1)
+    rC('grid','columnconfigure',fmanual,0,'-weight',1)
+    rC('grid','columnconfigure',fmanual,99,'-weight',0)
+
+    # reduce margins on preview tabs
+    rC(fright,'configure','-internalborderwidth',1)
 
     # hide some existing widgets
     rC('pack','forget','.toolbar.rule9')
@@ -3441,11 +3543,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',stats + '.runB','-column',3,'-row',8,'-padx',(16,0),'-pady',(8,0))
     rC('pack',stats,'-fill','both','-expand',True,'-padx',2,'-pady',2)
 
-    # reduce margins on manual/mdi tabs
-    rC(ftabs,'configure','-internalborderwidth',1)
-    rC('grid','columnconfigure',fmanual,0,'-weight',1)
-    rC('grid','columnconfigure',fmanual,99,'-weight',0)
-
     # destroy existing axes and joints
     rC('destroy',faxes)
     rC('destroy',fjoints)
@@ -3537,7 +3634,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new limit switch override frame
     rC('frame',flimitovr,'-bd',0)
     rC('button',fjogf + '.override') # dummy button to placate original axis code
-    rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',flimitovr + '.button','-command','toggle_override_limits','-variable','override_limits','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',flimitovr + '.label','-text',_('Override Limits'),'-anchor','center')
     # populate the frame
     rC('grid',flimitovr + '.button','-column',0,'-row',1,'-sticky','nsw')
@@ -3548,7 +3645,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # new jog inhibit override frame
     rC('frame',fjogiovr,'-bd',0)
-    rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fjogiovr + '.button','-variable','jogInhibitOvr','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fjogiovr + '.label','-text',_('Jog Inhibit Override'),'-anchor','center')
     # populate the frame
     rC('grid',fjogiovr + '.button','-column',0,'-row',1,'-sticky','nsw')
@@ -3579,20 +3676,20 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # create the widgets
     rC('frame',fplasma,'-bd',0)
     rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
-    rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4,'-fg',ourBlue)
-    rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4)
+    rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',14)
-    rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',14)
-    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',14)
     # populate the frame
-    rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e')
-    rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','e')
-    rC('grid',fplasma + '.vel','-column',2,'-row',1,'-sticky','e')
-    rC('grid',fplasma + '.velL','-column',3,'-row',1,'-sticky','e')
-    rC('grid',fplasma + '.void','-column',2,'-row',2,'-sticky','e')
-    rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','e')
+    rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e','-pady',(0,2))
+    rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','e','-pady',(0,2))
+    rC('grid',fplasma + '.vel','-column',2,'-row',1,'-sticky','e','-pady',(0,2))
+    rC('grid',fplasma + '.velL','-column',3,'-row',1,'-sticky','e','-pady',(0,2))
+    rC('grid',fplasma + '.void','-column',2,'-row',2,'-sticky','e','-pady',(0,2))
+    rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','e','-pady',(0,2))
     rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','ew')
     rC('grid','columnconfigure',fplasma,1,'-weight',1)
 
@@ -3626,17 +3723,17 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('canvas',fleds + '.led-kerf-locked','-width',20,'-height',20)
     rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
     # create the led shapes
-    led1 = rC(fleds + '.led-arc-ok','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
-    rC(fleds + '.led-torch','create','oval',1,1,18,18,'-fill',ourOrange,'-disabledfill',ourGray)
-    rC(fleds + '.led-breakaway','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
-    rC(fleds + '.led-thc-enabled','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
-    rC(fleds + '.led-thc-active','create','oval',1,1,18,18,'-fill',ourGreen,'-disabledfill',ourGray)
-    rC(fleds + '.led-ohmic','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
-    rC(fleds + '.led-float','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
-    rC(fleds + '.led-up','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
-    rC(fleds + '.led-down','create','oval',1,1,18,18,'-fill',ourYellow,'-disabledfill',ourGray)
-    rC(fleds + '.led-corner-locked','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
-    rC(fleds + '.led-kerf-locked','create','oval',1,1,18,18,'-fill',ourRed,'-disabledfill',ourGray)
+    rC(fleds + '.led-arc-ok','create','oval',1,1,19,19)
+    rC(fleds + '.led-torch','create','oval',1,1,19,19)
+    rC(fleds + '.led-breakaway','create','oval',1,1,19,19)
+    rC(fleds + '.led-thc-enabled','create','oval',1,1,19,19)
+    rC(fleds + '.led-thc-active','create','oval',1,1,19,19)
+    rC(fleds + '.led-ohmic','create','oval',1,1,19,19)
+    rC(fleds + '.led-float','create','oval',1,1,19,19)
+    rC(fleds + '.led-up','create','oval',1,1,19,19)
+    rC(fleds + '.led-down','create','oval',1,1,19,19)
+    rC(fleds + '.led-corner-locked','create','oval',1,1,19,19)
+    rC(fleds + '.led-kerf-locked','create','oval',1,1,19,19)
     # populate the frame
     rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
     rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
@@ -3693,7 +3790,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label','.info.gcodef.gcodel','-bd',0)
     rC('setup_widget_accel','.info.gcodef.gcodel','Active Codes:')
     rC('text','.info.gcodef.gcodes','-height',1,'-width',10,'-relief','flat','-bd',0,'-pady',0,)
-    rC('.info.gcodef.gcodes','configure','-bg',buttonBackG,'-undo',0,'-wrap','word',)
+    rC('.info.gcodef.gcodes','configure','-undo',0,'-wrap','word',)
     rC('pack','.info.tool','-side','left')
     rC('pack','.info.gcodef.gcodel','-side','left')
     rC('pack','.info.gcodef.gcodes','-side','left','-fill','x','-expand',1)
@@ -3708,7 +3805,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    rC('button','.fbuttons.torch-enable','-width',6,'-bg',ourRed,'-activebackground',ourRed,'-text',torchEnable['disabled'].replace('\\','\n'))
+    rC('button','.fbuttons.torch-enable','-width',6)
     if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
         rC('.fbuttons.torch-enable','configure','-height',2)
     else:
@@ -3724,69 +3821,71 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC(ftabs,'insert','end','cutrecs','-text','Cut Recovery')
     rC(fcutrecs,'configure','-borderwidth',2)
     rC(ftabs,'delete','cutrecs',0)
-    rC('labelframe',fcutrec,'-text','Speed:','-relief','flat')
-    rC('Button',fcutrec + '.reverse','-text','Rev','-takefocus',0,'-width',3)
-    rC('bind',fcutrec + '.reverse','<Button-1>','cut_rec_motion -1')
-    rC('bind',fcutrec + '.reverse','<ButtonRelease-1>','cut_rec_motion 0')
-    rC('frame',fcutrec + '.display','-relief','flat')
-    rC('frame',fcutrec + '.display.top','-relief','flat')
-    rC('label',fcutrec + '.display.top.value','-textvariable','crSpeed','-width',6,'-anchor','center')
-    rC('scale',fcutrec + '.display.cut-rec-speed','-takefocus',0,'-orient','horizontal','-showvalue',0,'-command','cut_rec_slider_changed')
-    rC(fcutrec + '.display.cut-rec-speed','configure','-from',1,'-to',100,'-resolution',1)
-    rC('Button',fcutrec + '.forward','-text','Fwd','-takefocus',0,'-width',3)
-    rC('frame',fcutrecs + '.buttons')
-    rC('button',fcutrecs + '.buttons.laser','-text',_('Laser'),'-takefocus',0)
-    rC('button',fcutrecs + '.buttons.cancel','-text',_('Cancel'),'-command','cut_rec_cancel','-takefocus',0)
-    rC('labelframe',fleadins,'-text','Leadins:','-relief','flat')
-    rC('Button',fleadins + '.nw','-takefocus',0,'-image',rC('load_image',imagePath + '/nw'))
-    rC('Button',fleadins + '.n','-takefocus',0,'-image',rC('load_image',imagePath + '/n'))
-    rC('Button',fleadins + '.ne','-takefocus',0,'-image',rC('load_image',imagePath + '/ne'))
-    rC('Button',fleadins + '.w','-takefocus',0,'-image',rC('load_image',imagePath + '/w'))
-    rC('Label',fleadins + '.offset','-textvariable','kerfWidth','-takefocus',0)
-    rC('Button',fleadins + '.e','-takefocus',0,'-image',rC('load_image',imagePath + '/e'))
-    rC('Button',fleadins + '.sw','-takefocus',0,'-image',rC('load_image',imagePath + '/sw'))
-    rC('Button',fleadins + '.s','-takefocus',0,'-image',rC('load_image',imagePath + '/s'))
-    rC('Button',fleadins + '.se','-takefocus',0,'-image',rC('load_image',imagePath + '/se'))
+    rC('labelframe',fcrspeed,'-text',_('Speed:'),'-relief','flat')
+    rC('Button',fcrspeed + '.reverse','-text',_('Rev'),'-takefocus',0,'-width',3)
+    rC('bind',fcrspeed + '.reverse','<Button-1>','cut_rec_motion -1')
+    rC('bind',fcrspeed + '.reverse','<ButtonRelease-1>','cut_rec_motion 0')
+    rC('frame',fcrspeed + '.display','-relief','flat')
+    rC('frame',fcrspeed + '.display.top','-relief','flat')
+    rC('label',fcrspeed + '.display.top.value','-textvariable','crSpeed','-width',6,'-anchor','center')
+    rC('scale',fcrspeed + '.display.cut-rec-speed','-takefocus',0,'-orient','horizontal','-showvalue',0,'-command','cut_rec_slider_changed')
+    rC(fcrspeed + '.display.cut-rec-speed','configure','-from',1,'-to',100,'-resolution',1)
+    rC('Button',fcrspeed + '.forward','-text',_('Fwd'),'-takefocus',0,'-width',3)
+    rC('frame',fcrbuttons,'-relief','flat')
+    rC('button',fcrbuttons + '.laser','-text',_('Laser'),'-takefocus',0,'-width',6)
+    rC('button',fcrbuttons + '.cancel','-text',_('Cancel'),'-command','cut_rec_cancel','-takefocus',0,'-width',6)
+    rC('labelframe',fcrleadin,'-text',_('Leadins:'),'-relief','flat')
+    rC('Button',fcrleadin + '.nw','-takefocus',0,'-image',rC('load_image',imagePath + '/nw'))
+    rC('Button',fcrleadin + '.n','-takefocus',0,'-image',rC('load_image',imagePath + '/n'))
+    rC('Button',fcrleadin + '.ne','-takefocus',0,'-image',rC('load_image',imagePath + '/ne'))
+    rC('Button',fcrleadin + '.w','-takefocus',0,'-image',rC('load_image',imagePath + '/w'))
+    rC('Label',fcrleadin + '.offset','-textvariable','kerfWidth','-takefocus',0)
+    rC('Button',fcrleadin + '.e','-takefocus',0,'-image',rC('load_image',imagePath + '/e'))
+    rC('Button',fcrleadin + '.sw','-takefocus',0,'-image',rC('load_image',imagePath + '/sw'))
+    rC('Button',fcrleadin + '.s','-takefocus',0,'-image',rC('load_image',imagePath + '/s'))
+    rC('Button',fcrleadin + '.se','-takefocus',0,'-image',rC('load_image',imagePath + '/se'))
     # populate the frame
-    rC('pack',fcutrec + '.reverse','-side','left','-fill','y')
-    rC('pack',fcutrec + '.display.top.value','-side','left','-fill','y')
-    rC('pack',fcutrec + '.display.top','-fill','y')
-    rC('pack',fcutrec + '.display.cut-rec-speed','-fill','y')
-    rC('pack',fcutrec + '.display','-side','left','-fill','x','-expand',1)
-    rC('pack',fcutrec + '.forward','-side','right','-fill','y')
-    rC('pack',fcutrecs + '.buttons.cancel','-side','right')
-    rC('grid',fcutrecs + '.buttons','-column',0,'-row',1,'-sticky','n','-pady',12)
-    rC('grid',fleadins + '.nw','-column',0,'-row',0)
-    rC('grid',fleadins + '.n','-column',1,'-row',0)
-    rC('grid',fleadins + '.ne','-column',2,'-row',0)
-    rC('grid',fleadins + '.w','-column',0,'-row',1)
-    rC('grid',fleadins + '.offset','-column',1,'-row',1)
-    rC('grid',fleadins + '.e','-column',2,'-row',1)
-    rC('grid',fleadins + '.sw','-column',0,'-row',2)
-    rC('grid',fleadins + '.s','-column',1,'-row',2)
-    rC('grid',fleadins + '.se','-column',2,'-row',2)
-    rC('grid',fcutrec,'-column',0,'-row',0,'-sticky','wne')
-    rC('grid',fleadins,'-column',0,'-row',2,'-sticky','nsew')
+    rC('pack',fcrspeed + '.reverse','-side','left','-fill','y')
+    rC('pack',fcrspeed + '.display.top.value','-side','left','-fill','y')
+    rC('pack',fcrspeed + '.display.top','-fill','y')
+    rC('pack',fcrspeed + '.display.cut-rec-speed','-fill','y')
+    rC('pack',fcrspeed + '.display','-side','left','-fill','x','-expand',1)
+    rC('pack',fcrspeed + '.forward','-side','right','-fill','y')
+    rC('grid',fcrbuttons + '.laser','-column',0,'-row',0)
+    rC('grid',fcrbuttons + '.cancel','-column',2,'-row',0)
+    rC('grid',fcrleadin + '.nw','-column',0,'-row',0)
+    rC('grid',fcrleadin + '.n','-column',1,'-row',0)
+    rC('grid',fcrleadin + '.ne','-column',2,'-row',0)
+    rC('grid',fcrleadin + '.w','-column',0,'-row',1)
+    rC('grid',fcrleadin + '.offset','-column',1,'-row',1)
+    rC('grid',fcrleadin + '.e','-column',2,'-row',1)
+    rC('grid',fcrleadin + '.sw','-column',0,'-row',2)
+    rC('grid',fcrleadin + '.s','-column',1,'-row',2)
+    rC('grid',fcrleadin + '.se','-column',2,'-row',2)
+    rC('grid',fcrspeed,'-column',0,'-row',0,'-sticky','wne')
+    rC('grid',fcrbuttons,'-column',0,'-row',1,'-sticky','wne','-pady',16)
+    rC('grid',fcrleadin,'-column',0,'-row',2,'-sticky','nsew')#,'-pady',12)
     # set direction buttons stretch
-    rC('grid','columnconfigure',fleadins,0,'-weight',1)
-    rC('grid','columnconfigure',fleadins,1,'-weight',1,)
-    rC('grid','columnconfigure',fleadins,2,'-weight',1)
-    rC('grid','rowconfigure',fleadins,0,'-weight',1)
-    rC('grid','rowconfigure',fleadins,1,'-weight',1,'-pad',20)
-    rC('grid','rowconfigure',fleadins,2,'-weight',1)
+    rC('grid','columnconfigure',fcrbuttons,1,'-weight',1)
+    rC('grid','columnconfigure',fcrleadin,0,'-weight',1)
+    rC('grid','columnconfigure',fcrleadin,1,'-weight',1,)
+    rC('grid','columnconfigure',fcrleadin,2,'-weight',1)
+    rC('grid','rowconfigure',fcrleadin,0,'-weight',1)
+    rC('grid','rowconfigure',fcrleadin,1,'-weight',1,'-pad',20)
+    rC('grid','rowconfigure',fcrleadin,2,'-weight',1)
     # widget bindings
-    rC('bind',fcutrec + '.forward','<Button-1>','cut_rec_motion 1')
-    rC('bind',fcutrec + '.forward','<ButtonRelease-1>','cut_rec_motion 0')
-    rC('bind',fleadins + '.nw','<Button-1>','cut_rec_move -1 1')
-    rC('bind',fleadins + '.n','<Button-1>','cut_rec_move 0 1')
-    rC('bind',fleadins + '.ne','<Button-1>','cut_rec_move 1 1')
-    rC('bind',fleadins + '.w','<Button-1>','cut_rec_move -1 0')
-    rC('bind',fleadins + '.e','<Button-1>','cut_rec_move 1 0')
-    rC('bind',fleadins + '.sw','<Button-1>','cut_rec_move -1 -1')
-    rC('bind',fleadins + '.s','<Button-1>','cut_rec_move 0 -1')
-    rC('bind',fleadins + '.se','<Button-1>','cut_rec_move 1 -1')
-    rC('bind',fcutrecs + '.buttons.laser','<Button-1>','laser_button_toggled 1 0')
-    rC('bind',fcutrecs + '.buttons.laser','<ButtonRelease-1>','laser_button_toggled 0 0')
+    rC('bind',fcrspeed + '.forward','<Button-1>','cut_rec_motion 1')
+    rC('bind',fcrspeed + '.forward','<ButtonRelease-1>','cut_rec_motion 0')
+    rC('bind',fcrleadin + '.nw','<Button-1>','cut_rec_move -1 1')
+    rC('bind',fcrleadin + '.n','<Button-1>','cut_rec_move 0 1')
+    rC('bind',fcrleadin + '.ne','<Button-1>','cut_rec_move 1 1')
+    rC('bind',fcrleadin + '.w','<Button-1>','cut_rec_move -1 0')
+    rC('bind',fcrleadin + '.e','<Button-1>','cut_rec_move 1 0')
+    rC('bind',fcrleadin + '.sw','<Button-1>','cut_rec_move -1 -1')
+    rC('bind',fcrleadin + '.s','<Button-1>','cut_rec_move 0 -1')
+    rC('bind',fcrleadin + '.se','<Button-1>','cut_rec_move 1 -1')
+    rC('bind',fcrbuttons + '.laser','<Button-1>','laser_button_toggled 1 0')
+    rC('bind',fcrbuttons + '.laser','<ButtonRelease-1>','laser_button_toggled 0 0')
 
     # new parameters frame
     rC('frame',fparam)
@@ -3803,7 +3902,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('labelframe',fparam + '.c4.scribe','-text','Scribe','-relief','groove')
     rC('labelframe',fparam + '.c4.spotting','-text','Spotting','-relief','groove')
     rC('label',fparam + '.c2.thc.thc-autoL','-text','Auto','-width',15,'-anchor','e')
-    rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0)
     rC(fparam + '.c2.thc.thc-auto','configure','-variable','thcAuto','-command','mode_changed')
     #  (parent, name, label text, prefs option)
     cp1=['.c1.probe','float-switch-travel','Float Travel','Float Switch Travel']
@@ -3860,7 +3959,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         cpName = fparam + cpItem[0] + '.' + cpItem[1]
         cpType = 'flt' if cpItem[2] > 0 else 'int'
         rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
-        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
+        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true')
         spinBoxes.append(cpName)
         rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
@@ -3894,7 +3993,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # gui frame
     rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
     rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
-    rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
@@ -3905,11 +4004,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
     rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
-    rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite,'-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
+    rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
     spinBoxes.append(fsetup + '.l.gui.zoom')
     rC('label',fsetup + '.l.gui.kbShortcutsL','-text','Use KB Shortcuts','-anchor','e')
-    rC('checkbutton',fsetup + '.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton',fsetup + '.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0)
     # populate gui frame
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
@@ -3929,7 +4028,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # jog frame
     rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
     rC('label',fsetup + '.l.jog.speedL','-width', 14,'-text','Units Per Minute','-anchor','e')
-    rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
+    rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true')
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
     rC(fsetup + '.l.jog.speed','configure','-format','%0.0f')
@@ -3965,7 +4064,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # cut recovery frame
     rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
     rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text','Speed %','-anchor','e')
-    rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true','-bg',ourWhite)
+    rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true')
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
     rC(fsetup + '.l.cr.speed','configure','-format','%0.0f')
@@ -4070,7 +4169,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     for rpItem in rpList:
         rpName = rpItem[0] + '.' + rpItem[1]
         rpType = 'flt' if rpItem[2] > 0 else 'int'
-        rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true','-bg',ourWhite)
+        rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true')
         spinBoxes.append(rpName)
         rC(rpName,'configure','-from',rpItem[4],'-to',rpItem[5])
         if rpItem[1] == 'kerf-width':
@@ -4085,32 +4184,32 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         rC(rpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,rpType,rpItem[2]))
         rC('label',rpName + 'L','-text',rpItem[7])
         if rpItem[1] not in ['cut-mode', 'gas-pressure']:
-            rC('grid', rpName,'-column',0,'-row',rpRow)
-            rC('grid', rpName + 'L','-column',1,'-row',rpRow,'-sticky','W')
+            rC('grid', rpName,'-column',0,'-row',rpRow,'-padx',(2,0),'-pady',(0,2))
+            rC('grid', rpName + 'L','-column',1,'-row',rpRow,'-sticky','W','-pady',(0,2))
         rpRow += 1
     # checkbox frame
     rC('labelframe','.runs.check','-text','Cut','-relief','groove')
-    rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton','.runs.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label','.runs.check.avL','-text','Use Auto Volts')
-    rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton','.runs.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label','.runs.check.ohmicL','-text','Ohmic Probe Enable')
-    rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton','.runs.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label','.runs.check.meshL','-text','Mesh Mode')
-    rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton','.runs.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label','.runs.check.ignoreokL','-text','Ignore Arc OK')
     # populate the frame
-    rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
-    rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
-    rC('grid','.runs.check.ohmic','-column',0,'-row',1,'-sticky','w')
-    rC('grid','.runs.check.ohmicL','-column',1,'-row',1,'-sticky','w')
-    rC('grid','.runs.check.mesh','-column',0,'-row',2,'-sticky','w')
-    rC('grid','.runs.check.meshL','-column',1,'-row',2,'-sticky','w')
-    rC('grid','.runs.check.ignoreok','-column',0,'-row',3,'-sticky','w')
-    rC('grid','.runs.check.ignoreokL','-column',1,'-row',3,'-sticky','w')
+    rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w','-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w','-pady',(0,2))
+    rC('grid','.runs.check.ohmic','-column',0,'-row',1,'-sticky','w','-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.check.ohmicL','-column',1,'-row',1,'-sticky','w','-pady',(0,2))
+    rC('grid','.runs.check.mesh','-column',0,'-row',2,'-sticky','w','-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.check.meshL','-column',1,'-row',2,'-sticky','w','-pady',(0,2))
+    rC('grid','.runs.check.ignoreok','-column',0,'-row',3,'-sticky','w','-padx',(2,0),'-pady',(0,2))
+    rC('grid','.runs.check.ignoreokL','-column',1,'-row',3,'-sticky','w','-pady',(0,2))
 
     # pmx frame
     rC('labelframe','.runs.pmx','-text','Powermax','-relief','groove')
-    rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0,'-selectcolor',ourGreen)
+    rC('checkbutton','.runs.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label','.runs.pmx.info','-text','PMX Info goes here','-anchor','w')
     rC('pack','.runs.pmx.enable','-expand',1,'-fill','x')
     rC('pack','.runs.pmx.info','-expand',1,'-fill','x')
@@ -4236,13 +4335,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     for widget in wLeds:
         rC(widget,'configure','-state','disabled')
         widgetValues[widget] = 0
-
-    comboFg = rC(fsetup + '.r.ubuttons.canvas.frame.name1','cget','-fg')
-    comboBg = rC(fsetup + '.r.ubuttons.canvas.frame.name1','cget','-bg')
-    for widget in wCombos:
-        rC(widget,'configure','-selectforeground',comboFg)
-        rC(widget,'configure','-selectbackground',comboBg)
-
     halPinList = hal.get_info_pins()
     load_param_clicked()
     mode_changed()
@@ -4270,7 +4362,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
     set_window_size()
-
 else:
     firstRun = 'invalid'
     title = _('LOAD ERROR')
@@ -4387,6 +4478,8 @@ def user_hal_pins():
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
+    # set the colors
+    color_change()
     # the first run has successfully completed
     firstRun = None
     # run users custom python commands if it exists
@@ -4475,7 +4568,7 @@ def user_live_update():
     elif probeStart and probeTimer <= 0 and not probePressed:
         hal.set_p('plasmac.probe-test','0')
         rC('.fbuttons.button' + probeButton,'configure','-text',probeText)
-        rC('.fbuttons.button' + probeButton,'configure','-bg',buttonBackG)
+        rC('.fbuttons.button' + probeButton,'configure','-bg',colorBack)
         probeStart = 0
         probeTimer = 0
         activeFunction = False
@@ -4489,7 +4582,7 @@ def user_live_update():
         hal.set_p('plasmac.torch-pulse-start','0')
         hal.set_p('plasmac.torch-pulse-time', '0')
         rC('.fbuttons.button' + torchButton,'configure','-text',torchText)
-        rC('.fbuttons.button' + torchButton,'configure','-bg',buttonBackG)
+        rC('.fbuttons.button' + torchButton,'configure','-bg',colorBack)
         torchStart = 0
         torchTimer = 0
     # halpin toggle
@@ -4497,12 +4590,12 @@ def user_live_update():
         if hal.get_value(togglePins[key]['pin']) != togglePins[key]['state']:
             togglePins[key]['state'] = hal.get_value(togglePins[key]['pin'])
             if togglePins[key]['state']:
-                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',ourGreen)
+                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorActive)
             else:
                 if togglePins[key]['runcritical']:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',ourRed)
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorActive)
                 else:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',buttonBackG)
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorBack)
         if togglePins[key]['runcritical']:
             if togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'normal':
                 rC('.toolbar.program_run','configure','-state','normal')
@@ -4524,9 +4617,9 @@ def user_live_update():
         if hal.get_value(pulsePins[key]['pin']) != pulsePins[key]['state']:
             pulsePins[key]['state'] = hal.get_value(pulsePins[key]['pin'])
             if pulsePins[key]['state']:
-                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',ourGreen)
+                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',colorActive)
             else:
-                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',buttonBackG)
+                rC('.fbuttons.button' + pulsePins[key]['button'],'configure','-bg',colorBack)
     # reset a consumable change
     if (hal.get_value('plasmac.consumable-change') or hal.get_value('plasmac.consumable-change')) and \
        (hal.get_value('axisui.abort') or not s.paused):
@@ -4534,7 +4627,7 @@ def user_live_update():
         hal.set_p('plasmac.x-offset', '0')
         hal.set_p('plasmac.y-offset', '0')
         hal.set_p('plasmac.xy-feed-rate', '0')
-        rC('.fbuttons.button{}'.format(cChangeButton),'configure','-bg',buttonBackG)
+        rC('.fbuttons.button{}'.format(cChangeButton),'configure','-bg',colorBack)
         activeFunction = False
     # abort a manual cut
     if manualCut['state'] and not hal.get_value('spindle.0.on'):
@@ -4555,7 +4648,7 @@ def user_live_update():
         rC(ftabs,'delete','mdi',0)
         rC(ftabs,'insert','end','cutrecs')
         rC(ftabs,'raise','cutrecs')
-        rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery')
+        rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery','-background',colorBack,'-foreground',colorFore)
     # hide cut recovery tab
     if not s.paused and 'cutrecs' in rC(ftabs,'pages') and \
        (not hal.get_value('plasmac.paused-motion') or \
