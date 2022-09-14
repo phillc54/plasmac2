@@ -829,6 +829,8 @@ def load_setup_clicked():
     pVars.closeDialog.set(restoreSetup['closeDialog'])
     rC(fsetup + '.l.gui.zoom','set',restoreSetup['tableZoom'])
     user_button_load()
+    read_colors()
+    color_change()
 
 def save_setup_clicked():
     if int(rC(fsetup + '.l.jog.speed','get')) < minJogSpeed:
@@ -855,6 +857,12 @@ def save_setup_clicked():
     restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
     user_button_save()
+    putPrefs(PREF,'GUI_OPTIONS', 'Foreground color', colorFore, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Background color', colorBack, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Disabled color', colorDisable, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Active color', colorActive, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Warning color', colorWarn, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Voltage color', colorVolt, str)
 
 
 ##############################################################################
@@ -2919,9 +2927,21 @@ def keyboard_bindings(state):
 ##############################################################################
 # COLOR CHANGE                                                               #
 ##############################################################################
+def read_colors():
+    global colorFore, colorBack, colorDisable, colorActive
+    global colorWarn, colorVolt, colorOrange, colorYellow
+    colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
+    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#d9d9d9', str)
+    colorDisable = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a3a3a3', str)
+    colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
+    colorWarn = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
+    colorVolt = getPrefs(PREF,'GUI_OPTIONS','Voltage color', '#0000ff', str)
+    colorOrange = '#FFAA00'
+    colorYellow = '#FFFF00'
+
 def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
     for b in criticalButtons:
-        rC('.fbuttons.button' + str(b),'configure','-bg',colorWarning)
+        rC('.fbuttons.button' + str(b),'configure','-bg',colorWarn)
     # user button entries in setup frame
     for n in range(1, 21):
         if buttonNames[n]['name']:
@@ -2939,7 +2959,7 @@ def color_torch():
     if hal.get_value('plasmac.torch-enable'):
         rC('.fbuttons.torch-enable','configure','-bg',colorActive,'-activebackground',colorActive,'-text',torchEnable['enabled'].replace('\\','\n'))
     else:
-        rC('.fbuttons.torch-enable','configure','-bg',colorWarning,'-activebackground',colorWarning,'-text',torchEnable['disabled'].replace('\\','\n'))
+        rC('.fbuttons.torch-enable','configure','-bg',colorWarn,'-activebackground',colorWarn,'-text',torchEnable['disabled'].replace('\\','\n'))
 
 def get_all_children(parent):
     _list = []
@@ -2953,7 +2973,7 @@ def get_all_children(parent):
                 _list.append(item)
     return _list
 
-def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
+def color_change():
     widgetTypes = []
     for child in get_all_children('.'):
         if child in ['.fbuttons.torch-enable']:
@@ -2974,7 +2994,7 @@ def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
         except:
             pass
         try:
-            rC(child,'configure','-disabledforeground',colorDisabled)
+            rC(child,'configure','-disabledforeground',colorDisable)
         except:
             pass
         try:
@@ -3013,9 +3033,9 @@ def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
     # leds
     for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','kerf-locked']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-disabledfill',colorBack)
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-outline',colorDisabled)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-outline',colorDisable)
     for led in ['breakaway','kerf-locked','corner-locked']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorWarning)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorWarn)
     for led in ['thc-enabled','thc-active']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorActive)
     for led in ['ohmic','float','up','down']:
@@ -3023,7 +3043,7 @@ def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
     rC(fleds + '.led-arc-ok','itemconfigure',1,'-fill',colorActive)
     rC(fleds + '.led-torch','itemconfigure',1,'-fill',colorOrange)
     # arc voltage
-    rC(fplasma + '.arc-voltage','configure','-fg',colorBlue)
+    rC(fplasma + '.arc-voltage','configure','-fg',colorVolt)
     color_user_buttons()
     color_torch()
 #FIXME: I am sitting on the fence with this
@@ -3032,7 +3052,44 @@ def color_change(fgc='#000000',bgc='#d9d9d9',dfc='#a3a3a3',abc='#ececec'):
 #FIXME: I am sitting on the fence with this
     # dro
 #    rC('.pane.top.right.fnumbers.text','configure','-foreground',colorActive,'-background',ourBlack)
+    rC(fsetup + '.m.colors.fore','configure','-bg',colorFore,'-activebackground',colorFore)
+    rC(fsetup + '.m.colors.back','configure','-bg',colorBack,'-activebackground',colorBack)
+    rC(fsetup + '.m.colors.disable','configure','-bg',colorDisable,'-activebackground',colorDisable)
+    rC(fsetup + '.m.colors.active','configure','-bg',colorActive,'-activebackground',colorActive)
+    rC(fsetup + '.m.colors.warn','configure','-bg',colorWarn,'-activebackground',colorWarn)
+    rC(fsetup + '.m.colors.volt','configure','-bg',colorVolt,'-activebackground',colorVolt)
 
+def color_set(option):
+    global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt
+    if option == 'fore':
+        color = colorFore
+    elif option == 'back':
+        color = colorBack
+    elif option == 'disable':
+        color = colorDisable
+    elif option == 'active':
+        color = colorActive
+    elif option == 'warn':
+       color = colorWarn
+    elif option == 'volt':
+       color = colorVolt
+    else:
+        color = '#000000'
+    colors = askcolor(color, title=_('plasmac2 Color Selector'))
+    if colors[1]:
+        if option == 'fore':
+            colorFore = colors[1]
+        elif option == 'back':
+            colorBack = colors[1]
+        elif option == 'disable':
+            colorDisable = colors[1]
+        elif option == 'active':
+            colorActive = colors[1]
+        elif option == 'warn':
+            colorWarn = colors[1]
+        elif option == 'volt':
+            colorVolt = colors[1]
+        color_change()
 
 ##############################################################################
 # SETUP                                                                      #
@@ -3047,6 +3104,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     import tarfile
     from tkinter import messagebox
     from tkinter import simpledialog
+    from tkinter.colorchooser import askcolor
     from math import radians, atan, degrees
     from collections import OrderedDict
     from glob import glob as GLOB
@@ -3200,14 +3258,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
     restoreSetup['fontSize'] = pVars.fontSize.get()
-    colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
-    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#d9d9d9', str)
-    colorDisabled = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a3a3a3', str)
-    colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
-    colorWarning = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
-    colorOrange = '#FFAA00'
-    colorYellow = '#FFFF00'
-    colorBlue = '#0000FF'
+    read_colors()
     thcFeedRate = round((float(inifile.find('AXIS_Z', 'MAX_VELOCITY')) * float(inifile.find('AXIS_Z', 'OFFSET_AV_RATIO'))) * 60, 3)
     maxHeight = round(hal.get_value('ini.z.max_limit') - hal.get_value('ini.z.min_limit'), 3)
     unitsPerMm = hal.get_value('halui.machine.units-per-mm')
@@ -3356,6 +3407,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.kb_shortcuts_changed = kb_shortcuts_changed
     TclCommands.key_pressed = key_pressed
     TclCommands.key_released = key_released
+    TclCommands.color_set = color_set
     commands = TclCommands(root_window)
 
 
@@ -4083,10 +4135,44 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.l.cr','-column',0,'-row',4,'-sticky','new')
 
     # middle panel for utilities
-    rC('labelframe',fsetup + '.utilities','-text','Utilities','-relief','groove')
-    rC('button',fsetup + '.utilities.offsets','-command','set_peripheral_offsets','-text','Set Offsets')
-    #populate left panel
-    rC('grid',fsetup + '.utilities.offsets','-column',0,'-row',0,'-sticky','new')
+    rC('frame',fsetup + '.m')
+    # utilities frame
+    rC('labelframe',fsetup + '.m.utilities','-text','Utilities','-relief','groove')
+    rC('button',fsetup + '.m.utilities.offsets','-command','set_peripheral_offsets','-text','Set Offsets')
+    # populate utilities frame
+    rC('grid',fsetup + '.m.utilities.offsets','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
+    rC('grid','columnconfigure',fsetup + '.m.utilities',0,'-weight',1)
+    # color frame
+    rC('labelframe',fsetup + '.m.colors','-text','Colors','-relief','groove')
+    rC('label',fsetup + '.m.colors.foreL','-width', 13,'-text','Foreground','-anchor','e')
+    rC('button',fsetup + '.m.colors.fore','-command','color_set fore')
+    rC('label',fsetup + '.m.colors.backL','-width', 13,'-text','Background','-anchor','e')
+    rC('button',fsetup + '.m.colors.back','-command','color_set back')
+    rC('label',fsetup + '.m.colors.disableL','-width', 13,'-text','Disabled','-anchor','e')
+    rC('button',fsetup + '.m.colors.disable','-command','color_set disable')
+    rC('label',fsetup + '.m.colors.activeL','-width', 13,'-text','Active','-anchor','e')
+    rC('button',fsetup + '.m.colors.active','-command','color_set active')
+    rC('label',fsetup + '.m.colors.warnL','-width', 13,'-text','Warning','-anchor','e')
+    rC('button',fsetup + '.m.colors.warn','-command','color_set warn')
+    rC('label',fsetup + '.m.colors.voltL','-width', 13,'-text','Arc Voltage','-anchor','e')
+    rC('button',fsetup + '.m.colors.volt','-command','color_set volt')
+    # populate color frame
+    rC('grid',fsetup + '.m.colors.foreL','-column',0,'-row',0,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.fore','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.backL','-column',0,'-row',1,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.back','-column',1,'-row',1,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.disableL','-column',0,'-row',2,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.disable','-column',1,'-row',2,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.activeL','-column',0,'-row',3,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.active','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.warnL','-column',0,'-row',4,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.warn','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.voltL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.volt','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid','columnconfigure',fsetup + '.m.colors',0,'-weight',1)
+    # populate middle panel
+    rC('grid',fsetup + '.m.utilities','-column',0,'-row',0,'-sticky','new')
+    rC('grid',fsetup + '.m.colors','-column',0,'-row',1,'-sticky','new')
 
     # right panel (for buttons)
     rC('frame',fsetup + '.r')
@@ -4130,7 +4216,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.utilities','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.m','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup,0,'-weight',0)
     rC('grid','columnconfigure',fsetup,1,'-weight',1)
@@ -4680,11 +4766,11 @@ def user_live_update():
     if isIdleHomed:
         rC(fjogf + '.zerohome.zeroxy','configure','-state','normal')
         rC(fjogf + '.zerohome.laser','configure','-state','normal')
-        rC(fsetup + '.utilities.offsets','configure','-state','normal')
+        rC(fsetup + '.m.utilities.offsets','configure','-state','normal')
     else:
         rC(fjogf + '.zerohome.zeroxy','configure','-state','disabled')
         rC(fjogf + '.zerohome.laser','configure','-state','disabled')
-        rC(fsetup + '.utilities.offsets','configure','-state','disabled')
+        rC(fsetup + '.m.utilities.offsets','configure','-state','disabled')
     # set height override buttons state
     if isIdle or isPaused or isRunning:
         rC(foverride + '.raise','configure','-state','normal')
