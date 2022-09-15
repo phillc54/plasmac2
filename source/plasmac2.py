@@ -997,7 +997,7 @@ def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
         widget = getattr(widgets, 'axis_%s' % vars.ja_rbutton.get())
         widget.focus()
-        rC(fjogf + '.zerohome.zero','configure','-text',_('Zero') + ' ' + vars.ja_rbutton.get().upper())
+        rC(fjogf + '.zerohome.zero','configure','-text',vars.ja_rbutton.get().upper() + '0')
         if not homing_order_defined:
             widgets.homebutton.configure(text = _('Home') + ' ' + vars.ja_rbutton.get().upper() )
     else:
@@ -1911,7 +1911,7 @@ def user_button_setup():
                     bHeight = 2
             bLabel = bName.replace('\\', '\n')
             rC('.fbuttons.button' + str(n),'configure','-text',bLabel,'-height',bHeight)
-            rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new')
+            rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new','-padx',(2,0),'-pady',(2,0))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
             row += 1
@@ -3002,6 +3002,10 @@ def color_change():
         except:
             pass
         try:
+            rC(child,'configure','-buttonbackground',colorBack)
+        except:
+            pass
+        try:
             rC(child,'configure','-highlightthickness',0)
         except:
             pass
@@ -3644,7 +3648,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',6)
     rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
     rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
-    rC('setup_widget_accel',fjogf + '.zerohome.zero',_('Zero') + ' X')
+    rC('setup_widget_accel',fjogf + '.zerohome.zero','X0')
     rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
     rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
     rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
@@ -3850,6 +3854,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # move existing pane to column 1
     rC('grid','.pane','-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
+    # set pane column growth
+    rC('grid','columnconfigure','.pane.top',0,'-weight',1)
+    rC('grid','columnconfigure','.pane.top',1,'-weight',255)
+    # set rot column growth
     rC('grid','columnconfigure','.',0,'-weight',0)
     rC('grid','columnconfigure','.',1,'-weight',1)
     rC('grid','columnconfigure','.',2,'-weight',0)
@@ -3857,13 +3865,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    rC('button','.fbuttons.torch-enable','-width',6)
+    rC('button','.fbuttons.torch-enable','-takefocus',0,'-width',6)
     if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
         rC('.fbuttons.torch-enable','configure','-height',2)
     else:
         rC('.fbuttons.torch-enable','configure','-height',1)
     # populate frame
-    rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new')
+    rC('grid','.fbuttons.torch-enable','-column',0,'-row',0,'-sticky','new','-padx',(2,0),'-pady',(2,0))
     rC('grid','.fbuttons','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',0,'-pady',0)
     # widget bindings
     rC('bind','.fbuttons.torch-enable','<ButtonPress-1>','torch_enable')
@@ -4181,13 +4189,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fsetup + '.r.torch.blankL','-text','','-width',2,'-anchor','w')
     rC('label',fsetup + '.r.torch.enabledL','-text','Enabled','-width',14,'-anchor','w')
     rC('label',fsetup + '.r.torch.disabledL','-text','Disabled','-width',14,'-anchor','w')
-    rC('entry',fsetup + '.r.torch.enabled','-width',14)
-    rC('entry',fsetup + '.r.torch.disabled','-width',14)
+    rC('entry',fsetup + '.r.torch.enabled','-bd',1,'-width',14)
+    rC('entry',fsetup + '.r.torch.disabled','-bd',1,'-width',14)
     rC('grid',fsetup + '.r.torch.blankL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.r.torch.enabledL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.r.torch.disabledL','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.r.torch.enabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0))
-    rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.torch.enabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
+    rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
     # canvas for scrolling user buttons
@@ -4200,8 +4208,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
-        rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-width',14)
-        rC('entry',fsetup + '.r.ubuttons.canvas.frame.code' + str(n))
+        rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
+        rC('entry',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-bd',1)
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
@@ -4300,7 +4308,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('pack','.runs.pmx.enable','-expand',1,'-fill','x')
     rC('pack','.runs.pmx.info','-expand',1,'-fill','x')
     # populate the run panel
-    rC('grid','.runs.materials','-column',0,'-row',0,'-sticky','new','-padx',2,'-pady',(0,2))
+    rC('grid','.runs.materials','-column',0,'-row',0,'-sticky','new','-padx',2,'-pady',2)
     rC('grid','.runs.material','-column',0,'-row',1,'-sticky','new','-padx',2,'-pady',(0,2))
     rC('grid','.runs.check','-column',0,'-row',2,'-sticky','new','-padx',2,'-pady',(0,2))
     # rC('grid','.runs.pmx','-column',0,'-row',3,'-sticky','new','-padx',2,'-pady',(0,2))
