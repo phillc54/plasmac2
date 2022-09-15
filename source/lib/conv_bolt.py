@@ -92,7 +92,6 @@ def widgets(self):
         self.ocButton['state'] = 'disabled'
     self.dLabel['text'] = _('DIAMETER')
     #connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.spButton['command'] = lambda:self.start_point_clicked()
     self.ocButton['command'] = lambda:overcut_clicked(self)
     self.previewC['command'] = lambda:preview(self)

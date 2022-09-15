@@ -67,7 +67,6 @@ def widgets(self):
         self.wValue.set('')
         self.aValue.set('')
     #connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.ctButton['command'] = lambda:self.cut_type_clicked()
     self.spButton['command'] = lambda:self.start_point_clicked()
     self.previewC['command'] = lambda:preview(self)

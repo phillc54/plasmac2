@@ -77,7 +77,6 @@ def widgets(self):
         self.clValue.set('')
         self.aValue.set('')
     # connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.ctButton['command'] = lambda:self.cut_type_clicked()
     self.previewC['command'] = lambda:preview(self)
     # add to layout

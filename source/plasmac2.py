@@ -359,7 +359,7 @@ def conv_toggle(state, convSent=False):
         preview_toggle(True)
         enable_menus(False)
         rC('grid','.toolconv','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
-        rC('grid','.fconv','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',(4,0),'-pady',(0,4))
+        rC('grid','.fconv','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew')
         rC(fright,'itemconfigure','numbers','-state','disabled')
         rC(fright,'raise','preview')
         matIndex = rC('.runs.materials','getvalue')
@@ -367,8 +367,9 @@ def conv_toggle(state, convSent=False):
             reload(conversational)
         if convFirstRun or comp['development']:
             CONV = conversational.Conv(convFirstRun, root_window, widgets.toolFrame, \
-                   widgets.convFrame, imagePath, tmpPath, pVars, unitsPerMm, comp, PREF, \
-                   getPrefs, putPrefs, open_file_guts, wcs_rotation, conv_toggle)
+                   widgets.convFrame, bwidget.ComboBox, imagePath, tmpPath, pVars, \
+                   unitsPerMm, comp, PREF, getPrefs, putPrefs, open_file_guts, \
+                   wcs_rotation, conv_toggle, color_change)
             convFirstRun = False
         set_conv_preview()
         if loaded_file:
@@ -2979,6 +2980,8 @@ def color_change():
         if child in ['.fbuttons.torch-enable']:
             continue
         w = rC('winfo','class',child)
+        # root window
+        rC('.','configure','-bg',colorBack)
         # all widgets
         try:
             rC(child,'configure','-fg',colorFore)
@@ -3014,17 +3017,26 @@ def color_change():
         except:
             pass
         try:
-            rC(child,'configure','-selectcolor',colorActive)
+            if w == 'Menu':
+                rC(child,'configure','-selectcolor',colorFore)
+            else:
+                rC(child,'configure','-selectcolor',colorActive)
         except:
             pass
-        # the jog increment combobox
-        if '.pane.top.tabs.fmanual.jogf.jog.jogincr' in child:
-            # ComboBox, Entry, Label, TopLevel, Listbox, and Scrollbar
-#FIXME: try to get rid of the arrow and also in the bwidget comboboxes
-            if w == 'Entry': 
-                rC(child,'configure','-disabledforeground',colorFore)
+#FIXME: try to get rid of the arrows in all comboboxes
+        # all comboboxes except for the jog increment Combobox
+        if w == 'ComboBox':
+            rC(child,'configure','-selectforeground',colorFore)
+            rC(child,'configure','-selectbackground',colorBack)
+        # the entry of the jog increment combobox
+        elif '.jogincr' in child and w == 'Entry': 
+            rC(child,'configure','-disabledforeground',colorFore)
+        # the listbox of the jog increment combobox
+        elif '.jogincr' in child and w == 'Listbox': 
+            rC(child,'configure','-selectforeground',colorFore)
+            rC(child,'configure','-selectbackground',colorBack)
         # all checkbuttons
-        if w in ['Checkbutton']:
+        elif w in ['Checkbutton']:
             rC(child,'configure','-relief','raised','-overrelief','raised','-bd',1)
     # notebook tabs - cutrecs is also done each time it is raised
     if isPaused:

@@ -76,7 +76,6 @@ def widgets(self):
         self.rValue.set('')
         self.aValue.set('90')
     #connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.ctButton['command'] = lambda:self.cut_type_clicked()
     self.previewC['command'] = lambda:preview(self)
     self.rButton['command'] = lambda:radius_button_pressed(self, self.rbValue)

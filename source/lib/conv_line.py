@@ -123,7 +123,7 @@ def arc_type_changed(self):
     auto_preview(self)
 
 def line_type_changed(self, refresh):
-    self.lineCombo.selection_clear()
+#    self.lineCombo.selection_clear()
     if self.lineCombo.get() == _('LINE POINT ~ POINT'):
         if not refresh:
             set_line_point_to_point(self)
@@ -232,15 +232,14 @@ def widgets(self):
         self.convLine['gcodeSave'] = ''
     self.dLabel['text'] = _('DIAMETER')
     #connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.previewC['command'] = lambda:preview(self)
-    self.lineCombo.bind("<<ComboboxSelected>>",lambda event: line_type_changed(self, False))
     self.g23Arc['command'] = lambda:arc_type_changed(self)
+    self.lineCombo['modifycmd'] = lambda:line_type_changed(self, False)
     #add to layout
     self.matLabel.grid(column=0, row=0, pady=(4,0), sticky='e')
-    self.matCombo.grid(column=1, row=0, pady=(4,0), columnspan=3, sticky='ew')
+    self.matCombo.grid(column=1, row=0, padx=(4,0), pady=(4,0), columnspan=3, sticky='ew')
     self.lnLabel.grid(column=0, row=1, pady=(4,0), sticky='e')
-    self.lineCombo.grid(column=1, row=1, pady=(4,0), columnspan=2, sticky='ew')
+    self.lineCombo.grid(column=1, row=1, padx=(4,0), pady=(4,0), columnspan=2, sticky='ew')
     self.l1Label.grid(column=0, row=2, pady=(4,0), sticky='e')
     self.l1Entry.grid(column=1, row=2, pady=(4,0))
     self.l2Label.grid(column=0, row=3, pady=(4,0), sticky='e')

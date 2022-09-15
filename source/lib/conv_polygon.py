@@ -46,7 +46,7 @@ def preview(self):
             isCenter, self.xsValue.get(), self.ysValue.get(), \
             kerfWidth, isExternal, \
             self.sValue.get(), self.dValue.get(), self.aValue.get(), \
-            self.polyCombo.current(), self.dLabel['text'])
+            self.polyCombo.getvalue(), self.dLabel['text'])
     if error:
         self.dialog_show_ok(_('Polygon Error'), error)
     else:
@@ -60,7 +60,7 @@ def auto_preview(self):
         preview(self)
 
 def mode_changed(self):
-    self.polyCombo.selection_clear()
+#    self.polyCombo.selection_clear()
     if self.polyCombo.get() == _('SIDE LENGTH'):
         self.dLabel['text'] = _('LENGTH')
     else:
@@ -80,11 +80,10 @@ def widgets(self):
     else:
         self.dLabel['text'] = _('DIAMETER')
     #connections
-    self.matCombo.bind("<<ComboboxSelected>>",lambda event: self.material_changed(event))
     self.ctButton['command'] = lambda:self.cut_type_clicked()
     self.spButton['command'] = lambda:self.start_point_clicked()
     self.previewC['command'] = lambda:preview(self)
-    self.polyCombo.bind("<<ComboboxSelected>>",lambda event: mode_changed(self))
+    self.polyCombo['modifycmd'] = lambda:mode_changed(self)
     #add to layout
     self.matLabel.grid(column=0, row=0, pady=(4,0), sticky='e')
     self.matCombo.grid(column=1, row=0, pady=(4,0), columnspan=3, sticky='ew')
@@ -100,7 +99,8 @@ def widgets(self):
     self.liEntry.grid(column=1, row=3, pady=(4,0))
     self.loLabel.grid(column=2, row=3, pady=(4,0), sticky='e')
     self.loEntry.grid(column=3, row=3, pady=(4,0))
-    self.polyCombo.grid(column=0, row=4, pady=(4,0), columnspan=2, sticky='ew')
+    self.polyLabel.grid(column=0, row=4, pady=(4,0), sticky='e')
+    self.polyCombo.grid(column=1, row=4, padx=(4,0), pady=(4,0), columnspan=2, sticky='ew')
     self.sLabel.grid(column=0, row=5, pady=(4,0), sticky='e')
     self.sEntry.grid(column=1, row=5, pady=(4,0))
     self.dLabel.grid(column=0, row=6, pady=(4,0), sticky='e')
