@@ -1698,6 +1698,23 @@ def posstrs():
     else:
         return o.joint_dro_format(s,spd,o.get_num_joints(),limit, homed)
 
+def install_help(app):
+    # we use install_kb_text instead so we can change colors
+    return
+
+def install_kb_text(app):
+    keys = nf.makewidget(app, Frame, '.keys.text')
+    fixed = app.tk.call("linuxcnc::standard_fixed_font")
+    for i in range(len(help1)):
+        a, b = help1[i]
+        Label(keys, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
+        Label(keys, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
+    for i in range(len(help2)):
+        a, b = help2[i]
+        Label(keys, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=3, sticky="w")
+        Label(keys, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=4, sticky="w")
+    Label(keys, text="    ").grid(row=0, column=2)
+
 
 ##############################################################################
 # USER BUTTON FUNCTIONS                                                      #
@@ -3356,6 +3373,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     o.get_view = get_view       # from axis.py
     o.draw_grid = draw_grid     # from glcanon.py
     o.posstrs = posstrs         # from glcanon.py
+    install_help = install_help # from axis.py
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
     TclCommands.task_run_line = task_run_line
@@ -4589,10 +4607,9 @@ def user_hal_pins():
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
-    # set the colors
+    # set quick reference and the colors
+    install_kb_text(root_window)
     color_change()
-    # the first run has successfully completed
-    firstRun = None
     # run users custom python commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
         exec(open(os.path.join(configPath, 'user_commands.py')).read())
@@ -4600,11 +4617,15 @@ def user_hal_pins():
 
 
 ##############################################################################
-# PERIODIC FUNCTION - CALLED FROM AXIS EVERY CYCLE                             #
+# PERIODIC FUNCTION - CALLED FROM AXIS EVERY CYCLE                           #
 ##############################################################################
 def user_live_update():
+    global firstRun
     # don't do any updates until first run is complete.
     if firstRun:
+        # test this last command in axis to see if we are loaded
+        if widgets.numbers_text.bind():
+            firstRun = None
         return
     global isIdle, isIdleHomed, isPaused, isRunning
     global runState, pausedState, relPos
