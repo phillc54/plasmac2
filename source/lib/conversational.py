@@ -94,7 +94,7 @@ class Conv(tk.Tk):
         if convFirstRun or self.comp['development']:
             self.create_widgets(imagePath)
             self.show_common_widgets()
-        color_change()
+            color_change()
         self.polyCombo['values'] = (_('CIRCUMSCRIBED'), _('INSCRIBED'), _('SIDE LENGTH'))
         self.lineCombo['values'] = (_('LINE POINT ~ POINT'), _('LINE BY ANGLE'), _('ARC 3P'),\
                                _('ARC 2P +RADIUS'), _('ARC ANGLE +RADIUS'))
