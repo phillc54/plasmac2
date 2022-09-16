@@ -2838,7 +2838,7 @@ def keyboard_bindings(state):
     if firstRun:
         set_help_text()
     # delete kb shortcuts from help menu
-    rC('.menu.help','delete','last')
+    rC('.menu.help','delete',3)
     # remove current bindings
     for key in root_window.bind():
         root_window.unbind(key)
@@ -3842,9 +3842,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('setup_menu_accel','.menu','end',_('_Setup'))
     rC('.menu','add','cascade','-menu','.menu.help')
     rC('setup_menu_accel','.menu','end',_('_Help'))
-    rC('.menu.help','insert',0,'command','-command','update_plasmac2')
-    rC('setup_menu_accel','.menu.help',0,_('_Update'))
-    rC('.menu.help','insert',1,'separator')
+    rC('.menu.help','delete',0,1)
+    rC('.menu.help','add','command','-command','update_plasmac2')
+    rC('setup_menu_accel','.menu.help','end',_('_Update'))
+    rC('.menu.help','add','separator')
+    rC('.menu.help','add','command','-command','wm transient .about .;wm deiconify .about;show_all .about.message;focus .about.ok')
+    rC('setup_menu_accel','.menu.help','end',_('About AXIS'))
+    rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
+    rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
 
     # rework the status bar
     rC('grid','forget',ftop + '.gcodel')
