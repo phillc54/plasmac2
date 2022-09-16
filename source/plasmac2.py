@@ -1705,15 +1705,24 @@ def install_help(app):
 def install_kb_text(app):
     keys = nf.makewidget(app, Frame, '.keys.text')
     fixed = app.tk.call("linuxcnc::standard_fixed_font")
-    for i in range(len(help1)):
-        a, b = help1[i]
+    for i in range(len(kb_text_1)):
+        a, b = kb_text_1[i]
         Label(keys, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
         Label(keys, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
-    for i in range(len(help2)):
-        a, b = help2[i]
+    for i in range(len(kb_text_2)):
+        a, b = kb_text_2[i]
         Label(keys, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=3, sticky="w")
         Label(keys, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=4, sticky="w")
     Label(keys, text="    ").grid(row=0, column=2)
+
+def install_kp_text(app):
+    keyp = nf.makewidget(app, Frame, '.keyp.text')
+    fixed = app.tk.call("linuxcnc::standard_fixed_font")
+    for i in range(len(kp_text_1)):
+        a, b = kp_text_1[i]
+        Label(keyp, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
+        Label(keyp, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
+
 
 
 ##############################################################################
@@ -2744,8 +2753,8 @@ def get_button_num(name):
 # HELP TEXT                                                                      #
 ##############################################################################
 def set_help_text():
-    global help1, help2
-    help1 = [
+    global kb_text_1, kb_text_2, kp_text_1
+    kb_text_1 = [
         ('ESC', _('Abort')),
         ('', ''),
         ('F1', _('Emergency stop')),
@@ -2770,15 +2779,14 @@ def set_help_text():
         ('; or \'', _('Jog fifth axis or joint')),
         (_('Shift+ above jog'), _('Jog at traverse speed')),
     ]
-    help2 = [
+    kb_text_2 = [
         ('Joint Mode:', ''),
         ('` or 0 ~ 8', _('Activate joints 1 thru 9')),
         ('', ''),
         ('World Mode:', ''),
         ('` or 1 ~ 0', _('Feed override from 0% to 100%')),
-        ('Ctrl+ ` or 1 ~ 0', _('Rapid oOverride from 0% to 100%')),
+        ('Ctrl+ ` or 1 ~ 0', _('Rapid Override from 0% to 100%')),
         ('Alt+ ` or 1 ~ 0', _('Jog speed from 0% to 100%')),
-
         ('', ''),
         (_('Shift+ Home'), _('Home active joint')),
          (_('Ctrl+ Home'), _('Emulate GUI home button')),
@@ -2797,6 +2805,18 @@ def set_help_text():
         ('', ''),
         (_('Ctrl-K'), _('Clear live plot')),
         (_('Ctrl-Space'), _('Clear notifications')),
+    ]
+    kp_text_1 = [
+        (_('Left or Right'), _('Jog first axis or joint')),
+        (_('Up or Down'), _('Jog second axis or joint')),
+        (_('Pg Up, Pg Dn'), _('Jog third axis or joint')),
+        ('', ''),
+        (_('-+ above jog'), _('Jog speed x 0.1')),
+        (_('++ above jog'), _('Jog speed x 10')),
+        ('', ''),
+        (_('Home'), _('Emulate GUI home button')),
+        (_('End'), _('Touchoff X and Y to zero')),
+        (_('Del'), _('Emulate GUI laser button')),
     ]
 
 ##############################################################################
@@ -2855,7 +2875,7 @@ def keyboard_bindings(state):
     if firstRun:
         set_help_text()
     # delete kb shortcuts from help menu
-    rC('.menu.help','delete',3)
+    rC('.menu.help','delete',3,5)
     # remove current bindings
     for key in root_window.bind():
         root_window.unbind(key)
@@ -2938,8 +2958,11 @@ def keyboard_bindings(state):
                 root_window.bind('<KeyRelease-KP_{}>'.format(keys2[k]), make_lambda(key_released, keys2[k]))
                 root_window.bind('<Mod2-KeyRelease-KP_{}>'.format(keys2[k]), make_lambda(key_released, keys1[k]))
         # add kb shortcuts to help menu
+        rC('.menu.help','add','separator')
         rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
-        rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
+        rC('setup_menu_accel','.menu.help','end',_('Keyboard Shortcuts'))
+        rC('.menu.help','add','command','-command','wm transient .keyp .;wm deiconify .keyp; focus .keyp.ok')
+        rC('setup_menu_accel','.menu.help','end',_('Keypad Shortcuts'))
 
 
 ##############################################################################
@@ -3842,6 +3865,24 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
     rC('grid',fleds + '.lCLlab',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
 
+    # rename keyboard shortcut window
+    rC('wm','title','.keys','plasmac2 Keyboard Shortcuts')
+    # new keypad shortcut window
+    rC('toplevel','.keyp')
+    rC('bind','.keyp','<Key-Return>','wm withdraw .keyp')
+    rC('bind','.keyp','<Key-Escape>','wm withdraw .keyp')
+    rC('frame','.keyp.text')
+    rC('button','.keyp.ok','-command','wm wi .keyp','-default','active','-padx',0,'-pady',0,'-width','10')
+    rC('setup_widget_accel','.keyp.ok','OK')
+    rC('pack','.keyp.text','-expand',1,'-fill','y')
+    rC('pack','.keyp.ok')
+    rC('wm','title','.keyp','plasmac2 Keypad Shortcuts')
+    rC('wm','iconname','.keyp','')
+    rC('wm','resiz','.keyp',0,0)
+    rC('wm','minsize','.keyp',1,1)
+    rC('wm','protocol','.keyp','WM_DELETE_WINDOW','wm wi .keys')
+    rC('wm','withdraw','.keyp')
+
     # menu alterations
     # delete existing
     rC('.menu.file','delete','last')
@@ -3866,8 +3907,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('.menu.help','add','separator')
     rC('.menu.help','add','command','-command','wm transient .about .;wm deiconify .about;show_all .about.message;focus .about.ok')
     rC('setup_menu_accel','.menu.help','end',_('About AXIS'))
+    rC('.menu.help','add','separator')
     rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
-    rC('setup_menu_accel','.menu.help','end',_('Quick _Reference'))
+    rC('setup_menu_accel','.menu.help','end',_('Keyboard Shortcuts'))
+    rC('.menu.help','add','command','-command','wm transient .keyp .;wm deiconify .keyp; focus .keyp.ok')
+    rC('setup_menu_accel','.menu.help','end',_('Keypad Shortcuts'))
 
     # rework the status bar
     rC('grid','forget',ftop + '.gcodel')
@@ -4607,8 +4651,8 @@ def user_hal_pins():
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
-    # set quick reference and the colors
     install_kb_text(root_window)
+    install_kp_text(root_window)
     color_change()
     # run users custom python commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
