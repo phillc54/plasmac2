@@ -1536,6 +1536,23 @@ def reload_file(refilter=True):
         o.set_highlight_line(line)
     live_plotter.clear()
 
+def task_run(*event):
+    for key in togglePins:
+        if togglePins[key]['runcritical'] and not togglePins[key]['state']:
+            title = _('RUN ERROR')
+            msg0 = _('Cannot run program while critical button is not active')
+            btn = rC('.fbuttons.button' + togglePins[key]['button'],'cget','-text')
+            notifications.add('error', '{}:\n{}\n'.format(title, msg0 + ': ' + btn))
+            return
+    if run_warn(): return
+    global program_start_line, program_start_line_last
+    program_start_line_last = program_start_line;
+    ensure_mode(linuxcnc.MODE_AUTO)
+    c.auto(linuxcnc.AUTO_RUN, program_start_line)
+    program_start_line = 0
+    t.tag_remove("ignored", "0.0", "end")
+    o.set_highlight_line(None)
+
 def task_run_line():
     if vars.highlight_line.get() == 0:
         return
@@ -3399,6 +3416,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     install_help = install_help # from axis.py
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
+    TclCommands.task_run = task_run
     TclCommands.task_run_line = task_run_line
     TclCommands.task_stop = task_stop
     TclCommands.open_file_name = open_file_name
@@ -4769,14 +4787,9 @@ def user_live_update():
                 rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorActive)
             else:
                 if togglePins[key]['runcritical']:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorActive)
+                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorWarn)
                 else:
                     rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorBack)
-        if togglePins[key]['runcritical']:
-            if togglePins[key]['state'] and rC('.toolbar.program_run','cget','-state') != 'normal':
-                rC('.toolbar.program_run','configure','-state','normal')
-            elif not togglePins[key]['state'] and isIdleHomed and rC('.toolbar.program_run','cget','-state') != 'disabled' and isIdleHomed:
-                rC('.toolbar.program_run','configure','-state','disabled')
     # halpin pulse
     for key in pulsePins:
         # service the timers
