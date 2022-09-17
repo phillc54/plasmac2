@@ -1496,11 +1496,11 @@ def dialog_run_from_line():
 # add plasmac to the title
 def update_title(*args):
     if vars.taskfile.get() == '':
-        file = 'no file'
+        file = 'no file loaded'
         name = 'AXIS'
     else:
         file = name = os.path.basename(vars.taskfile.get())
-    base = '{} on PLASMAC_V{} + AXIS {}'.format(vars.machine.get(), VER, linuxcnc.version)
+    base = '{} on plasmac2_v{} + AXIS {}'.format(vars.machine.get(), VER, linuxcnc.version)
     rC('wm','title','.','{} - ({})'.format(base, file))
     rC('wm','iconname','.', name)
 
@@ -1745,7 +1745,6 @@ def install_kp_text(app):
         a, b = kp_text_1[i]
         Label(keyp, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
         Label(keyp, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
-
 
 
 ##############################################################################
@@ -4683,8 +4682,17 @@ def user_hal_pins():
     # run users custom hal commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
         exec(open(os.path.join(configPath, 'user_hal.py')).read())
+    # setup key shortcuts
     install_kb_text(root_window)
     install_kp_text(root_window)
+    # setup the about text
+    rC('text','.about.message1','-borderwidth','0','-relief','flat','-width','40','-height','6','-wrap','word')
+    rC('.about.message1','insert','end','\nplasmac2 extensions v{}\n\nCopyright (C) 2022\nPhillip A Carter and Gregory D Carl'.format(VER))
+    rC('.about.message1','configure','-state','disabled')
+    rC('pack','forget','.about.ok')
+    rC('pack','.about.message1','-expand','1','-fill','both')
+    rC('pack','.about.ok')
+    # setup the colors
     color_change()
     # run users custom python commands if it exists
     if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
