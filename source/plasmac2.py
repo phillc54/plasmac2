@@ -3209,12 +3209,20 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # only usefull if we move the file open code in Axis so it it called after the user command file is called
     #args = ['do_not_open_a_file']
 
-    VER = '2.0'
     PREF = plasmacPreferences()
     MATS = plasmacMaterials()
     TEMP = plasmacTempMaterial()
     rC = root_window.tk.call
     rE = root_window.tk.eval
+    # set the version
+    VER = getPrefs(PREF,'GUI_OPTIONS', 'Version', '0', str)
+    if VER == '0':
+        with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
+            for line in inFile:
+                if 'v2.' in line:
+                    VER = line.split('v')[1].split('<')[0]
+                    break
+        putPrefs(PREF,'GUI_OPTIONS', 'Version', VER, str)
     # set the default font
     fontName = 'sans'
     fontSize = startFontSize = '10'
@@ -3333,7 +3341,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('jogMultiplier', DoubleVar),
              )
     restoreSetup = {}
-    plasmacVer = getPrefs(PREF,'GUI_OPTIONS', 'Version', '2.232.000', str)
     pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
