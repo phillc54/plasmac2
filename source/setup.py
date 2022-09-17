@@ -10,6 +10,7 @@ import git
 from shutil import *
 from tkinter import *
 from tkinter import filedialog
+import configparser
 
 class Setup:
     def __init__(self, master):
@@ -60,6 +61,15 @@ class Setup:
             self.myMsg(title, os.path.join(self.b2tf, '../') + msg, 1)
             raise SystemExit
         self.reply = [False, None]
+        self.version = '2.232.000'
+        with open(os.path.join(self.b2tf, 'versions.html'), 'r') as inFile:
+            for line in inFile:
+                if 'v2.' in line:
+                    self.version = line.split('v')[1].split('<')[0]
+                    break
+        # self.prefs = configparser.ConfigParser
+        self.prefs = configparser.ConfigParser()
+        self.prefs.optionxform=str
 
     def migrate(self):
         ini = filedialog.askopenfilename(
@@ -221,7 +231,10 @@ class Setup:
             os.symlink(os.path.join(self.b2tf), os.path.join(newDir, 'plasmac2'))
             # copy user custom files
             self.copy_custom_files(newDir)
-            # we made it...
+            # write the version number
+            prefsFile = newIni.replace('ini', 'prefs')
+            self.write_version(prefsFile)
+            # all done...
             title = 'Migration Complete'
             msg = ['Ini file for plasmac2 config is:']
             msg.append(os.path.join(newDir, iniFile))
@@ -332,10 +345,19 @@ class Setup:
         self.copy_custom_files(simDir)
         # create a link to plasmac2
         os.symlink(os.path.join(self.b2tf), os.path.join(simDir, 'plasmac2'))
+        # write the version number
+        prefsFile = os.path.join(simDir, '{}.prefs'.format(simName))
+        self.write_version(prefsFile)
+        # all done...
         title = 'Sim Creation Complete'
         msg = ['Ini file for {} sim config is: {}'.format(simUnits, os.path.join(simDir, simName))]
         msg.append('X={}   Y={}   Z={}'.format(simX, simY, simZ))
         self.myMsg(title, '\n\n'.join(msg), 1)
+
+    def write_version(self, prefs):
+        self.prefs.read(prefs)
+        self.prefs['GUI_OPTIONS']['Version'] = self.version
+        self.prefs.write(open(prefs, 'w'))
 
     def copy_custom_files(self, dir):
         for f in ['commands', 'hal', 'periodic']:

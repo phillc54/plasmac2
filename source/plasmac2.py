@@ -23,7 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
 
-
 ##############################################################################
 # NEW CLASSES                                                                #
 ##############################################################################
@@ -869,25 +868,32 @@ def save_setup_clicked():
 ##############################################################################
 # GENERAL FUNCTIONS                                                          #
 ##############################################################################
-
 def update_plasmac2():
+    global plasmacVer
     try:
         repo = git.Repo(repoPath)
-    except:
+    except Exception as e:
         msg = 'Cannot open a git repository at '
-        messagebox.showerror('Repository Error', msg + repoPath)
+        messagebox.showerror('Repository Error', msg + repoPath + '\n\n' + e.stderr)
         return
     try:
         current = repo.head.commit
         repo.remotes.origin.pull()
-    except:
+    except Exception as e:
         msg = 'An error occurred while updating'
-        messagebox.showerror('Update Error', msg)
+        messagebox.showerror('Update Error', msg + ':\n\n' + e.stderr)
         return
     if current == repo.head.commit:
         messagebox.showinfo('plasmac2 Update', 'plasmac2 was up to date')
     else:
+        with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
+            for line in inFile:
+                if 'v2.' in line:
+                    plasmacVer = line.split('v')[1].split('<')[0]
+                    break
+        putPrefs(PREF,'GUI_OPTIONS','Version', plasmacVer, str)
         msg = ['plasmac2 was updated']
+        msg.append('to v{}'.format(plasmacVer))
         msg.append('A restart may be needed')
         messagebox.showinfo('plasmac2 Update', '\n'.join(msg))
 
@@ -3327,6 +3333,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('jogMultiplier', DoubleVar),
              )
     restoreSetup = {}
+    plasmacVer = getPrefs(PREF,'GUI_OPTIONS', 'Version', '2.232.000', str)
     pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
