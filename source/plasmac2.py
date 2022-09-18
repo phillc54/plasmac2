@@ -2160,7 +2160,8 @@ def save_material_clicked():
     load_materials(section)
 
 def reload_material_clicked():
-    load_materials(int(rC('.runs.materials','get').split(':')[0]))
+    MATS.read(MATS.fn)
+    load_materials()
 
 def new_material_clicked():
     global materialNumList
