@@ -2793,48 +2793,50 @@ def set_help_text():
         ('B', _('Activate fifth axis')),
         ('', ''),
         ('C', _('Select continuous jog')),
-        (_('I or Shift+ I'), _('Select jog increment')),
+        (_('I or Shift-I'), _('Select jog increment')),
         (_('Left or Right'), _('Jog first axis or joint')),
         (_('Up or Down'), _('Jog second axis or joint')),
-        (_('Pg Up, Pg Dn'), _('Jog third axis or joint')),
+        (_('PgUp or PgDn'), _('Jog third axis or joint')),
         ('[ or ]', _('Jog fourth axis or joint')),
         ('; or \'', _('Jog fifth axis or joint')),
         (_('Shift+ above jog'), _('Jog at traverse speed')),
     ]
     kb_text_2 = [
-        ('Joint Mode:', ''),
-        ('` or 0 ~ 8', _('Activate joints 1 thru 9')),
-        ('', ''),
-        ('World Mode:', ''),
-        ('` or 1 ~ 0', _('Feed override from 0% to 100%')),
-        ('Ctrl+ ` or 1 ~ 0', _('Rapid Override from 0% to 100%')),
-        ('Alt+ ` or 1 ~ 0', _('Jog speed from 0% to 100%')),
-        ('', ''),
-        (_('Shift+ Home'), _('Home active joint')),
-         (_('Ctrl+ Home'), _('Emulate GUI home button')),
+         (_('Ctrl-Home'), _('Emulate GUI home button')),
+        (_('Shift-Home'), _('Home active joint')),
         (_('End'), _('Touchoff X and Y to zero')),
-        (_('Shift+ End'), _('Touchoff active axis to zero')),
-        (_('Ctrl+ End'), _('Set touchoff for current axis')),
+        (_('Ctrl-End'), _('Touchoff active axis to zero')),
+        (_('Shift-End'), _('Set touchoff for current axis')),
         (_('Del'), _('Emulate GUI laser button')),
         ('', ''),
         ('O', _('Open program')),
         ('R', _('Run program')),
         ('T', _('Step program')),
-        ('P', _('Pause program')),
+        ('P or Space', _('Pause program')),
         ('S', _('Resume program')),
         (_('Ctrl-R'), _('Reload program')),
         (_('Ctrl-S'), _('Save G-code as')),
         ('', ''),
         (_('Ctrl-K'), _('Clear live plot')),
         (_('Ctrl-Space'), _('Clear notifications')),
+        ('', ''),
+        ('World Mode:', ''),
+        ('` or 1~0', _('Feed override from 0% to 100%')),
+        ('Ctrl+ ` or 1~0', _('Rapid Override from 0% to 100%')),
+        ('Alt+ ` or 1~0', _('Jog speed from 0% to 100%')),
+        ('Joint Mode:', ''),
+        ('` or 0~8', _('Activate joints 1 thru 9')),
     ]
     kp_text_1 = [
-        (_('Left or Right'), _('Jog first axis or joint')),
-        (_('Up or Down'), _('Jog second axis or joint')),
-        (_('Pg Up, Pg Dn'), _('Jog third axis or joint')),
+        (_('Left'), _('Jog first axis or joint negative')),
+        (_('Right'), _('Jog first axis or joint positive')),
+        (_('Up'), _('Jog second axis or joint positive')),
+        (_('Down'), _('Jog second axis or joint negative')),
+        (_('PgUp'), _('Jog third axis or joint positive')),
+        (_('PgDn'), _('Jog third axis or joint negative')),
         ('', ''),
-        (_('-+ above jog'), _('Jog speed x 0.1')),
-        (_('++ above jog'), _('Jog speed x 10')),
+        (_('Minus+ above jog'), _('Jog speed x 0.1')),
+        (_('Plus+ above jog'), _('Jog speed x 10')),
         ('', ''),
         (_('Home'), _('Emulate GUI home button')),
         (_('End'), _('Touchoff X and Y to zero')),
@@ -2948,22 +2950,23 @@ def keyboard_bindings(state):
             root_window.bind('<Control-Key-{}>'.format(n), make_lambda(set_rapidrate, rate * 10))
             root_window.bind('<Alt-Key-{}>'.format(n), make_lambda(set_jog_slider, rate * 0.1))
         # homing
-        root_window.bind('<Shift-Home>', commands.home_joint)
         if homing_order_defined:
             root_window.bind('<Control-Home>', commands.home_all_joints)
         else:
             root_window.bind('<Control-Home>', commands.home_joint)
+        root_window.bind('<Shift-Home>', commands.home_joint)
         # touchoff
         root_window.bind('<Key-End>', lambda event: commands.touch_off_xy('1', 0, 0))
         root_window.bind('<KeyRelease-End>', lambda event: commands.touch_off_xy('0', 0, 0))
-        root_window.bind('<Control-End>', commands.touch_off_system)
-        root_window.bind('<Shift-End>', commands.set_axis_offset)
+        root_window.bind('<Control-End>', commands.set_axis_offset)
+        root_window.bind('<Shift-End>', commands.touch_off_system)
         root_window.bind('<Key-Delete>', lambda event: commands.key_pressed('Delete'))
         root_window.bind('<KeyRelease-Delete>', lambda event: commands.key_released('Delete'))
         # program
         root_window.bind('o', commands.open_file)
         root_window.bind('r', commands.task_run)
         root_window.bind('p', commands.task_pause)
+        root_window.bind('<space>', commands.task_pause)
         root_window.bind('s', commands.task_resume)
         root_window.bind('<Control-r>', commands.reload_file)
         root_window.bind('<Control-s>', commands.save_gcode)
@@ -4686,8 +4689,8 @@ def user_hal_pins():
     install_kb_text(root_window)
     install_kp_text(root_window)
     # setup the about text
-    rC('text','.about.message1','-borderwidth','0','-relief','flat','-width','40','-height','6','-wrap','word')
-    rC('.about.message1','insert','end','\nplasmac2 extensions v{}\n\nCopyright (C) 2022\nPhillip A Carter and Gregory D Carl'.format(VER))
+    rC('text','.about.message1','-borderwidth','0','-relief','flat','-width','40','-height','5','-wrap','word')
+    rC('.about.message1','insert','end','\nplasmac2 extensions v{}\nCopyright (C) 2022\nPhillip A Carter and Gregory D Carl'.format(VER))
     rC('.about.message1','configure','-state','disabled')
     rC('pack','forget','.about.ok')
     rC('pack','.about.message1','-expand','1','-fill','both')
