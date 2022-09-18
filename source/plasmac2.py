@@ -780,8 +780,8 @@ def load_param_clicked():
         except:
             value = 0
             title = _('Parameter Error')
-            msg = _('Invalid parameter for')
-            messagebox.showerror(title, '{}:\n\n{}'.format(msg, widget[8]))
+            msg0 = _('Invalid parameter for')
+            show_message(messagebox.showerror, title, '{}: {}'.format(msg0, widget[8]), len(msg0 + len(widget[8])))
             continue
         # convert to int here if required
         value = value if widget[2] > 0 else int(value)
@@ -873,18 +873,19 @@ def update_plasmac2():
     try:
         repo = git.Repo(repoPath)
     except Exception as e:
-        msg = 'Cannot open a git repository at '
-        messagebox.showerror('Repository Error', msg + repoPath + '\n\n' + e.stderr)
+        msg0 = 'Cannot open a git repository at '
+        show_message(messagebox.showerror, 'Repository Error', msg0 + repoPath + '\n\n' + e.stderr, len(msg0) + len(repoPath))
         return
     try:
         current = repo.head.commit
         repo.remotes.origin.pull()
     except Exception as e:
-        msg = 'An error occurred while updating'
-        messagebox.showerror('Update Error', msg + ':\n\n' + e.stderr)
+        msg0 = 'An error occurred while updating'
+        show_message(messagebox.showerror, 'Update Error', msg0 + ':\n\n' + e.stderr, len(msg0))
         return
     if current == repo.head.commit:
-        messagebox.showinfo('plasmac2 Update', 'plasmac2 was up to date')
+        msg0 = 'plasmac2 was up to date'
+        show_message(messagebox.showinfo, 'plasmac2 Update', msg0, len(msg0))
     else:
         with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
             for line in inFile:
@@ -892,10 +893,9 @@ def update_plasmac2():
                     plasmacVer = line.split('v')[1].split('<')[0]
                     break
         putPrefs(PREF,'GUI_OPTIONS','Version', plasmacVer, str)
-        msg = ['plasmac2 was updated']
-        msg.append('to v{}'.format(plasmacVer))
-        msg.append('A restart may be needed')
-        messagebox.showinfo('plasmac2 Update', '\n'.join(msg))
+        msg0 = 'plasmac2 was updated to v{}'.format(plasmacVer)
+        msg1 = 'A restart is recommended'
+        show_message(messagebox.showinfo, 'plasmac2 Update', '{}\n\n{}'.format(msg0, msg1), len(msg0))
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
@@ -968,9 +968,7 @@ def backup_clicked():
     msg0 = _('A compressed backup of the machine configuration has been saved in your home directory')
     msg1 = _('The file name is')
     msg2 = _('This file may be attached to a post on the LinuxCNC forum to aid in problem solving')
-#FIXME: TRY TO SET A MESSAGEBOX SIZE
-#    rC('wm','geometry','[messagebox.showinfo(title, msg)]','600x100')
-    messagebox.showinfo(title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2))
+    show_message(messagebox.showinfo, title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2), len(msg0))
 
 def torch_enable():
     hal.set_p('plasmac.torch-enable',str(not hal.get_value('plasmac.torch-enable')))
@@ -990,6 +988,12 @@ def update_preview(clear):
         root_window.update_idletasks()
     if clear:
        live_plotter.clear()
+
+def show_message(box, title, msg, chars):
+    rC('option','add','*Dialog.msg.font', 'sans {}'.format(fontSize))
+    rC('option','add','*Dialog.msg.width', '{}'.format(chars))
+    rC('option','add','*Dialog.msg.wrapLength', '{}'.format(chars * 8))
+    return box(title, msg)
 
 
 ##############################################################################
@@ -1255,22 +1259,26 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
 # FRAMING FUNCTIONS                                                          #
 ##############################################################################
 def frame_error(torch, msgList, units, xMin, yMin, xMax, yMax):
-    title = _('AXIS LIMIT ERROR')
+    print(msgList)
+    title = _('Axis Limit Error')
+    msg = []
     msgs = ''
-    msg1 = _('due to laser offset')
+    msg1 = '' if torch else _('due to laser offset')
     for n in range(0, len(msgList)):
+        msg.append(msgList[n][0] + ' ')
         if msgList[n][1] == 'MAX':
-            msg0 = _('move would exceed the maximum limit by')
+            msg[n] += _('move would exceed the maximum limit by')
         else:
-            msg0 = _('move would exceed the minimum limit by')
-        fmt = '{} {} {}{} {}\n\n' if msgs else '{} {} {}{} {}\n\n'
-        msgs += fmt.format(msgList[n][0], msg0, msgList[n][2], units, msg1)
+            msg[n] += _('move would exceed the minimum limit by')
+        msg[n] += ' ' + msgList[n][2] + units + ' ' + msg1 + '\n\n'
+        msgs += msg[n]
+    maxLen = len(max(msgs.split('\n'), key=len))
     if not torch:
         msgs += _('Do you want to try with the torch?')
-        response = messagebox.askyesno('Axis Limit Error', msgs)
+        response = show_message(messagebox.askyesno, title, msgs, maxLen)
     else:
         msgs += _('Framing can not proceed')
-        response = messagebox.showerror('Axis Limit Error', msgs)
+        response = show_message(messagebox.showerror, title, msgs, maxLen)
     return response
 
 def frame_job(feed, height):
@@ -2169,7 +2177,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Number')
     msgs = msg1
     while(1):
-        num = simpledialog.askstring(title, '{}:'.format(msgs))
+        num = show_message(simpledialog.askstring, title, '{}:'.format(msgs), len(msgs))
         if num == None:
             return
         if not num:
@@ -2194,7 +2202,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Name')
     msgs = msg1
     while(1):
-        nam = simpledialog.askstring(title, '{}:'.format(msgs))
+        nam = show_message(simpledialog.askstring, title, '{}:'.format(msgs), len(msgs))
         if nam == None:
             return
         if not nam:
@@ -2212,10 +2220,10 @@ def delete_material_clicked():
     msg0 = _('Default material cannot be deleted')
     material = int(rC('.runs.materials','get').split(':')[0])
     if material == getPrefs(PREF,'GUI_OPTIONS', 'Default material', 0, int):
-        reply = messagebox.showwarning(title,msg0)
+        reply = show_message(messagebox.showwarning, title, msg0, len(msg0))
         return
     msg0 = _('Do you wish to delete material')
-    reply = messagebox.askyesno(title, '{} #{}?'.format(msg0, material))
+    reply = show_message(messagebox.askyesno, title, '{} #{}?'.format(msg0, material), len(msg0) + 3)
     if not reply:
         return
     removePrefsSect(MATS,'MATERIAL_NUMBER_{}'.format(int(rC('.runs.materials','get').split(':')[0])))

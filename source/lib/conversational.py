@@ -259,15 +259,22 @@ class Conv(tk.Tk):
             self.invalidLeads = 0
 
     def dialog_show_ok(self, title, text):
-        response = tk.messagebox.showerror(title, text)
+        maxLen = len(max(text.split('\n'), key=len))
+        response = self.show_message(tk.messagebox.showerror, title, text, maxLen)
         return response
+
+    def show_message(self, box, title, msg, chars):
+        self.rC('option','add','*Dialog.msg.font', 'TkDefaultFont')
+        self.rC('option','add','*Dialog.msg.width', '{}'.format(chars))
+        self.rC('option','add','*Dialog.msg.wrapLength', '{}'.format(chars * 8))
+        return box(title, msg)
 
     def new_pressed(self, buttonPressed):
         if buttonPressed and (self.saveC['state'] or self.sendC['state'] or self.previewActive):
             title = _('Unsaved Shape')
             msg0 = _('You have an unsaved, unsent, or active previewed shape')
             msg1 = _('If you continue it will be deleted')
-            if not tk.messagebox.askyesno(title, '{}\n\n{}\n'.format(msg0, msg1)):
+            if not self.show_message(tk.messagebox.askyesno, title, '{}\n\n{}\n'.format(msg0, msg1), len(msg0)):
                 return
         if self.oldConvButton == 'line':
             if self.lineCombo.get() == _('LINE POINT ~ POINT'):
@@ -300,7 +307,7 @@ class Conv(tk.Tk):
             for line in inFile:
                 if '(new conversational file)' in line:
                     msg0 = _('An empty file cannot be saved')
-                    tk.messagebox.showerror(title, msg0)
+                    self.show_message(tk.messagebox.showerror, title, msg0, len(msg0))
                     return
 #        self.vkb_show() if we add a virtual keyboard ??????????????????????????
         fileTypes = [('G-Code Files', '*.ngc *.nc *.tap'),
@@ -356,12 +363,12 @@ class Conv(tk.Tk):
                 for line in inFile:
                     if '(new conversational file)' in line:
                         msg0 = _('An empty file cannot be arrayed, rotated, or scaled')
-                        tk.messagebox.showerror(title, msg0)
+                        self.show_message(tk.messagebox.showerror, title, msg0, len(msg0))
                         return True
                     # see if we can do something about NURBS blocks down the track
                     elif 'g5.2' in line.lower() or 'g5.3' in line.lower():
                         msg0 = _('Cannot scale a GCode NURBS block')
-                        tk.messagebox.showerror(title, msg0)
+                        self.show_message(tk.messagebox.showerror, title, msg0, len(msg0))
                         return True
                     elif 'M3' in line or 'm3' in line:
                         break
@@ -440,7 +447,7 @@ class Conv(tk.Tk):
             child.deselect()
         title = _('Active Preview')
         msg0 = _('Cannot continue with an active previewed shape')
-        response = tk.messagebox.showwarning(title, '{}\n'.format(msg0))
+        response = self.show_message(tk.messagebox.showwarning, title, '{}\n'.format(msg0), len(msg0))
         if self.oldConvButton:
             self.toolButton[self.convShapes.index(self.oldConvButton)].select()
         self.module = self.oldModule
@@ -473,12 +480,12 @@ class Conv(tk.Tk):
                 name = os.path.basename(self.existingFile)
                 msg0 = _('The original file will be loaded')
                 msg1 = _('If you continue all changes will be deleted')
-                if not tk.messagebox.askyesno(title, '{}:\n\n{}\n\n{}\n'.format(msg0, name, msg1)):
+                if not self.show_message(tk.messagebox.askyesno, title, '{}:\n\n{}\n\n{}\n'.format(msg0, name, msg1), len(msg0)):
                     return(True)
             else:
                 msg0 = _('An empty file will be loaded')
                 msg1 = _('If you continue all changes will be deleted')
-                if not tk.messagebox.askyesno(title, '{}\n\n{}\n'.format(msg0, msg1)):
+                if not self.show_message(tk.messagebox.askyesno, title, '{}\n\n{}\n'.format(msg0, msg1), len(msg0)):
                     return(True)
             if self.existingFile:
                 COPY(self.existingFile, self.fNgcBkp)
