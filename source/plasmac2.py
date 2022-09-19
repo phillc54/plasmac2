@@ -249,10 +249,18 @@ def font_size_changed():
 
 def close_window():
     if pVars.closeDialog.get():
-        text1 = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str)
-        text2 = _('Do you really want to close LinuxCNC?')
-        text = '{}\n\n{}'.format(text1, text2)
-        if rC('nf_dialog', '.error', _('Confirm Close'), text, 'warning', 1, _('Yes'), _('No')):
+        msgs = '\n'
+        customLen = 0
+        if pVars.closeText.get():
+            customText = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str).split('\\')
+            if customText:
+                for t in customText:
+                    msgs += '{}\n\n'.format(t)
+            customLen = len(max(customText, key=len))
+        text2 = _('Do you really want to close LinuxCNC ?')
+        msgs  += text2
+        maxLen = max(customLen, len(text2))
+        if not show_message(messagebox.askyesno, _('Confirm Close'), msgs, maxLen):
             return
     putPrefs(PREF,'GUI_OPTIONS', 'Window last', rC('winfo','geometry',root_window), str)
     if pVars.pmx485Enable.get():
@@ -827,6 +835,7 @@ def load_setup_clicked():
     else:
         rC(fsetup + '.l.cr.speed','set',restoreSetup['crPercent'])
     pVars.closeDialog.set(restoreSetup['closeDialog'])
+    pVars.closeText.set(restoreSetup['closeText'])
     rC(fsetup + '.l.gui.zoom','set',restoreSetup['tableZoom'])
     user_button_load()
     read_colors()
@@ -839,6 +848,8 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Jog speed', restoreSetup['jogSpeed'], int)
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Mode', restoreSetup['plasmacMode'], int)
+    restoreSetup['closeText'] = pVars.closeText.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', restoreSetup['closeText'], str)
     restoreSetup['closeDialog'] = pVars.closeDialog.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Exit warning', restoreSetup['closeDialog'], bool)
     restoreSetup['winSize'] = pVars.winSize.get()
@@ -956,8 +967,8 @@ def tar_filter(tarinfo):
           return tarinfo
 
 def backup_clicked():
-    n = time.gmtime()
-    d = '{:02d}{:02d}{:02d}'.format(n.tm_year, n.tm_mon, n.tm_mday)
+    n = time.localtime()
+    d = '{}{:02d}{:02d}'.format(str(n.tm_year)[-2:], n.tm_mon, n.tm_mday)
     t = '{:02d}{:02d}{:02d}'.format(n.tm_hour, n.tm_min, n.tm_sec)
     configDir = os.path.dirname(vars.emcini.get())
     outName = '{}_V{}_{}_{}.tar.gz'.format(vars.machine.get(), VER, d, t)
@@ -2112,9 +2123,9 @@ def user_button_released(button, code):
 def user_button_add():
     for n in range(1, 21):
         if not rC('winfo','ismapped',fsetup + '.r.ubuttons.canvas.frame.num' + str(n)):
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
             break
 
 def user_button_load():
@@ -2131,9 +2142,9 @@ def user_button_load():
         if getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str) or getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str):
             rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str))
             rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(4,0))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
+            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
             color_user_buttons()
 
 def user_button_save():
@@ -3296,6 +3307,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('ohmicEnable', BooleanVar),
              ('meshEnable', BooleanVar),
              ('ignorArcOk', BooleanVar),
+             ('closeText', StringVar),
              ('closeDialog', BooleanVar),
              ('kbShortcuts', BooleanVar),
              ('winSize', StringVar),
@@ -4304,45 +4316,53 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.m.utilities','-column',0,'-row',0,'-sticky','new')
     rC('grid',fsetup + '.m.colors','-column',0,'-row',1,'-sticky','new')
 
-    # right panel (for buttons)
+    # right panel for text entries
     rC('frame',fsetup + '.r')
-    # top for torch enable
+    # frame for torch enable
     rC('labelframe',fsetup + '.r.torch','-text','Torch Enable','-relief','groove')
     rC('label',fsetup + '.r.torch.blankL','-text','','-width',2,'-anchor','w')
     rC('label',fsetup + '.r.torch.enabledL','-text','Enabled','-width',14,'-anchor','w')
     rC('label',fsetup + '.r.torch.disabledL','-text','Disabled','-width',14,'-anchor','w')
     rC('entry',fsetup + '.r.torch.enabled','-bd',1,'-width',14)
     rC('entry',fsetup + '.r.torch.disabled','-bd',1,'-width',14)
-    rC('grid',fsetup + '.r.torch.blankL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.r.torch.enabledL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.r.torch.disabledL','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
+    rC('grid',fsetup + '.r.torch.blankL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.torch.enabledL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.torch.disabledL','-column',2,'-row',0,'-sticky','nw','-padx',(4,0))
     rC('grid',fsetup + '.r.torch.enabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
     rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
-    # canvas for scrolling user buttons
-    rC('canvas',fsetup + '.r.ubuttons.canvas')
-    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
-    # user button widgets
+    # canvas for scrolling
+    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',1000,'-width',536)
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
+    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
+    # window frame
+    rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
+    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,0,1000),'-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
+    rC('pack',fsetup + '.r.ubuttons.canvas','-fill','both','-side','left')
+    rC('pack',fsetup + '.r.ubuttons.yscroll','-fill','both','-side','right','-padx',(4,0))
+    # user button widgets
     rC('label',fsetup + '.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
     rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w','-relief','sunken')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-bd',1)
-    rC('grid',fsetup + '.r.ubuttons.canvas.frame.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,0))
-    # create window for user buttons
-    rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
-    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,0,800),'-yscrollcommand',fsetup + '.r.ubuttons.yscroll set','-height',316)
-    rC('pack',fsetup + '.r.ubuttons.canvas','-fill','both','-side','left')
-    rC('pack',fsetup + '.r.ubuttons.yscroll','-fill','both','-side','right','-padx',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.canvas.frame.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4))
+
+    # frame for shutdown message
+    rC('labelframe',fsetup + '.r.shutdown','-text','Shutdown Message','-relief','groove')
+    rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1,'-width',66)
+    rC('grid',fsetup + '.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',(4,0),'-pady',(0,4))
+
     # populate right panel
     rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','new')
     rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','nsew')
+    rC('grid',fsetup + '.r.shutdown','-column',0,'-row',2,'-sticky','new')
+    rC('grid','rowconfigure',fsetup + '.r',1,'-weight',1)
 
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
@@ -4353,6 +4373,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid','columnconfigure',fsetup,2,'-weight',0)
     rC('grid','columnconfigure',fsetup,3,'-weight',1)
     rC('grid','columnconfigure',fsetup,4,'-weight',0)
+    rC('grid','rowconfigure',fsetup,0,'-weight',1)
 
     # run panel
     # create the widgets
@@ -4497,6 +4518,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC(fsetup + '.l.jog.speed','set',value)
     restoreSetup['jogSpeed'] = value
     set_jog_slider(value / vars.max_speed.get() / 60)
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str)
+    pVars.closeText.set(value)
+    restoreSetup['closeText'] = value
     value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning', True, bool)
     pVars.closeDialog.set(value)
     restoreSetup['closeDialog'] = value
