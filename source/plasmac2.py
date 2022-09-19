@@ -229,6 +229,13 @@ def font_size_changed():
     rC(fright,'itemconfigure','preview','-text',_('Preview'))
     rC(fright,'itemconfigure','numbers','-text',_('DRO'))
     rC(fright,'itemconfigure','stats','-text',_('Statistics'))
+    if isPaused:
+        rC(ftabs,'itemconfigure','cutrecs','-background',colorBack,'-foreground',colorFore)
+    else:
+        for tab in ['manual', 'mdi']:
+            rC(ftabs,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
+    for tab in ['numbers', 'preview', 'stats']:
+        rC(fright,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
     rC(fright + '.fpreview','configure','-bd',2)
     rC(fright + '.fnumbers','configure','-bd',2)
     rC(fright + '.fstats','configure','-bd',2)
@@ -3108,11 +3115,13 @@ def color_change():
                 rC(child,'configure','-selectcolor',colorActive)
         except:
             pass
-#FIXME: try to get rid of the arrows in all comboboxes
         # all comboboxes except for the jog increment Combobox
         if w == 'ComboBox':
-            rC(child,'configure','-selectforeground',colorFore)
+            rC(child,'configure','-background',colorBack)
             rC(child,'configure','-selectbackground',colorBack)
+            rC(child,'configure','-selectforeground',colorFore)
+            # lose the arrow
+            rC('pack','forget','{}.a'.format(child))
         # the entry of the jog increment combobox
         elif '.jogincr' in child and w == 'Entry': 
             rC(child,'configure','-disabledforeground',colorFore)
@@ -4207,11 +4216,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.wsizeL','-column',0,'-row',1,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-    rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+    rC('grid',fsetup + '.l.gui.wsize','-column',1,'-row',1,'-sticky','ew','-padx',(0,4),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.fsizeL','-column',0,'-row',2,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',2,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.coneL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',3,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.kbShortcutsL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
@@ -4237,21 +4246,21 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # plasmac frame
     rC('labelframe',fsetup + '.l.plasmac','-text','Plasmac','-relief','groove')
     rC('label',fsetup + '.l.plasmac.modeL','-width', 13,'-text','Mode','-anchor','e')
-    rC('ComboBox',fsetup + '.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC('ComboBox',fsetup + '.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',11,'-justify','right','-editable',0)
     rC(fsetup + '.l.plasmac.mode','configure','-values',[0,1,2])
     # populate plasmac frame
     rC('grid',fsetup + '.l.plasmac.modeL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.plasmac.mode','-column',1,'-row',0,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.plasmac',0,'-weight',1)
 #    rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
 
     # material frame
     rC('labelframe',fsetup + '.l.mats','-text','Material','-relief','groove')
     rC('label',fsetup + '.l.mats.defaultL','-width', 13,'-text','Default','-anchor','e')
-    rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',11,'-justify','right','-editable',0)
     # populate material frame
     rC('grid',fsetup + '.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.mats.default','-column',1,'-row',0,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.mats',0,'-weight',1)
 #    rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
 
@@ -4319,7 +4328,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # right panel for text entries
     rC('frame',fsetup + '.r')
     # frame for torch enable
-    rC('labelframe',fsetup + '.r.torch','-text','Torch Enable','-relief','groove')
+    rC('labelframe',fsetup + '.r.torch','-text','Torch Enable Text','-relief','groove')
     rC('label',fsetup + '.r.torch.blankL','-text','','-width',2,'-anchor','w')
     rC('label',fsetup + '.r.torch.enabledL','-text','Enabled','-width',14,'-anchor','w')
     rC('label',fsetup + '.r.torch.disabledL','-text','Disabled','-width',14,'-anchor','w')
@@ -4333,18 +4342,24 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
     # canvas for scrolling
-    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',1000,'-width',536)
+    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',800,'-width',540)
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
-    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
-    # window frame
+    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview','-troughcolor','#b3b3b3')
+    rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview','-troughcolor','#b3b3b3')
     rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
-    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,0,1000),'-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
-    rC('pack',fsetup + '.r.ubuttons.canvas','-fill','both','-side','left')
-    rC('pack',fsetup + '.r.ubuttons.yscroll','-fill','both','-side','right','-padx',(4,0))
+    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,1600,800))
+    rC(fsetup + '.r.ubuttons.canvas','configure','-xscrollcommand',fsetup + '.r.ubuttons.xscroll set')
+    rC(fsetup + '.r.ubuttons.canvas','configure','-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
+    # layout the canvas
+    rC('grid',fsetup + '.r.ubuttons.canvas','-column',1,'-row',0,'-sticky','nsew')
+    rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','sew','-pady',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
+    rC('grid','columnconfigure',fsetup + '.r.ubuttons',1,'-weight',1)
+    rC('grid','rowconfigure',fsetup + '.r.ubuttons',0,'-weight',1)
     # user button widgets
     rC('label',fsetup + '.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
     rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w','-relief','sunken')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
@@ -4367,7 +4382,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.m','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','ne','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','nse','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup,0,'-weight',0)
     rC('grid','columnconfigure',fsetup,1,'-weight',1)
     rC('grid','columnconfigure',fsetup,2,'-weight',0)
@@ -4461,7 +4476,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # configure
     rC(ft,'configure','-relief','flat','-pady',0)
     rC(ft + '.sb','configure','-bd',1)
-    rC(ft + '.sb','configure','-width', 16)
+    rC(ft + '.sb','configure','-width', 16,'-troughcolor','#b3b3b3')
     rC(ft + '.text','configure','-width',10,'-height',6,'-borderwidth',1,'-relief','sunken')
     # populate
     rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',2,'-sticky','nsew')
