@@ -886,11 +886,9 @@ def save_setup_clicked():
 def update_plasmac2():
     global VER
     oldVer = VER
-'''
-for development configs:
-  put "_devel" somewhere in the config directory
-  the config/plasmac2 directory should link to the development git repo
-'''
+    # for development configs:
+    #   put "_devel" somewhere in the config directory
+    #   the config/plasmac2 directory should link to the development git repo
     dev = '_devel' in configPath
     try:
         repo = git.Repo(repoPath)
