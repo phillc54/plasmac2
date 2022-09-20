@@ -229,13 +229,10 @@ def font_size_changed():
     rC(fright,'itemconfigure','preview','-text',_('Preview'))
     rC(fright,'itemconfigure','numbers','-text',_('DRO'))
     rC(fright,'itemconfigure','stats','-text',_('Statistics'))
-    if isPaused:
-        rC(ftabs,'itemconfigure','cutrecs','-background',colorBack,'-foreground',colorFore)
-    else:
-        for tab in ['manual', 'mdi']:
-            rC(ftabs,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
-    for tab in ['numbers', 'preview', 'stats']:
-        rC(fright,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
+    for nbook in [ftabs, fright]:
+        pages = (rC(nbook,'pages'))
+        for page in pages:
+            rC(nbook,'itemconfigure',page,'-foreground',colorFore,'-background',colorBack)
     rC(fright + '.fpreview','configure','-bd',2)
     rC(fright + '.fnumbers','configure','-bd',2)
     rC(fright + '.fstats','configure','-bd',2)
@@ -3128,13 +3125,10 @@ def color_change():
         elif w in ['Checkbutton']:
             rC(child,'configure','-relief','raised','-overrelief','raised','-bd',1)
     # notebook tabs - cutrecs is also done each time it is raised
-    if isPaused:
-        rC(ftabs,'itemconfigure','cutrecs','-background',colorBack,'-foreground',colorFore)
-    else:
-        for tab in ['manual', 'mdi']:
-            rC(ftabs,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
-    for tab in ['numbers', 'preview', 'stats']:
-        rC(fright,'itemconfigure',tab,'-background',colorBack,'-foreground',colorFore)
+    for nbook in [ftabs, fright]:
+        pages = (rC(nbook,'pages'))
+        for page in pages:
+            rC(nbook,'itemconfigure',page,'-foreground',colorFore,'-background',colorBack)
     # leds
     for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','kerf-locked']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-disabledfill',colorBack)
@@ -4915,8 +4909,8 @@ def user_live_update():
         rC(ftabs,'insert','end','manual')
         rC(ftabs,'insert','end','mdi')
         rC(ftabs,'raise','manual')
-        rC(ftabs,'itemconfigure','manual','-text','Manual')
-        rC(ftabs,'itemconfigure','mdi','-text','MDI')
+        rC(ftabs,'itemconfigure','manual','-text','Manual','-background',colorBack,'-foreground',colorFore)
+        rC(ftabs,'itemconfigure','mdi','-text','MDI','-background',colorBack,'-foreground',colorFore)
     # if resumed and component has completed a cut recovery then cancel cut recovey
     if not s.paused and not hal.get_value('plasmac.cut-recovering') and hal.get_value('plasmac.cut-recovery'):
         cut_rec_cancel()
