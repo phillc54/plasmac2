@@ -1975,17 +1975,12 @@ def user_button_setup():
         if bName and outCode['code']:
             bHeight = 1
             if type(bName) == list:
-                if '\\' in bName[0] or '\\' in bName[1]:
-                    bHeight = 2
-                if rC('.fbuttons.button' + str(n),'cget','-bg') != colorBack:
-                    bName = bName[1]
-                else:
-                    bName = bName[0]
+                bHeight = max(len(bName[0].split('\\')), len(bName[1].split('\\')))
+                bName = bName[0]
             else:
-                if '\\' in bName:
-                    bHeight = 2
+                bHeight = len(bName.split('\\'))
             bLabel = bName.replace('\\', '\n')
-            rC('.fbuttons.button' + str(n),'configure','-text',bLabel,'-height',bHeight)
+            rC('.fbuttons.button' + str(n),'configure','-text',bLabel,'-height',bHeight,'-bg',colorBack)
             rC('grid','.fbuttons.button{}'.format(n),'-column',0,'-row',row,'-sticky','new','-padx',(2,0),'-pady',(2,0))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonPress-1>','button_action {} 1'.format(n))
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
