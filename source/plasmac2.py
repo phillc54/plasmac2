@@ -884,7 +884,14 @@ def save_setup_clicked():
 # GENERAL FUNCTIONS                                                          #
 ##############################################################################
 def update_plasmac2():
-    global plasmacVer
+    global VER
+    oldVer = VER
+'''
+for development configs:
+  put "_devel" somewhere in the config directory
+  the config/plasmac2 directory should link to the development git repo
+'''
+    dev = '_devel' in configPath
     try:
         repo = git.Repo(repoPath)
     except Exception as e:
@@ -898,19 +905,27 @@ def update_plasmac2():
         msg0 = 'An error occurred while updating'
         show_message(messagebox.showerror, 'Update Error', msg0 + ':\n\n' + e.stderr, len(msg0))
         return
-    if current == repo.head.commit:
+    if current == repo.head.commit and not dev:
         msg0 = 'plasmac2 was up to date'
         show_message(messagebox.showinfo, 'plasmac2 Update', msg0, len(msg0))
+        return
+    with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
+        for line in inFile:
+            if 'v2.' in line:
+                VER = line.split('v')[1].split('<')[0]
+                break
+    putPrefs(PREF,'GUI_OPTIONS','Version', VER, str)
+    update_title()
+    if dev:
+        if oldVer == VER:
+            msg0 = 'development config was up to date'
+        else:
+            msg0 = 'development config was updated from v{} to v{}'.format(oldVer, VER)
+        msg1 = ''
     else:
-        with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
-            for line in inFile:
-                if 'v2.' in line:
-                    plasmacVer = line.split('v')[1].split('<')[0]
-                    break
-        putPrefs(PREF,'GUI_OPTIONS','Version', plasmacVer, str)
-        msg0 = 'plasmac2 was updated to v{}'.format(plasmacVer)
-        msg1 = 'A restart is recommended'
-        show_message(messagebox.showinfo, 'plasmac2 Update', '{}\n\n{}'.format(msg0, msg1), len(msg0))
+        msg0 = 'plasmac2 was updated from v{} to v{}'.format(oldVer, VER)
+        msg1 = '\n\nA restart is recommended'
+    show_message(messagebox.showinfo, 'plasmac2 Update', '{}{}'.format(msg0, msg1), len(msg0))
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
