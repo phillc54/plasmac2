@@ -1,6 +1,8 @@
 # plasmac2
 A plasma add-on for the AXIS GUI using LinuxCNC master branch. (v2.9)
 
+!['plasmac2'](source/lib/images/plasmac2.svg)
+
 ## Installation
 ### Requirements for using plasmac2 are:
   * A working version of LinuxCNC Master branch (V2.9)
@@ -65,5 +67,5 @@ git pull
 ## Notes:
 There are some different keyboard shortcuts in plasmac2 compared to AXIS.
 
-All schortcuts are shown in Help > Key... Shortcuts if keyboard shortcuts are enabled.
+All shortcuts are shown in the Help menu if keyboard shortcuts are enabled.
 
