@@ -3031,14 +3031,10 @@ def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
     for n in range(1, 21):
         if buttonNames[n]['name']:
             rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorFore)
-            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-bg',colorBack)
             rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorFore)
-            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-bg',colorBack)
         else:
-            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorBack)
-            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-bg',colorFore)
-            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorBack)
-            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-bg',colorFore)
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorDisable)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorDisable)
 
 def color_torch():
     if hal.get_value('plasmac.torch-enable'):
