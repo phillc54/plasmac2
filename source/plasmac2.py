@@ -3128,6 +3128,15 @@ def color_change():
                 rC(child,'configure','-selectcolor',colorActive)
         except:
             pass
+        try:
+            # color the trough of override scales and user button scrollbars
+            rC(child,'configure','-troughcolor',colorFore)
+            # color the trough of combobox lists
+            rC('option','add','*Scrollbar.troughColor',colorFore)
+            rC('option','add','*Scrollbar.background',colorBack)
+            rC('option','add','*Scrollbar.activeBackground',colorBack)
+        except:
+            pass
         # all comboboxes except for the jog increment Combobox
         if w == 'ComboBox':
             rC(child,'configure','-background',colorBack)
@@ -4354,8 +4363,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # canvas for scrolling
     rC('canvas',fsetup + '.r.ubuttons.canvas','-height',800,'-width',540)
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
-    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview','-troughcolor','#b3b3b3')
-    rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview','-troughcolor','#b3b3b3')
+    rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
+    rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview')
     rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
     rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,1600,800))
     rC(fsetup + '.r.ubuttons.canvas','configure','-xscrollcommand',fsetup + '.r.ubuttons.xscroll set')
@@ -4486,7 +4495,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # configure
     rC(ft,'configure','-relief','flat','-pady',0)
     rC(ft + '.sb','configure','-bd',1)
-    rC(ft + '.sb','configure','-width', 16,'-troughcolor','#b3b3b3')
     rC(ft + '.text','configure','-width',10,'-height',6,'-borderwidth',1,'-relief','sunken')
     # populate
     rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',2,'-sticky','nsew')
