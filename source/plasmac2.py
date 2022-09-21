@@ -2066,8 +2066,8 @@ def user_button_pressed(button, code):
             activeFunction = False
         else:
             activeFunction = True
-            xPos = s.position[0] if not code['X'] else code['X']
-            yPos = s.position[1] if not code['Y'] else code['Y']
+            xPos = s.position[0] if code['X'] is None else code['X']
+            yPos = s.position[1] if code['Y'] is None else code['Y']
             hal.set_p('plasmac.xy-feed-rate', str(code['F']))
             hal.set_p('plasmac.x-offset', '{:.0f}'.format((xPos - s.position[0]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.y-offset', '{:.0f}'.format((yPos - s.position[1]) / hal.get_value('plasmac.offset-scale')))
