@@ -878,6 +878,8 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Active color', colorActive, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Warning color', colorWarn, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Voltage color', colorVolt, str)
+    for key in togglePins:
+        set_toggle_pins(togglePins[key]) 
 
 
 ##############################################################################
@@ -960,6 +962,16 @@ def set_probe_offset_pins():
     hal.set_p('plasmac.offset-probe-x', '{}'.format(probeOffsets['X']))
     hal.set_p('plasmac.offset-probe-y', '{}'.format(probeOffsets['Y']))
     hal.set_p('plasmac.offset-probe-delay', '{}'.format(probeOffsets['Delay']))
+
+def set_toggle_pins(pin):
+    pin['state'] = hal.get_value(pin['pin'])
+    if pin['state']:
+        rC('.fbuttons.button' + pin['button'],'configure','-bg',colorActive)
+    else:
+        if pin['runcritical']:
+            rC('.fbuttons.button' + pin['button'],'configure','-bg',colorWarn)
+        else:
+            rC('.fbuttons.button' + pin['button'],'configure','-bg',colorBack)
 
 def set_peripheral_offsets():
     if comp['development']:
@@ -4853,14 +4865,7 @@ def user_live_update():
     # halpin toggle
     for key in togglePins:
         if hal.get_value(togglePins[key]['pin']) != togglePins[key]['state']:
-            togglePins[key]['state'] = hal.get_value(togglePins[key]['pin'])
-            if togglePins[key]['state']:
-                rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorActive)
-            else:
-                if togglePins[key]['runcritical']:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorWarn)
-                else:
-                    rC('.fbuttons.button' + togglePins[key]['button'],'configure','-bg',colorBack)
+            set_toggle_pins(togglePins[key])
     # halpin pulse
     for key in pulsePins:
         # service the timers
