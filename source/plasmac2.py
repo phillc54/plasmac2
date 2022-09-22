@@ -3181,6 +3181,7 @@ def color_change():
 #FIXME: I am sitting on the fence with this
     # dro
 #    rC('.pane.top.right.fnumbers.text','configure','-foreground',colorActive,'-background',ourBlack)
+    # the color setup buttons
     rC(fsetup + '.m.colors.fore','configure','-bg',colorFore,'-activebackground',colorFore)
     rC(fsetup + '.m.colors.back','configure','-bg',colorBack,'-activebackground',colorBack)
     rC(fsetup + '.m.colors.disable','configure','-bg',colorDisable,'-activebackground',colorDisable)
@@ -4027,7 +4028,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new button panel
     # create widgets
     rC('frame','.fbuttons','-relief','flat')
-    rC('button','.fbuttons.torch-enable','-takefocus',0,'-width',6)
+    rC('button','.fbuttons.torch-enable','-takefocus',0,'-width',6,'-highlightthickness',0)
     if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
         rC('.fbuttons.torch-enable','configure','-height',2)
     else:
