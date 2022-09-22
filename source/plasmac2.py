@@ -4981,14 +4981,12 @@ def user_live_update():
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
             elif buttonCodes[n]['code'] == 'single-cut':
-#                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state').string == 'normal':
-                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state') == 'normal':
+                if isIdleHomed and not activeFunction and str(rC('.toolbar.program_run','cget','-state')) == 'normal':
                     rC('.fbuttons.button' + str(n),'configure','-state','normal')
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
             elif buttonCodes[n]['code'] == 'manual-cut':
-#                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state').string == 'normal':
-                if isIdleHomed and not activeFunction and rC('.toolbar.program_run','cget','-state') == 'normal':
+                if isIdleHomed and not activeFunction and str(rC('.toolbar.program_run','cget','-state')) == 'normal':
                     rC('.fbuttons.button' + str(n),'configure','-state','normal')
                 else:
                     rC('.fbuttons.button' + str(n),'configure','-state','disabled')
