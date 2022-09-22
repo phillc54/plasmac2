@@ -119,7 +119,7 @@ def mode_changed():
         rC('grid','forget',foverride)
         rC('grid','forget',fplasma + '.arcvl')
         rC('grid','forget',fplasma + '.arc-voltage')
-        rC('grid','forget',fleds + '.led-kerf-locked')
+        rC('grid','forget',fleds + '.led-void-locked')
         rC('grid','forget',fleds + '.lKLlab')
         rC('grid','forget','.runs.check.av')
         rC('grid','forget','.runs.check.avL')
@@ -137,8 +137,8 @@ def mode_changed():
         rC('grid','forget',fparam + '.c2.thc.pid-i-gainL')
         rC('grid','forget',fparam + '.c2.thc.pid-d-gain')
         rC('grid','forget',fparam + '.c2.thc.pid-d-gainL')
-        rC('grid','forget',fparam + '.c2.thc.kerfcross-override')
-        rC('grid','forget',fparam + '.c2.thc.kerfcross-overrideL')
+        rC('grid','forget',fparam + '.c2.thc.voidlock-slope')
+        rC('grid','forget',fparam + '.c2.thc.voidlock-slopeL')
         rC('grid','forget',fparam + '.c3.arc.arc-voltage-scale')
         rC('grid','forget',fparam + '.c3.arc.arc-voltage-scaleL')
         rC('grid','forget',fparam + '.c3.arc.arc-voltage-offset')
@@ -161,7 +161,7 @@ def mode_changed():
         rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','w')
         rC('grid',fplasma + '.arcvl','-column',0,'-row',0,'-sticky','nw')
         rC('grid',fplasma + '.arc-voltage','-column',0,'-row',1,'-sticky','se','-rowspan',2)
-        rC('grid',fleds + '.led-kerf-locked','-column',4,'-row',3,'-padx',(4,0),'-pady',(4,0))
+        rC('grid',fleds + '.led-void-locked','-column',4,'-row',3,'-padx',(4,0),'-pady',(4,0))
         rC('grid',fleds + '.lKLlab',         '-column',5,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
         rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
         rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
@@ -187,8 +187,8 @@ def mode_changed():
         rC('grid',fparam + '.c2.thc.pid-i-gain','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,0))
         rC('grid',fparam + '.c2.thc.pid-d-gainL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,0))
         rC('grid',fparam + '.c2.thc.pid-d-gain','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,0))
-        rC('grid',fparam + '.c2.thc.kerfcross-overrideL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,0))
-        rC('grid',fparam + '.c2.thc.kerfcross-override','-column',1,'-row',9,'-sticky','e','-padx',(0,4),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.voidlock-slopeL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+        rC('grid',fparam + '.c2.thc.voidlock-slope','-column',1,'-row',9,'-sticky','e','-padx',(0,4),'-pady',(4,0))
         rC('grid',fparam + '.c3.arc.arc-voltage-scaleL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,0))
         rC('grid',fparam + '.c3.arc.arc-voltage-scale','-column',1,'-row',3,'-sticky','e','-padx',(0,4),'-pady',(4,0))
         rC('grid',fparam + '.c3.arc.arc-voltage-offsetL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,0))
@@ -935,9 +935,9 @@ def corner_enable_toggled():
     hal.set_p('plasmac.cornerlock-enable', str(pVars.cornerEnable.get()))
     putPrefs(PREF,'ENABLE_OPTIONS','Corner lock enable', pVars.cornerEnable.get(), bool)
 
-def kerf_enable_toggled():
-    hal.set_p('plasmac.kerfcross-enable', str(pVars.kerfEnable.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS','Kerf cross enable', pVars.kerfEnable.get(), bool)
+def void_enable_toggled():
+    hal.set_p('plasmac.voidlock-enable', str(pVars.voidEnable.get()))
+    putPrefs(PREF,'ENABLE_OPTIONS','Void lock enable', pVars.voidEnable.get(), bool)
 
 def auto_volts_toggled():
     hal.set_p('plasmac.use-auto-volts', str(pVars.autoVolts.get()))
@@ -3160,10 +3160,10 @@ def color_change():
         for page in pages:
             rC(nbook,'itemconfigure',page,'-foreground',colorFore,'-background',colorBack)
     # leds
-    for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','kerf-locked']:
+    for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','void-locked']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-disabledfill',colorBack)
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-outline',colorDisable)
-    for led in ['breakaway','kerf-locked','corner-locked']:
+    for led in ['breakaway','void-locked','corner-locked']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorWarn)
     for led in ['thc-enabled','thc-active']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorActive)
@@ -3309,7 +3309,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              fleds + '.led-up',\
              fleds + '.led-down',\
              fleds + '.led-corner-locked',\
-             fleds + '.led-kerf-locked',\
+             fleds + '.led-void-locked',\
             ]
     # recreate widget list to move active gcodes and add new widgets
     widget_list_new = []
@@ -3330,7 +3330,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('thcAuto', BooleanVar),
              ('thcEnable', BooleanVar),
              ('cornerEnable', BooleanVar),
-             ('kerfEnable', BooleanVar),
+             ('voidEnable', BooleanVar),
              ('autoVolts', BooleanVar),
              ('ohmicEnable', BooleanVar),
              ('meshEnable', BooleanVar),
@@ -3513,7 +3513,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.conv_toggle = conv_toggle
     TclCommands.thc_enable_toggled = thc_enable_toggled
     TclCommands.corner_enable_toggled = corner_enable_toggled
-    TclCommands.kerf_enable_toggled = kerf_enable_toggled
+    TclCommands.void_enable_toggled = void_enable_toggled
     TclCommands.auto_volts_toggled = auto_volts_toggled
     TclCommands.ohmic_enable_toggled = ohmic_enable_toggled
     TclCommands.ignore_arc_ok_toggled = ignore_arc_ok_toggled
@@ -3873,7 +3873,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',14)
     rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',14)
-    rC('checkbutton',fplasma + '.void','-variable','kerfEnable','-command','kerf_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
+    rC('checkbutton',fplasma + '.void','-variable','voidEnable','-command','void_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',14)
     # populate the frame
     rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e','-pady',(0,2))
@@ -3912,7 +3912,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fleds + '.labdn','-text',_('Dn'),'-anchor','w','-width',8)
     rC('canvas',fleds + '.led-corner-locked','-width',20,'-height',20)
     rC('label',fleds + '.lCLlab','-text',_('Vel Lock'),'-anchor','w','-width',8)
-    rC('canvas',fleds + '.led-kerf-locked','-width',20,'-height',20)
+    rC('canvas',fleds + '.led-void-locked','-width',20,'-height',20)
     rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
     # create the led shapes
     rC(fleds + '.led-arc-ok','create','oval',1,1,19,19)
@@ -3925,7 +3925,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC(fleds + '.led-up','create','oval',1,1,19,19)
     rC(fleds + '.led-down','create','oval',1,1,19,19)
     rC(fleds + '.led-corner-locked','create','oval',1,1,19,19)
-    rC(fleds + '.led-kerf-locked','create','oval',1,1,19,19)
+    rC(fleds + '.led-void-locked','create','oval',1,1,19,19)
     # populate the frame
     rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
     rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
@@ -4155,7 +4155,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
               ['.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
               ['.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
               ['.c2.thc','cornerlock-threshold',0,90,1,99,1,'VAD Threshold (%)','Velocity Anti Dive Threshold'], \
-              ['.c2.thc','kerfcross-override',0,100,10,500,1,'Void Override (%)','Void Sense Override'], \
+              ['.c2.thc','voidlock-slope',0,500,1,10000,1,'Void Slope (V/sec)','Void Sense Slope'], \
               cp7, \
               ['.c3.arc','arc-fail-delay',1,3,0.1,60,0.1,'Fail Timeout','Arc Fail Timeout'], \
               ['.c3.arc','arc-max-starts',0,3,1,9,1,'Max. Attempts','Arc Maximum Starts'], \
@@ -4538,9 +4538,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     value = getPrefs(PREF,'ENABLE_OPTIONS', 'Corner lock enable', False, bool)
     pVars.cornerEnable.set(value)
     hal.set_p('plasmac.cornerlock-enable', str(value))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Kerf cross enable', False, bool)
-    pVars.kerfEnable.set(value)
-    hal.set_p('plasmac.kerfcross-enable', str(value))
+    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Void lock enable', False, bool)
+    pVars.voidEnable.set(value)
+    hal.set_p('plasmac.voidlock-enable', str(value))
     value = getPrefs(PREF,'ENABLE_OPTIONS', 'Use auto volts', False, bool)
     pVars.autoVolts.set(value)
     hal.set_p('plasmac.use-auto-volts', str(value))
@@ -4662,7 +4662,7 @@ def user_hal_pins():
     comp.newpin('led-up', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('led-down', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('led-corner-locked', hal.HAL_BIT, hal.HAL_IN)
-    comp.newpin('led-kerf-locked', hal.HAL_BIT, hal.HAL_IN)
+    comp.newpin('led-void-locked', hal.HAL_BIT, hal.HAL_IN)
     comp.newpin('refresh', hal.HAL_S32, hal.HAL_IN)
     comp.newpin('material-change-number', hal.HAL_S32, hal.HAL_IN)
     comp.newpin('material-change', hal.HAL_S32, hal.HAL_IN)
@@ -4693,7 +4693,7 @@ def user_hal_pins():
                 [10,'plasmac:led-up','plasmac.led-up','axisui.led-up'],\
                 [11,'plasmac:led-down','plasmac.led-down','axisui.led-down'],\
                 [11,'plasmac:cornerlock-is-locked','plasmac.cornerlock-is-locked','axisui.led-corner-locked'],\
-                [13,'plasmac:kerfcross-is-locked','plasmac.kerfcross-is-locked','axisui.led-kerf-locked'],\
+                [13,'plasmac:voidlock-is-locked','plasmac.voidlock-is-locked','axisui.led-void-locked'],\
                 [14,'plasmac:offset-set-probe','plasmac.offset-set-probe','axisui.offset-set-probe'],\
                 [15,'plasmac:offset-set-scribe','plasmac.offset-set-scribe','axisui.offset-set-scribe'],\
                 ]
