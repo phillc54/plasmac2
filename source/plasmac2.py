@@ -3188,6 +3188,13 @@ def color_change():
     rC(fsetup + '.m.colors.active','configure','-bg',colorActive,'-activebackground',colorActive)
     rC(fsetup + '.m.colors.warn','configure','-bg',colorWarn,'-activebackground',colorWarn)
     rC(fsetup + '.m.colors.volt','configure','-bg',colorVolt,'-activebackground',colorVolt)
+    # notifications
+    rC('option','add','*!notification2.Frame.Background',colorBack)
+    rC('option','add','*!notification2.Frame.Label.Foreground',colorFore)
+    rC('option','add','*!notification2.Frame.Label.Background',colorBack)
+    rC('option','add','*!notification2.Frame.Button.Background',colorBack)
+    rC('option','add','*!notification2.Frame.Button.activeBackground',colorBack)
+    rC('option','add','*!notification2.Frame.Button.highlightThickness', 0)
 
 def color_set(option):
     global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt
