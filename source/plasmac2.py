@@ -74,6 +74,67 @@ class plasmacTempMaterial(tempP):
         self.fn = os.path.join(tmpPath, '{}_material.gcode'.format(vars.machine.get()))
         self.read(self.fn)
 
+# class for popup dialogs
+class plasmacDialog:
+    def __init__(self, func, title, msg, system=None):
+        dlg = self.dlg = Tkinter.Toplevel(root_window, bg=colorBack)
+        dlg.attributes('-type', 'dock')
+        rE('tk::PlaceWindow {} center'.format(dlg))
+        dlg.wait_visibility()
+        dlg.grab_set()
+        dlg.protocol("WM_DELETE_WINDOW", lambda:self.dlg_complete(False, False))
+        dlg.title(title)
+        frm = Tkinter.Frame(dlg, bg=colorBack, bd=2, relief='ridge')
+        ttl = Tkinter.Label(frm, text=title, fg=colorBack, bg=colorFore)
+        ttl.pack(fill='x')
+        label = Tkinter.Label(frm, text=msg, fg=colorFore, bg=colorBack)
+        label.pack(padx=4, pady=4)
+        if func in ['entry', 'touch']:
+            self.entry = Tkinter.Entry(frm, justify='right', fg=colorFore, bg=colorBack)
+            self.entry.configure(highlightthickness=0, selectforeground=colorBack, selectbackground=colorFore)
+            self.entry.pack(padx=4, pady=4)
+            self.entry.focus_set()
+        if func == 'touch':
+            self.entry.insert('end', '0.0')
+            opl = Tkinter.Label(frm, text=_('Coordinate System'), fg=colorFore, bg=colorBack)
+            opl.pack(padx=4, pady=4)
+            self.c = c = StringVar(t)
+            c.set(system)
+            self.opt = Tkinter.OptionMenu(frm, c, *all_systems[:])
+            self.opt.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+            self.opt.children['menu'].configure(fg=colorFore, bg=colorBack, activeforeground=colorBack, activebackground=colorFore)
+            self.opt.pack(padx=4, pady=4)
+        bbox = Tkinter.Frame(frm, bg=colorBack)
+        if func in ['info', 'error', 'warn']:
+            b1Text = _('OK')
+            b2Text = None
+        elif func in ['yesno']:
+            b1Text = _('Yes')
+            b2Text = _('No')
+        elif func in ['entry', 'touch']:
+            b1Text = _('OK')
+            b2Text = _('Cancel')
+        b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.dlg_complete(True, func), width=8)
+        b1.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+        b1.pack(side='left')
+        if b2Text:
+            b2 = Tkinter.Button(bbox, text=b2Text, command=lambda:self.dlg_complete(False, func), width=8)
+            b2.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+            b2.pack(side='left', padx=(8,0))
+        bbox.pack(padx=4, pady=4)
+        frm.pack()
+
+    def dlg_complete(self, value, func):
+        if func in ['entry']:
+            text = None if not self.entry.get() else self.entry.get()
+            self.reply = value, self.entry.get()
+        elif func in ['touch']:
+            text = None if not self.entry.get() else self.entry.get()
+            self.reply = value, self.entry.get(), self.c.get()
+        else:
+            self.reply = value
+        self.dlg.destroy()
+
 
 ##############################################################################
 # PREFERENCE FUNCTIONS                                                       #
@@ -253,18 +314,15 @@ def font_size_changed():
 
 def close_window():
     if pVars.closeDialog.get():
-        msgs = '\n'
-        customLen = 0
+        msgs = ''
         if pVars.closeText.get():
             customText = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str).split('\\')
             if customText:
                 for t in customText:
                     msgs += '{}\n\n'.format(t)
-            customLen = len(max(customText, key=len))
         text2 = _('Do you really want to close LinuxCNC ?')
         msgs  += text2
-        maxLen = max(customLen, len(text2))
-        if not show_message(messagebox.askyesno, _('Confirm Close'), msgs, maxLen):
+        if not show_dialog('yesno', _('CONFIRM CLOSE'), msgs):
             return
     putPrefs(PREF,'GUI_OPTIONS', 'Window last', rC('winfo','geometry',root_window), str)
     if pVars.pmx485Enable.get():
@@ -380,7 +438,7 @@ def conv_toggle(state, convSent=False):
             CONV = conversational.Conv(convFirstRun, root_window, widgets.toolFrame, \
                    widgets.convFrame, bwidget.ComboBox, imagePath, tmpPath, pVars, \
                    unitsPerMm, comp, PREF, getPrefs, putPrefs, open_file_guts, \
-                   wcs_rotation, conv_toggle, color_change)
+                   wcs_rotation, conv_toggle, color_change, show_dialog)
             convFirstRun = False
         set_conv_preview()
         if loaded_file:
@@ -791,9 +849,9 @@ def load_param_clicked():
             value = getPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), widget[3], float)
         except:
             value = 0
-            title = _('Parameter Error')
+            title = _('PARAMETER ERROR')
             msg0 = _('Invalid parameter for')
-            show_message(messagebox.showerror, title, '{}: {}'.format(msg0, widget[8]), len(msg0 + len(widget[8])))
+            show_dialog('error', title, '{}: {}'.format(msg0, widget[8]))
             continue
         # convert to int here if required
         value = value if widget[2] > 0 else int(value)
@@ -896,18 +954,18 @@ def update_plasmac2():
         repo = git.Repo(repoPath)
     except Exception as e:
         msg0 = 'Cannot open a git repository at '
-        show_message(messagebox.showerror, 'Repository Error', msg0 + repoPath + '\n\n' + e.stderr, len(msg0) + len(repoPath))
+        show_dialog('error', _('REPOSITORY ERROR'), msg0 + repoPath + '\n\n' + e.stderr)
         return
     try:
         current = repo.head.commit
         repo.remotes.origin.pull()
     except Exception as e:
         msg0 = 'An error occurred while updating'
-        show_message(messagebox.showerror, 'Update Error', msg0 + ':\n\n' + e.stderr, len(msg0))
+        show_dialog('error', _('UPDATE ERROR'), msg0 + ':\n\n' + e.stderr)
         return
     if current == repo.head.commit and not dev:
         msg0 = 'plasmac2 was up to date'
-        show_message(messagebox.showinfo, 'plasmac2 Update', msg0, len(msg0))
+        show_dialog('info', _('plasmac2 UPDATE'), msg0)
         return
     with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
         for line in inFile:
@@ -925,7 +983,7 @@ def update_plasmac2():
     else:
         msg0 = 'plasmac2 was updated from v{} to v{}'.format(oldVer, VER)
         msg1 = '\n\nA restart is recommended'
-    show_message(messagebox.showinfo, 'plasmac2 Update', '{}{}'.format(msg0, msg1), len(msg0))
+    show_dialog('info', _('plasmac2 UPDATE'), '{}{}'.format(msg0, msg1))
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
@@ -1008,7 +1066,7 @@ def backup_clicked():
     msg0 = _('A compressed backup of the machine configuration has been saved in your home directory')
     msg1 = _('The file name is')
     msg2 = _('This file may be attached to a post on the LinuxCNC forum to aid in problem solving')
-    show_message(messagebox.showinfo, title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2), len(msg0))
+    show_dialog('info', title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2))
 
 def torch_enable():
     hal.set_p('plasmac.torch-enable',str(not hal.get_value('plasmac.torch-enable')))
@@ -1029,11 +1087,10 @@ def update_preview(clear):
     if clear:
        live_plotter.clear()
 
-def show_message(box, title, msg, chars):
-    rC('option','add','*Dialog.msg.font', 'sans {}'.format(fontSize))
-    rC('option','add','*Dialog.msg.width', '{}'.format(chars))
-    rC('option','add','*Dialog.msg.wrapLength', '{}'.format(chars * 8))
-    return box(title, msg)
+def show_dialog(func, title, msg):
+    dlg = plasmacDialog(func, title, msg)
+    root_window.wait_window(dlg.dlg)
+    return(dlg.reply)
 
 
 ##############################################################################
@@ -1299,8 +1356,7 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
 # FRAMING FUNCTIONS                                                          #
 ##############################################################################
 def frame_error(torch, msgList, units, xMin, yMin, xMax, yMax):
-    print(msgList)
-    title = _('Axis Limit Error')
+    title = _('AXIS LIMIT ERROR')
     msg = []
     msgs = ''
     msg1 = '' if torch else _('due to laser offset')
@@ -1312,13 +1368,12 @@ def frame_error(torch, msgList, units, xMin, yMin, xMax, yMax):
             msg[n] += _('move would exceed the minimum limit by')
         msg[n] += ' ' + msgList[n][2] + units + ' ' + msg1 + '\n\n'
         msgs += msg[n]
-    maxLen = len(max(msgs.split('\n'), key=len))
     if not torch:
         msgs += _('Do you want to try with the torch?')
-        response = show_message(messagebox.askyesno, title, msgs, maxLen)
+        response = show_dialog('yesno', title, msgs)
     else:
         msgs += _('Framing can not proceed')
-        response = show_message(messagebox.showerror, title, msgs, maxLen)
+        response = show_dialog('error', title, msgs)
     return response
 
 def frame_job(feed, height):
@@ -1794,6 +1849,23 @@ def install_kp_text(app):
         Label(keyp, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
         Label(keyp, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
 
+def prompt_touchoff(title, text, default, tool_only, system=None):
+    title = _('TOUCH OFF')
+    text = text.replace(':', '') % _('workpiece')
+    dlg = plasmacDialog('touch', title, text, system)
+    root_window.wait_window(dlg.dlg)
+    valid, value, system = dlg.reply
+    try:
+        v = float(value)
+    except:
+        msg0 = _('Touch off entry {} is invalid'.format(value))
+        show_dialog('error', title, msg0)
+        value = 0.0
+    if valid:
+        return(value, system)
+    else:
+        return(None, None)
+
 
 ##############################################################################
 # USER BUTTON FUNCTIONS                                                      #
@@ -2212,8 +2284,8 @@ def new_material_clicked():
     msg1 = _('Enter New Material Number')
     msgs = msg1
     while(1):
-        num = show_message(simpledialog.askstring, title, '{}:'.format(msgs), len(msgs))
-        if num == None:
+        valid, num = show_dialog('entry', title, '{}:'.format(msgs))
+        if not valid:
             return
         if not num:
             msg0 = _('A material number is required')
@@ -2237,8 +2309,8 @@ def new_material_clicked():
     msg1 = _('Enter New Material Name')
     msgs = msg1
     while(1):
-        nam = show_message(simpledialog.askstring, title, '{}:'.format(msgs), len(msgs))
-        if nam == None:
+        valid, nam = show_dialog('entry', title, '{}:'.format(msgs))
+        if not valid:
             return
         if not nam:
             msg0 = _('Material name is required')
@@ -2255,10 +2327,10 @@ def delete_material_clicked():
     msg0 = _('Default material cannot be deleted')
     material = int(rC('.runs.materials','get').split(':')[0])
     if material == getPrefs(PREF,'GUI_OPTIONS', 'Default material', 0, int):
-        reply = show_message(messagebox.showwarning, title, msg0, len(msg0))
+        reply = show_dialog('warn', title, msg0)
         return
     msg0 = _('Do you wish to delete material')
-    reply = show_message(messagebox.askyesno, title, '{} #{}?'.format(msg0, material), len(msg0) + 3)
+    reply = show_dialog('yesno', title, '{} #{}?'.format(msg0, material))
     if not reply:
         return
     removePrefsSect(MATS,'MATERIAL_NUMBER_{}'.format(int(rC('.runs.materials','get').split(':')[0])))
@@ -3239,8 +3311,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     sys.path.append(libPath)
 
     import tarfile
-    from tkinter import messagebox
-    from tkinter import simpledialog
     from tkinter.colorchooser import askcolor
     from math import radians, atan, degrees
     from collections import OrderedDict
@@ -3482,11 +3552,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     matButtons   = ['delete','new','reload','save']
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
-    # monkeypatched functions
-    o.get_view = get_view       # from axis.py
-    o.draw_grid = draw_grid     # from glcanon.py
-    o.posstrs = posstrs         # from glcanon.py
-    install_help = install_help # from axis.py
+    # monkeypatched functions from axis.py
+    o.get_view = get_view
+    install_help = install_help
+    prompt_touchoff = prompt_touchoff
+    # monkeypatched functions from glcanon.py
+    o.draw_grid = draw_grid
+    o.posstrs = posstrs
     # tcl called functions hijacked from axis.py
     TclCommands.reload_file = reload_file
     TclCommands.task_run = task_run
