@@ -936,6 +936,7 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Active color', colorActive, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Warning color', colorWarn, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Voltage color', colorVolt, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Trough color', colorTrough, str)
     for key in togglePins:
         set_toggle_pins(togglePins[key]) 
 
@@ -3111,13 +3112,14 @@ def keyboard_bindings(state):
 ##############################################################################
 def read_colors():
     global colorFore, colorBack, colorDisable, colorActive
-    global colorWarn, colorVolt, colorOrange, colorYellow
+    global colorWarn, colorVolt, colorTrough, colorOrange, colorYellow
     colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
     colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#d9d9d9', str)
     colorDisable = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a3a3a3', str)
     colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
     colorWarn = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
     colorVolt = getPrefs(PREF,'GUI_OPTIONS','Voltage color', '#0000ff', str)
+    colorTrough = getPrefs(PREF,'GUI_OPTIONS','Trough color', '#000000', str)
     colorOrange = '#FFAA00'
     colorYellow = '#FFFF00'
 
@@ -3202,9 +3204,9 @@ def color_change():
             pass
         try:
             # color the trough of override scales and user button scrollbars
-            rC(child,'configure','-troughcolor',colorFore)
+            rC(child,'configure','-troughcolor',colorTrough)
             # color the trough of combobox lists
-            rC('option','add','*Scrollbar.troughColor',colorFore)
+            rC('option','add','*Scrollbar.troughColor',colorTrough)
             rC('option','add','*Scrollbar.background',colorBack)
             rC('option','add','*Scrollbar.activeBackground',colorBack)
         except:
@@ -3260,6 +3262,7 @@ def color_change():
     rC(fsetup + '.m.colors.active','configure','-bg',colorActive,'-activebackground',colorActive)
     rC(fsetup + '.m.colors.warn','configure','-bg',colorWarn,'-activebackground',colorWarn)
     rC(fsetup + '.m.colors.volt','configure','-bg',colorVolt,'-activebackground',colorVolt)
+    rC(fsetup + '.m.colors.trough','configure','-bg',colorTrough,'-activebackground',colorTrough)
     # notifications
     rC('option','add','*!notification2.Frame.Background',colorBack)
     rC('option','add','*!notification2.Frame.Label.Foreground',colorFore)
@@ -3269,7 +3272,7 @@ def color_change():
     rC('option','add','*!notification2.Frame.Button.highlightThickness', 0)
 
 def color_set(option):
-    global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt
+    global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt, colorTrough
     if option == 'fore':
         color = colorFore
     elif option == 'back':
@@ -3282,6 +3285,8 @@ def color_set(option):
        color = colorWarn
     elif option == 'volt':
        color = colorVolt
+    elif option == 'trough':
+       color = colorTrough
     else:
         color = '#000000'
     colors = askcolor(color, title=_('plasmac2 Color Selector'))
@@ -3298,6 +3303,8 @@ def color_set(option):
             colorWarn = colors[1]
         elif option == 'volt':
             colorVolt = colors[1]
+        elif option == 'trough':
+            colorTrough = colors[1]
         color_change()
 
 ##############################################################################
@@ -4406,6 +4413,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('button',fsetup + '.m.colors.warn','-command','color_set warn')
     rC('label',fsetup + '.m.colors.voltL','-width', 13,'-text','Arc Voltage','-anchor','e')
     rC('button',fsetup + '.m.colors.volt','-command','color_set volt')
+    rC('label',fsetup + '.m.colors.troughL','-width', 13,'-text','Slider Trough','-anchor','e')
+    rC('button',fsetup + '.m.colors.trough','-command','color_set trough')
     # populate color frame
     rC('grid',fsetup + '.m.colors.foreL','-column',0,'-row',0,'-sticky','e','-padx',4,'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.fore','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
@@ -4419,6 +4428,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.m.colors.warn','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.voltL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.volt','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.troughL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.trough','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.m.colors',0,'-weight',1)
     # populate middle panel
     rC('grid',fsetup + '.m.utilities','-column',0,'-row',0,'-sticky','new')
