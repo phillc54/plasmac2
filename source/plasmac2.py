@@ -308,7 +308,7 @@ def font_size_changed():
     ngcFont = str(int(fontSize) - 1)
     rC('font','configure','TkDefaultFont','-family', fontName, '-size', fontSize)
     rC(fplasma + '.arc-voltage','configure','-font',arcFont)
-    rC('.pane.bottom.t.text','configure','-height',8,'-font',font)
+    rC('.pane.bottom.t.text','configure','-font',font)
     rC('.info.gcodef.gcodes','configure','-font',font)
     if s.paused:
         rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery')
@@ -3247,6 +3247,11 @@ def color_change():
     rC('option','add','*!notification2.Frame.Button.Background',colorBack)
     rC('option','add','*!notification2.Frame.Button.activeBackground',colorBack)
     rC('option','add','*!notification2.Frame.Button.highlightThickness', 0)
+    # tags in gcode text
+    t.tag_configure('ignored', background='#ffffff', foreground='#808080')
+    t.tag_configure('lineno', foreground=colorTrough)
+    t.tag_configure('executing', background=colorTrough)
+    t.tag_configure('sel', background='red', foreground='blue')
 
 def color_set(option):
     global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt, colorTrough
@@ -3955,7 +3960,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # new led frame
     # create the widgets
-    rC('frame',fleds,'-relief','flat','-bd',1)
+    rC('frame',fleds,'-relief','flat','-bd',0)
     for led in wLeds:
         # leds
         rC('canvas',led,'-width',20,'-height',20,'-bd',2,'-relief','ridge')
@@ -3983,6 +3988,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fleds + '.led-downL',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
     rC('grid',fleds + '.led-corner-lockedL',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    for n in range(3):
+        rC('grid','rowconfigure',fleds,n,'-weight',1)
 
     # rename keyboard shortcut window
     rC('wm','title','.keys','plasmac2 Keyboard Shortcuts')
@@ -4533,11 +4540,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # bottom pane widgets
     # configure
-    rC(ft,'configure','-relief','flat','-pady',0)
+    rC(ft,'configure','-relief','flat','-pady',0,'-bd',0)
     rC(ft + '.sb','configure','-bd',1)
     rC(ft + '.text','configure','-width',10,'-height',6,'-borderwidth',1,'-relief','sunken')
     # populate
-    rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',2,'-sticky','nsew')
+    rC('grid',fleds,'-column',0,'-row',1,'-padx',(2,0),'-pady',(0,2),'-sticky','nsew')
+    rC('grid',ft,'-padx',(0,2),'-pady',(0,2))
     rC('pack',ft + '.sb','-fill','y','-side','left','-padx',1)
     rC('pack',ft + '.text','-fill','both','-expand',1,'-side','left','-pady',0)
 
