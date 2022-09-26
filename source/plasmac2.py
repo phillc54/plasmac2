@@ -3131,6 +3131,9 @@ def get_all_children(parent):
     return _list
 
 def color_change():
+    # menu colors
+    rC('option','add','*Menu.Background',colorBack)
+    rC('option','add','*Menu.Foreground',colorFore)
     widgetTypes = []
     for child in get_all_children('.'):
         if child in ['.fbuttons.torch-enable']:
@@ -3541,6 +3544,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     matButtons   = ['delete','new','reload','save']
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
+    # allow right-click to select start from line
+    o.bind('<Button-3>', rClicker)
     # monkeypatched functions from axis.py
     o.get_view = get_view
     install_help = install_help
