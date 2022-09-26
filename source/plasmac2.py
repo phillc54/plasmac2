@@ -221,7 +221,7 @@ def mode_changed():
         rC('grid','forget',fplasma + '.arcvl')
         rC('grid','forget',fplasma + '.arc-voltage')
         rC('grid','forget',fleds + '.led-void-locked')
-        rC('grid','forget',fleds + '.lKLlab')
+        rC('grid','forget',fleds + '.led-void-lockedL')
         rC('grid','forget','.runs.check.av')
         rC('grid','forget','.runs.check.avL')
         rC('grid','forget',fparam + '.c2.thc.thc-auto')
@@ -263,7 +263,7 @@ def mode_changed():
         rC('grid',fplasma + '.arcvl','-column',0,'-row',0,'-sticky','nw')
         rC('grid',fplasma + '.arc-voltage','-column',0,'-row',1,'-sticky','se','-rowspan',2)
         rC('grid',fleds + '.led-void-locked','-column',4,'-row',3,'-padx',(4,0),'-pady',(4,0))
-        rC('grid',fleds + '.lKLlab',         '-column',5,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+        rC('grid',fleds + '.led-void-lockedL','-column',5,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
         rC('grid','.runs.check.av','-column',0,'-row',0,'-sticky','w')
         rC('grid','.runs.check.avL','-column',1,'-row',0,'-sticky','w')
         rC('grid',fparam + '.c2.thc.thc-autoL','-column',0,'-row',0,'-sticky','e')
@@ -3212,16 +3212,16 @@ def color_change():
             rC(nbook,'itemconfigure',page,'-foreground',colorFore,'-background',colorBack)
     # leds
     for led in ['arc-ok','torch','breakaway','thc-enabled','thc-active','ohmic','float','up','down','corner-locked','void-locked']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-disabledfill',colorBack)
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-outline',colorDisable)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-disabledfill',colorBack)
+#        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-outline',colorDisable)
     for led in ['breakaway','void-locked','corner-locked']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorWarn)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorWarn)
     for led in ['thc-enabled','thc-active']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorActive)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorActive)
     for led in ['ohmic','float','up','down']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure',1,'-fill',colorYellow)
-    rC(fleds + '.led-arc-ok','itemconfigure',1,'-fill',colorActive)
-    rC(fleds + '.led-torch','itemconfigure',1,'-fill',colorOrange)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorYellow)
+    rC(fleds + '.led-arc-ok','itemconfigure','all','-fill',colorActive)
+    rC(fleds + '.led-torch','itemconfigure','all','-fill',colorOrange)
     # arc voltage
     rC(fplasma + '.arc-voltage','configure','-fg',colorVolt)
     color_user_buttons()
@@ -3361,18 +3361,18 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     fcrleadin = fcutrecs + '.leadins'
     fparam = '.param'
     fsetup = '.setup'
-    wLeds = [fleds + '.led-arc-ok',\
-             fleds + '.led-torch',\
-             fleds + '.led-thc-enabled',\
-             fleds + '.led-ohmic',\
-             fleds + '.led-float',\
-             fleds + '.led-breakaway',\
-             fleds + '.led-thc-active',\
-             fleds + '.led-up',\
-             fleds + '.led-down',\
-             fleds + '.led-corner-locked',\
-             fleds + '.led-void-locked',\
-            ]
+    wLeds = {fleds + '.led-arc-ok': [_('Arc OK'), 8], \
+             fleds + '.led-torch': [_('Torch On'), 8], \
+             fleds + '.led-breakaway': [_('Break'), 8], \
+             fleds + '.led-thc-enabled': [_('THC Enabled'), 11], \
+             fleds + '.led-thc-active': [_('THC Active'), 11], \
+             fleds + '.led-ohmic': [_('Ohmic Probe'), 11], \
+             fleds + '.led-float': [_('Float Switch'), 11], \
+             fleds + '.led-up': [_('Up'), 8], \
+             fleds + '.led-down': [_('Down'), 8], \
+             fleds + '.led-corner-locked': [_('Vel Lock'), 8], \
+             fleds + '.led-void-locked': [_('Void Lock'), 8], \
+            }
     # recreate widget list to move active gcodes and add new widgets
     widget_list_new = []
     for l in widget_list:
@@ -3956,61 +3956,33 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new led frame
     # create the widgets
     rC('frame',fleds,'-relief','flat','-bd',1)
-    rC('canvas',fleds + '.led-arc-ok','-width',20,'-height',20)
-    rC('label',fleds + '.lAOlab','-text',_('Arc OK'),'-anchor','w','-width',9)
-    rC('canvas',fleds + '.led-torch','-width',20,'-height',20)
-    rC('label',fleds + '.lTlab','-text',_('Torch On'),'-anchor','w','-width',9)
-    rC('canvas',fleds + '.led-breakaway','-width',20,'-height',20)
-    rC('label',fleds + '.lBlab','-text',_('Breakaway'),'-anchor','w','-width',9)
-    rC('canvas',fleds + '.led-thc-enabled','-width',20,'-height',20)
-    rC('label',fleds + '.lTElab','-text',_('THC Enabled'),'-anchor','w','-width',10)
-    rC('canvas',fleds + '.led-thc-active','-width',20,'-height',20)
-    rC('label',fleds + '.lTAlab','-text',_('THC Active'),'-anchor','w','-width',10)
-    rC('canvas',fleds + '.led-ohmic','-width',20,'-height',20)
-    rC('label',fleds + '.lOlab','-text',_('Ohmic Probe'),'-anchor','w','-width',10)
-    rC('canvas',fleds + '.led-float','-width',20,'-height',20)
-    rC('label',fleds + '.lFlab','-text',_('Float Switch'),'-anchor','w','-width',10)
-    rC('canvas',fleds + '.led-up','-width',20,'-height',20)
-    rC('label',fleds + '.labup','-text',_('Up'),'-anchor','w','-width',8)
-    rC('canvas',fleds + '.led-down','-width',20,'-height',20)
-    rC('label',fleds + '.labdn','-text',_('Dn'),'-anchor','w','-width',8)
-    rC('canvas',fleds + '.led-corner-locked','-width',20,'-height',20)
-    rC('label',fleds + '.lCLlab','-text',_('Vel Lock'),'-anchor','w','-width',8)
-    rC('canvas',fleds + '.led-void-locked','-width',20,'-height',20)
-    rC('label',fleds + '.lKLlab','-text',_('Void Lock'),'-anchor','w','-width',8)
-    # create the led shapes
-    rC(fleds + '.led-arc-ok','create','oval',1,1,19,19)
-    rC(fleds + '.led-torch','create','oval',1,1,19,19)
-    rC(fleds + '.led-breakaway','create','oval',1,1,19,19)
-    rC(fleds + '.led-thc-enabled','create','oval',1,1,19,19)
-    rC(fleds + '.led-thc-active','create','oval',1,1,19,19)
-    rC(fleds + '.led-ohmic','create','oval',1,1,19,19)
-    rC(fleds + '.led-float','create','oval',1,1,19,19)
-    rC(fleds + '.led-up','create','oval',1,1,19,19)
-    rC(fleds + '.led-down','create','oval',1,1,19,19)
-    rC(fleds + '.led-corner-locked','create','oval',1,1,19,19)
-    rC(fleds + '.led-void-locked','create','oval',1,1,19,19)
+    for led in wLeds:
+        # leds
+        rC('canvas',led,'-width',20,'-height',20,'-bd',2,'-relief','ridge')
+        rC(led,'create','rectangle',1,1,22,22,'-width',0)
+        # labels
+        rC('label',led + 'L','-text',wLeds[led][0],'-anchor','w','-width',wLeds[led][1])
     # populate the frame
     rC('grid',fleds + '.led-arc-ok',         '-column',0,'-row',0,'-padx',(4,0),'-pady',(4,0),'-sticky','EW')
-    rC('grid',fleds + '.lAOlab',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-arc-okL',             '-column',1,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-torch',          '-column',0,'-row',1,'-padx',(4,0),'-pady',(4,0))
-    rC('grid',fleds + '.lTlab',              '-column',1,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-torchL',              '-column',1,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-breakaway',      '-column',0,'-row',3,'-padx',(4,0),'-pady',(4,0))
-    rC('grid',fleds + '.lBlab',              '-column',1,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-breakawayL',              '-column',1,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-thc-enabled',    '-column',2,'-row',0,'-padx',(0,0),'-pady',(4,0))
-    rC('grid',fleds + '.lTElab',             '-column',3,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-thc-enabledL',             '-column',3,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-thc-active',     '-column',2,'-row',1,'-padx',(0,0),'-pady',(4,0))
-    rC('grid',fleds + '.lTAlab',             '-column',3,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-thc-activeL',             '-column',3,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-ohmic',          '-column',2,'-row',2,'-padx',(0,0),'-pady',(4,0))
-    rC('grid',fleds + '.lOlab',              '-column',3,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-ohmicL',              '-column',3,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-float',          '-column',2,'-row',3,'-padx',(0,0),'-pady',(4,0))
-    rC('grid',fleds + '.lFlab',              '-column',3,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-floatL',              '-column',3,'-row',3,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-up',             '-column',4,'-row',0,'-padx',(4,0),'-pady',(4,0))
-    rC('grid',fleds + '.labup',              '-column',5,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-upL',              '-column',5,'-row',0,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-down',           '-column',4,'-row',1,'-padx',(4,0),'-pady',(4,0))
-    rC('grid',fleds + '.labdn',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-downL',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
-    rC('grid',fleds + '.lCLlab',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
+    rC('grid',fleds + '.led-corner-lockedL',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
 
     # rename keyboard shortcut window
     rC('wm','title','.keys','plasmac2 Keyboard Shortcuts')
