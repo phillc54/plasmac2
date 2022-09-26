@@ -87,8 +87,43 @@ class plasmacDialog:
         frm = Tkinter.Frame(dlg, bg=colorBack, bd=2, relief='ridge')
         ttl = Tkinter.Label(frm, text=title, fg=colorBack, bg=colorFore)
         ttl.pack(fill='x')
-        label = Tkinter.Label(frm, text=msg, fg=colorFore, bg=colorBack)
-        label.pack(padx=4, pady=4)
+        if func == 'rfl':
+            self.leadIn = Tkinter.BooleanVar()
+            self.leadLength = Tkinter.StringVar()
+            self.leadAngle = Tkinter.StringVar()
+            f1 = Tkinter.Frame(frm, bg=colorBack)
+            lbl1 = Tkinter.Label(f1, text=_('Use Leadin:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+            lbl1.pack(side='left')
+            leadinDo = Tkinter.Checkbutton(f1, fg=colorFore, bg=colorBack, variable=self.leadIn, indicatoron=False, width=2, bd=1)
+            leadinDo.configure(highlightthickness=0, activebackground=colorBack, selectcolor=colorActive, relief='raised', overrelief='raised')
+            leadinDo.pack(side='left')
+            f1.pack(padx=4, pady=4, anchor='w')
+            f2 = Tkinter.Frame(frm, bg=colorBack)
+            lbl2 = Tkinter.Label(f2, text=_('Leadin Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+            lbl2.pack(side='left')
+            leadinLength = Tkinter.Spinbox(f2, fg=colorFore, bg=colorBack, textvariable=self.leadLength, width=10)
+            leadinLength.configure(font=(fontName, fontSize), highlightthickness=0)
+            leadinLength.pack(side='left')
+            f2.pack(padx=4, pady=4, anchor='w')
+            f3 = Tkinter.Frame(frm, bg=colorBack)
+            lbl3 = Tkinter.Label(f3, text=_('Leadin Angle:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+            lbl3.pack(side='left')
+            leadinAngle = Tkinter.Spinbox(f3, fg=colorFore, bg=colorBack, textvariable=self.leadAngle, width=10)
+            leadinAngle.configure(font=(fontName, fontSize), highlightthickness=0)
+            leadinAngle.pack(side='left')
+            f3.pack(padx=4, pady=4, anchor='w')
+            self.leadIn.set(False)
+            if s.linear_units == 1:
+                leadinLength.config(width=10, from_=1, to=25, increment=1, format='%0.0f', wrap=1)
+                self.leadLength.set(5)
+            else:
+                leadinLength.config(width=10, from_=0.05, to=1, increment=0.05, format='%0.2f', wrap=1)
+                self.leadLength.set(0.2)
+            leadinAngle.config(width=10, from_=-359, to=359, increment=1, format='%0.0f', wrap=1)
+            self.leadAngle.set(0)
+        else:
+            label = Tkinter.Label(frm, text=msg, fg=colorFore, bg=colorBack)
+            label.pack(padx=4, pady=4)
         if func in ['entry', 'touch']:
             self.entry = Tkinter.Entry(frm, justify='right', fg=colorFore, bg=colorBack)
             self.entry.configure(highlightthickness=0, selectforeground=colorBack, selectbackground=colorFore)
@@ -105,6 +140,9 @@ class plasmacDialog:
             self.opt.children['menu'].configure(fg=colorFore, bg=colorBack, activeforeground=colorBack, activebackground=colorFore)
             self.opt.pack(padx=4, pady=4)
         bbox = Tkinter.Frame(frm, bg=colorBack)
+        if func == 'rfl':
+            b1Text = _('Load')
+            b2Text = _('Cancel')
         if func in ['info', 'error', 'warn']:
             b1Text = _('OK')
             b2Text = None
@@ -125,11 +163,13 @@ class plasmacDialog:
         frm.pack()
 
     def dlg_complete(self, value, func):
-        if func in ['entry']:
-            text = None if not self.entry.get() else self.entry.get()
+        if func == 'rfl':
+            self.reply = value, self.leadIn.get(), float(self.leadLength.get()), float(self.leadAngle.get())
+        elif func in ['entry']:
+#            text = None if not self.entry.get() else self.entry.get()
             self.reply = value, self.entry.get()
         elif func in ['touch']:
-            text = None if not self.entry.get() else self.entry.get()
+#            text = None if not self.entry.get() else self.entry.get()
             self.reply = value, self.entry.get(), self.c.get()
         else:
             self.reply = value
@@ -1528,73 +1568,6 @@ def cut_rec_cancel():
 
 
 ##############################################################################
-# RUN FROM LINE DIALOG                                                       #
-##############################################################################
-def dialog_run_from_line():
-    global result
-    result = None
-
-    def leadin_clicked(event):
-        global result
-        result = event
-        rfl.quit()
-
-    rfl = Tkinter.Toplevel()
-    rfl.title('Run From Line')
-    lbl1 = Tkinter.Label(rfl, text=_('Use Leadin:'))
-    lbl2 = Tkinter.Label(rfl, text=_('Leadin Length:'))
-    lbl3 = Tkinter.Label(rfl, text=_('Leadin Angle:'))
-    lbl4 = Tkinter.Label('')
-    leadIn = Tkinter.BooleanVar()
-    leadinDo = Tkinter.Checkbutton(rfl, variable=leadIn)
-    leadLength = Tkinter.StringVar()
-    leadinLength = Tkinter.Spinbox(rfl, textvariable=leadLength)
-    leadAngle = Tkinter.StringVar()
-    leadinAngle = Tkinter.Spinbox(rfl, textvariable=leadAngle)
-    buttons = Tkinter.Frame(rfl)
-    buttonLoad = Tkinter.Button(buttons, text=_('Load'), width=8, )
-    buttonCancel = Tkinter.Button(buttons, text=_('Cancel'), width=8)
-    lbl1.grid(column=0, row=0, sticky='e')
-    lbl2.grid(column=0, row=1, sticky='e')
-    lbl3.grid(column=0, row=2, sticky='e')
-    lbl4.grid(column=0, row=3, sticky='e')
-    leadinDo.grid(column=1, row=0, sticky='w')
-    leadinLength.grid(column=1, row=1, sticky='w')
-    leadinAngle.grid(column=1, row=2, sticky='w')
-    buttonLoad.pack(side='left')
-    buttonCancel.pack(side='right')
-    buttons.grid(column=0, row=4, columnspan=2, sticky='ew')
-    buttons.grid_columnconfigure(0, weight=1, uniform='group1')
-    buttons.grid_columnconfigure(2, weight=1, uniform='group1')
-    rfl.grid_rowconfigure(0, weight=1, uniform='group2')
-    rfl.grid_rowconfigure(1, weight=1, uniform='group2')
-    rfl.grid_rowconfigure(2, weight=1, uniform='group2')
-    rfl.grid_rowconfigure(3, weight=1, uniform='group2')
-    rfl.grid_rowconfigure(4, weight=1, uniform='group2')
-    leadIn.set(False)
-    if s.linear_units == 1:
-        leadinLength.config(width=10, from_=1, to=25, increment=1, format='%0.0f', wrap=1)
-        leadLength.set(5)
-    else:
-        leadinLength.config(width=10, from_=0.05, to=1, increment=0.05, format='%0.2f', wrap=1)
-        leadLength.set(0.2)
-    leadinAngle.config(width=10, from_=-359, to=359, increment=1, format='%0.0f', wrap=1)
-    leadAngle.set(0)
-    buttonLoad.bind('<Button-1>', lambda event: leadin_clicked('load'))
-    buttonCancel.bind('<Button-1>', lambda event: leadin_clicked('cancel'))
-    Tkinter.mainloop()
-    rfl.destroy()
-    # load clicked
-    if result == 'load':
-        return {'cancel':False, 'do':leadIn.get(), 'length':float(leadLength.get()), 'angle':float(leadAngle.get())}
-    # cancel clicked
-    else:
-        pVars.rflActive = False
-        pVars.startLine.set(0)
-        return {'cancel':True}
-
-
-##############################################################################
 # TCL FUNCTIONS HIJACKED FROM AXIS.PY                                        #
 ##############################################################################
 # add plasmac to the title
@@ -1690,15 +1663,19 @@ def task_run_line():
             pVars.startLine.set(0)
     else:
         # get user input
-        userInput = dialog_run_from_line()
+        rfl = {}
+        title = _('RUN FROM LINE')
+        dlg = plasmacDialog('rfl', title, None)
+        root_window.wait_window(dlg.dlg)
+        valid, rfl['do'], rfl['length'], rfl['angle'] = dlg.reply
         # rfl cancel clicked
-        if userInput['cancel']:
+        if not valid:
             pVars.rflActive = False
             pVars.startLine.set(0)
         else:
             # rfl load clicked
             rflFile = os.path.join(tmpPath, 'rfl.ngc')
-            result = RFL.run_from_line_set(rflFile, setup, userInput, unitsPerMm)
+            result = RFL.run_from_line_set(rflFile, setup, rfl, unitsPerMm)
             # leadin cannot be used
             if result['error']:
                 msg0 = _('Unable to calculate a leadin for this cut')
