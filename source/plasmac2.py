@@ -351,6 +351,8 @@ def font_size_changed():
         rC('.toolbar.{}'.format(w),'configure','-width',bSize,'-height',bSize)
     for w in matButtons:
         rC('.toolmat.{}'.format(w),'configure','-width',bSize,'-height',bSize)
+    if pVars.winSize.get() == 'default' and not firstRun:
+        set_window_size()
 
 def close_window():
     if pVars.closeDialog.get():
@@ -394,11 +396,19 @@ def set_window_size():
         if size == 'default':
             rC('wm','attributes','.','-zoomed', 0)
             rC('wm','attributes','.','-fullscreen', 0)
-            width = 1024
-            height = 570
-            rC('wm','geometry','.','{}x{}'.format(width, height))
-
-            rC('tk::PlaceWindow','.')
+            #    fontSize: window width, window height, user button canvas width
+            wSize = { '9': [ 960, 550, 444],
+                     '10': [ 960, 565, 444],
+                     '11': [ 992, 590, 496],
+                     '12': [1060, 620, 548],
+                     '13': [1150, 676, 600],
+                     '14': [1226, 710, 654],
+                     '15': [1310, 740, 704],
+                     '16': [1404, 786, 760]}
+            rC(fsetup + '.r.ubuttons.canvas','configure','-width',wSize[fontSize][2])
+            xPos = int((root_window.winfo_screenwidth() - wSize[fontSize][0]) / 2)
+            yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
+            rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
 
 def wcs_rotation(mode):
     global currentX, currentY, currentRot
@@ -3464,6 +3474,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     restoreSetup = {}
     pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
+    pVars.winSize.set(getPrefs(PREF,'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ',''))
+    restoreSetup['winSize'] = pVars.winSize.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
     restoreSetup['fontSize'] = pVars.fontSize.get()
     read_colors()
@@ -4163,14 +4175,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('frame',fparam + '.c1')
     rC('frame',fparam + '.c2')
     rC('frame',fparam + '.c3')
-    rC('frame',fparam + '.c4')
     rC('labelframe',fparam + '.c1.probe','-text','Probing','-relief','groove')
     rC('labelframe',fparam + '.c1.motion','-text','Motion','-relief','groove')
     rC('labelframe',fparam + '.c2.thc','-text','THC','-relief','groove')
-    rC('labelframe',fparam + '.c2.safety','-text','Safety','-relief','groove')
+    rC('labelframe',fparam + '.c1.safety','-text','Safety','-relief','groove')
     rC('labelframe',fparam + '.c3.arc','-text','Arc','-relief','groove')
-    rC('labelframe',fparam + '.c4.scribe','-text','Scribe','-relief','groove')
-    rC('labelframe',fparam + '.c4.spotting','-text','Spotting','-relief','groove')
+    rC('labelframe',fparam + '.c2.scribe','-text','Scribe','-relief','groove')
+    rC('labelframe',fparam + '.c3.spotting','-text','Spotting','-relief','groove')
     rC('label',fparam + '.c2.thc.thc-autoL','-text','Auto','-width',15,'-anchor','e')
     rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0)
     rC(fparam + '.c2.thc.thc-auto','configure','-variable','thcAuto','-command','mode_changed')
@@ -4188,7 +4199,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     cp5[2:1] = [0,0,0,999,1] if s.linear_units == 1 else [1,0,0,99,.1]
     cp6=['.c1.motion','setup-feed-rate','Setup Speed','Setup Feed Rate']
     cp6[2:1] = [0,int(thcFeedRate * 0.8),1,thcFeedRate,1] if s.linear_units == 1 else [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
-    cp7=['.c2.safety','safe-height','Safe Height','Safe Height']
+    cp7=['.c1.safety','safe-height','Safe Height','Safe Height']
     cp7[2:1] = [0,20,0,maxHeight,1] if s.linear_units == 1 else [2,0.75,0,maxHeight,0.01]
     cp8=['.c3.arc','height-per-volt','Height Per Volt','Height Per Volt']
     cp8[2:1] = [3,0.1,0.025,0.5,0.01] if s.linear_units == 1 else [4,0.004,0.001,0.020,0.001]
@@ -4213,10 +4224,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
               ['.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
               ['.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
               cp8, \
-              ['.c4.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
-              ['.c4.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
-              ['.c4.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
-              ['.c4.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
+              ['.c2.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
+              ['.c2.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
+              ['.c3.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
+              ['.c3.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
              ]
     cpRow = 0
     cpFrame = cp1[0]
@@ -4229,15 +4240,15 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         cpName = fparam + cpItem[0] + '.' + cpItem[1]
         cpType = 'flt' if cpItem[2] > 0 else 'int'
         rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
-        rC('spinbox',cpName,'-width', 10,'-justify','right','-wrap','true')
+        rC('spinbox',cpName,'-width', 8,'-justify','right','-wrap','true')
         spinBoxes.append(cpName)
         rC(cpName,'configure','-from',cpItem[4],'-to',cpItem[5])
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
         rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
         if cpItem[1] == 'setup-feed-rate':
             rC('label',fparam + cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
-            rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',10,'-anchor','e')
-            rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
+            rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',8,'-anchor','e')
+            rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(0,0),'-pady',(4,0))
             rC('grid', fparam + cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
             cpRow += 1
         rC('grid', cpName + 'L','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
@@ -4246,15 +4257,16 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # populate parameters frame
     rC('grid',fparam + '.c1.probe','-column',0,'-row',0,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
     rC('grid',fparam + '.c1.motion','-column',0,'-row',1,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c1.safety','-column',0,'-row',2,'-sticky','new','-padx',(4,2),'-pady',(4,0),'-ipady',4)
     rC('grid',fparam + '.c2.thc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-    rC('grid',fparam + '.c2.safety','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c2.scribe','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
     rC('grid',fparam + '.c3.arc','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-    rC('grid',fparam + '.c4.scribe','-column',0,'-row',0,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
-    rC('grid',fparam + '.c4.spotting','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
+    rC('grid',fparam + '.c3.spotting','-column',0,'-row',1,'-sticky','new','-padx',(2,2),'-pady',(4,0),'-ipady',4)
     rC('grid',fparam + '.c1','-column',0,'-row',0,'-sticky','n')
-    rC('grid',fparam + '.c2','-column',1,'-row',0,'-sticky','n')
-    rC('grid',fparam + '.c3','-column',2,'-row',0,'-sticky','n')
-    rC('grid',fparam + '.c4','-column',3,'-row',0,'-sticky','n')
+    rC('grid',fparam + '.c2','-column',2,'-row',0,'-sticky','n')
+    rC('grid',fparam + '.c3','-column',4,'-row',0,'-sticky','n')
+    rC('grid','columnconfigure',fparam,1,'-weight',1)
+    rC('grid','columnconfigure',fparam,3,'-weight',1)
 
     # new settings frame
     rC('frame',fsetup)
@@ -4413,7 +4425,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
     # canvas for scrolling
-    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',800,'-width',540)
+    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',100,'-width',760)
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
     rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
     rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview')
@@ -4430,7 +4442,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # user button widgets
     rC('label',fsetup + '.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
     rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',48,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',36,'-anchor','w')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
@@ -4438,11 +4450,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4))
+    rC('grid','columnconfigure',fsetup + '.r.ubuttons.canvas.frame',2,'-weight',1)
 
     # frame for shutdown message
     rC('labelframe',fsetup + '.r.shutdown','-text','Shutdown Message','-relief','groove')
-    rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1,'-width',66)
-    rC('grid',fsetup + '.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',(4,0),'-pady',(0,4))
+    rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1)#,'-width',54)
+    rC('grid',fsetup + '.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
+    rC('grid','columnconfigure',fsetup + '.r.shutdown',0,'-weight',1)
 
     # populate right panel
     rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','new')
@@ -4452,13 +4466,13 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.m','-column',2,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.m','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,4))
     rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','nse','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup,0,'-weight',0)
     rC('grid','columnconfigure',fsetup,1,'-weight',1)
     rC('grid','columnconfigure',fsetup,2,'-weight',0)
     rC('grid','columnconfigure',fsetup,3,'-weight',1)
-    rC('grid','columnconfigure',fsetup,4,'-weight',0)
+    rC('grid','columnconfigure',fsetup,4,'-weight',1)
     rC('grid','rowconfigure',fsetup,0,'-weight',1)
 
     # run panel
@@ -4611,9 +4625,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     pVars.closeDialog.set(value)
     restoreSetup['closeDialog'] = value
     root_window.protocol('WM_DELETE_WINDOW', close_window)
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ','')
-    putPrefs(PREF,'GUI_OPTIONS', 'Window size', value, str)
-    pVars.winSize.set(value)
     restoreSetup['winSize'] = value
     value = getPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', 0.5, float)
     pVars.coneSize.set(value)
