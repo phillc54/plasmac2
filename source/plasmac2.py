@@ -459,7 +459,7 @@ def setup_toggle(state):
         rC('grid','forget','.toolsetup')
         rC('grid','forget',fsetup)
         show_default()
- 
+
 def param_toggle(state):
     if int(state):
         hide_default()
@@ -481,6 +481,9 @@ def conv_toggle(state, convSent=False):
         rC('grid','.toolconv','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
         rC('grid','.fconv','-column',0,'-row',1,'-rowspan',2,'-sticky','nsew')
         rC(fright,'itemconfigure','numbers','-state','disabled')
+        for page in rC(fright,'pages'):
+            if page != 'preview':
+                rC(fright,'itemconfigure',page,'-state','disabled')
         rC(fright,'raise','preview')
         matIndex = rC('.runs.materials','getvalue')
         if comp['development']:
@@ -501,7 +504,8 @@ def conv_toggle(state, convSent=False):
         rC('grid','forget','.toolconv')
         rC('grid','forget','.fconv')
         show_default()
-        rC(fright,'itemconfigure','numbers','-state','normal')
+        for page in rC(fright,'pages'):
+            rC(fright,'itemconfigure',page,'-state','normal')
         reset_conv_preview()
         if convSent:
             loaded_file = vars.taskfile.get()
@@ -520,7 +524,7 @@ def conv_toggle(state, convSent=False):
             commands.set_view_t()
         else:
             commands.set_view_z()
- 
+
 def clear_program():
     file = os.path.join(tmpPath, 'clear.ngc')
     with open(file, 'w') as outFile:
@@ -4624,7 +4628,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     pVars.closeDialog.set(value)
     restoreSetup['closeDialog'] = value
     root_window.protocol('WM_DELETE_WINDOW', close_window)
-    restoreSetup['winSize'] = value
     value = getPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', 0.5, float)
     pVars.coneSize.set(value)
     restoreSetup['coneSize'] = value
@@ -4698,6 +4701,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
     set_window_size()
+    ucFile = os.path.join(configPath, 'user_commands.py')
+    if os.path.isfile(ucFile):
+        exec(compile(open(ucFile, "rb").read(), ucFile, 'exec'))
+
 else:
     firstRun = 'invalid'
     title = _('LOAD ERROR')
@@ -4812,8 +4819,9 @@ def user_hal_pins():
             msg0 = _('does not exist')
             notifications.add('error', '{}:\n"{}" {}\n'.format(title, os.path.realpath(openFile), msg0))
     # run users custom hal commands if it exists
-    if os.path.isfile(os.path.join(configPath, 'user_hal.py')):
-        exec(open(os.path.join(configPath, 'user_hal.py')).read())
+    uhFile = os.path.join(configPath, 'user_hal.py')
+    if os.path.isfile(uhFile):
+        exec(compile(open(uhFile, "rb").read(), uhFile, 'exec'))
     # setup key shortcuts
     install_kb_text(root_window)
     install_kp_text(root_window)
@@ -4824,11 +4832,6 @@ def user_hal_pins():
     rC('pack','forget','.about.ok')
     rC('pack','.about.message1','-expand','1','-fill','both')
     rC('pack','.about.ok')
-    # setup the colors
-    color_change()
-    # run users custom python commands if it exists
-    if os.path.isfile(os.path.join(configPath, 'user_commands.py')):
-        exec(open(os.path.join(configPath, 'user_commands.py')).read())
     previewSize = {'w':rC('winfo','width',tabs_preview), 'h':rC('winfo','height',tabs_preview)}
 
 
@@ -4836,11 +4839,14 @@ def user_hal_pins():
 # PERIODIC FUNCTION - CALLED FROM AXIS EVERY CYCLE                           #
 ##############################################################################
 def user_live_update():
-    global firstRun
+    global firstRun, upFile
     # don't do any updates until first run is complete.
     if firstRun:
         # test this last command in axis to see if we are loaded
         if widgets.numbers_text.bind():
+            upFile = os.path.join(configPath, 'user_periodic.py')
+            # setup the colors
+            color_change()
             firstRun = None
         return
     global isIdle, isIdleHomed, isPaused, isRunning
@@ -5272,7 +5278,6 @@ def user_live_update():
         previewSize = {'w':rC('winfo','width',tabs_preview), 'h':rC('winfo','height',tabs_preview)}
         root_window.update_idletasks()
         commands.set_view_t()
-
     # run users custom periodic commands if it exists
-    if os.path.isfile(os.path.join(configPath, 'user_periodic.py')):
-        exec(open(os.path.join(configPath, 'user_periodic.py')).read())
+    if os.path.isfile(upFile):
+        exec(open(upFile).read())
