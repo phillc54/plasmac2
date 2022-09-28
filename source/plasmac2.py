@@ -409,6 +409,7 @@ def set_window_size():
             xPos = int((root_window.winfo_screenwidth() - wSize[fontSize][0]) / 2)
             yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
             rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
+            rC('wm','minsize','.',wSize[fontSize][0], wSize[fontSize][1])
 
 def wcs_rotation(mode):
     global currentX, currentY, currentRot
@@ -3344,6 +3345,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TEMP = plasmacTempMaterial()
     rC = root_window.tk.call
     rE = root_window.tk.eval
+    icon = PhotoImage(file=imagePath + '/chips_plasma.png')
+    rC('wm','iconphoto','.',icon)
     # set the version
     VER = getPrefs(PREF,'GUI_OPTIONS', 'Version', '0', str)
     if VER == '0':
@@ -4005,8 +4008,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fleds + '.led-downL',              '-column',5,'-row',1,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
     rC('grid',fleds + '.led-corner-locked',  '-column',4,'-row',2,'-padx',(4,0),'-pady',(4,0))
     rC('grid',fleds + '.led-corner-lockedL',             '-column',5,'-row',2,'-padx',(0,0),'-pady',(4,0),'-sticky','W')
-    for n in range(3):
-        rC('grid','rowconfigure',fleds,n,'-weight',1)
 
     # rename keyboard shortcut window
     rC('wm','title','.keys','plasmac2 Keyboard Shortcuts')
@@ -4430,13 +4431,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
     rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview')
     rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
-    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,1600,800))
-    rC(fsetup + '.r.ubuttons.canvas','configure','-xscrollcommand',fsetup + '.r.ubuttons.xscroll set')
+    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,0,800))
     rC(fsetup + '.r.ubuttons.canvas','configure','-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
     # layout the canvas
-    rC('grid',fsetup + '.r.ubuttons.canvas','-column',1,'-row',0,'-sticky','nsew')
-    rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','sew','-pady',(4,0))
     rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
+    rC('grid',fsetup + '.r.ubuttons.canvas','-column',1,'-row',0,'-sticky','nsew')
     rC('grid','columnconfigure',fsetup + '.r.ubuttons',1,'-weight',1)
     rC('grid','rowconfigure',fsetup + '.r.ubuttons',0,'-weight',1)
     # user button widgets
