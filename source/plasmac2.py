@@ -382,12 +382,12 @@ def set_window_size():
         # minimm window size = fontSize: window width, window height, user button canvas width
         wSize = { '9': [ 960, 550,  636],
                  '10': [ 960, 565,  636],
-                 '11': [ 992, 590,  712],
-                 '12': [1060, 620,  788],
-                 '13': [1150, 676,  864],
-                 '14': [1226, 710,  940],
-                 '15': [1310, 740, 1016],
-                 '16': [1404, 786, 1092]}
+                 '11': [1024, 590,  712],
+                 '12': [1092, 620,  788],
+                 '13': [1176, 676,  864],
+                 '14': [1252, 710,  940],
+                 '15': [1334, 740, 1016],
+                 '16': [1416, 786, 1092]}
         rC(fsetup + '.r.ubuttons.canvas','configure','-width',wSize[fontSize][2])
         if size == 'maximized':
             rC('wm','attributes','.','-fullscreen', 0)
@@ -3756,42 +3756,42 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC(fright + '.fstats','configure','-bd',2)
     stats = fright + '.fstats.statistics'
     rC('labelframe',stats,'-relief','groove')
-    rC('label',stats + '.itemL','-text',_('Item'),'-width',16,'-anchor','e')
-    rC('label',stats + '.jobL','-text',_('Job'),'-width',10,'-anchor','e')
-    rC('label',stats + '.totalL','-text',_('Total'),'-width',10,'-anchor','e')
-    rC('label',stats + '.lengthL','-text',_('Cut Length'),'-width',16,'-anchor','e')
-    rC('label',stats + '.lengthJ','-textvariable','lengthJ','-width',10,'-anchor','e')
-    rC('label',stats + '.lengthT','-textvariable','lengthT','-width',10,'-anchor','e')
+    rC('label',stats + '.itemL','-text',_('Item'),'-width',13,'-anchor','e')
+    rC('label',stats + '.jobL','-text',_('Job'),'-width',9,'-anchor','e')
+    rC('label',stats + '.totalL','-text',_('Total'),'-width',9,'-anchor','e')
+    rC('label',stats + '.lengthL','-text',_('Cut Length'),'-width',13,'-anchor','e')
+    rC('label',stats + '.lengthJ','-textvariable','lengthJ','-width',9,'-anchor','e')
+    rC('label',stats + '.lengthT','-textvariable','lengthT','-width',9,'-anchor','e')
     rC('button',stats + '.lengthB','-command','reset_all_stats length','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.pierceL','-text',_('Torch Starts'),'-width',16,'-anchor','e')
-    rC('label',stats + '.pierceJ','-textvariable','pierceJ','-width',10,'-anchor','e')
-    rC('label',stats + '.pierceT','-textvariable','pierceT','-width',10,'-anchor','e')
+    rC('label',stats + '.pierceL','-text',_('Torch Starts'),'-width',13,'-anchor','e')
+    rC('label',stats + '.pierceJ','-textvariable','pierceJ','-width',9,'-anchor','e')
+    rC('label',stats + '.pierceT','-textvariable','pierceT','-width',9,'-anchor','e')
     rC('button',stats + '.pierceB','-command','reset_all_stats pierce','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.rapidL','-text',_('Rapid Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.rapidJ','-textvariable','rapidJ','-width',10,'-anchor','e')
-    rC('label',stats + '.rapidT','-textvariable','rapidT','-width',10,'-anchor','e')
+    rC('label',stats + '.rapidL','-text',_('Rapid Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.rapidJ','-textvariable','rapidJ','-width',9,'-anchor','e')
+    rC('label',stats + '.rapidT','-textvariable','rapidT','-width',9,'-anchor','e')
     rC('button',stats + '.rapidB','-command','reset_all_stats rapid','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.probeL','-text',_('Probe Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.probeJ','-textvariable','probeJ','-width',10,'-anchor','e')
-    rC('label',stats + '.probeT','-textvariable','probeT','-width',10,'-anchor','e')
+    rC('label',stats + '.probeL','-text',_('Probe Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.probeJ','-textvariable','probeJ','-width',9,'-anchor','e')
+    rC('label',stats + '.probeT','-textvariable','probeT','-width',9,'-anchor','e')
     rC('button',stats + '.probeB','-command','reset_all_stats probe','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.torchL','-text',_('Torch On Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.torchJ','-textvariable','torchJ','-width',10,'-anchor','e')
-    rC('label',stats + '.torchT','-textvariable','torchT','-width',10,'-anchor','e')
+    rC('label',stats + '.torchL','-text',_('Torch On Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.torchJ','-textvariable','torchJ','-width',9,'-anchor','e')
+    rC('label',stats + '.torchT','-textvariable','torchT','-width',9,'-anchor','e')
     rC('button',stats + '.torchB','-command','reset_all_stats torch','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.cutL','-text',_('Cutting Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.cutJ','-textvariable','cutJ','-width',10,'-anchor','e')
-    rC('label',stats + '.cutT','-textvariable','cutT','-width',10,'-anchor','e')
+    rC('label',stats + '.cutL','-text',_('Cutting Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.cutJ','-textvariable','cutJ','-width',9,'-anchor','e')
+    rC('label',stats + '.cutT','-textvariable','cutT','-width',9,'-anchor','e')
     rC('button',stats + '.cutB','-command','reset_all_stats cut','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.pausedL','-text',_('Paused Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.pausedJ','-textvariable','pausedJ','-width',10,'-anchor','e')
-    rC('label',stats + '.pausedT','-textvariable','pausedT','-width',10,'-anchor','e')
+    rC('label',stats + '.pausedL','-text',_('Paused Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.pausedJ','-textvariable','pausedJ','-width',9,'-anchor','e')
+    rC('label',stats + '.pausedT','-textvariable','pausedT','-width',9,'-anchor','e')
     rC('button',stats + '.pausedB','-command','reset_all_stats paused','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.runL','-text',_('Total Run Time'),'-width',16,'-anchor','e')
-    rC('label',stats + '.runJ','-textvariable','runJ','-width',10,'-anchor','e')
-    rC('label',stats + '.runT','-textvariable','runT','-width',10,'-anchor','e')
+    rC('label',stats + '.runL','-text',_('Total Run Time'),'-width',13,'-anchor','e')
+    rC('label',stats + '.runJ','-textvariable','runJ','-width',9,'-anchor','e')
+    rC('label',stats + '.runT','-textvariable','runT','-width',9,'-anchor','e')
     rC('button',stats + '.runB','-command','reset_all_stats run','-text',_('Reset'),'-pady',0)
-    rC('label',stats + '.arcL','-text',_('Arc On Time'),'-width',16,'-anchor','e')
+    rC('label',stats + '.arcL','-text',_('Arc On Time'),'-width',13,'-anchor','e')
     rC('label',stats + '.arcT','-textvariable','arcT','-width',10,'-anchor','e')
     rC('grid',stats + '.itemL','-column',0,'-row',0)
     rC('grid',stats + '.jobL','-column',1,'-row',0)
