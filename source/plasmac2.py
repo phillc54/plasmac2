@@ -351,7 +351,7 @@ def font_size_changed():
         rC('.toolbar.{}'.format(w),'configure','-width',bSize,'-height',bSize)
     for w in matButtons:
         rC('.toolmat.{}'.format(w),'configure','-width',bSize,'-height',bSize)
-    if pVars.winSize.get() == 'default' and not firstRun:
+    if not firstRun:
         set_window_size()
 
 def close_window():
@@ -379,6 +379,16 @@ def set_window_size():
         notifications.add('error', '{}:\n{}\n'.format(title, msg0))
         return False
     else:
+        # minimm window size = fontSize: window width, window height, user button canvas width
+        wSize = { '9': [ 960, 550,  636],
+                 '10': [ 960, 565,  636],
+                 '11': [ 992, 590,  712],
+                 '12': [1060, 620,  788],
+                 '13': [1150, 676,  864],
+                 '14': [1226, 710,  940],
+                 '15': [1310, 740, 1016],
+                 '16': [1404, 786, 1092]}
+        rC(fsetup + '.r.ubuttons.canvas','configure','-width',wSize[fontSize][2])
         if size == 'maximized':
             rC('wm','attributes','.','-fullscreen', 0)
             rC('wm','attributes','.','-zoomed',1)
@@ -396,16 +406,6 @@ def set_window_size():
         if size == 'default':
             rC('wm','attributes','.','-zoomed', 0)
             rC('wm','attributes','.','-fullscreen', 0)
-            #    fontSize: window width, window height, user button canvas width
-            wSize = { '9': [ 960, 550, 444],
-                     '10': [ 960, 565, 444],
-                     '11': [ 992, 590, 496],
-                     '12': [1060, 620, 548],
-                     '13': [1150, 676, 600],
-                     '14': [1226, 710, 654],
-                     '15': [1310, 740, 704],
-                     '16': [1404, 786, 760]}
-            rC(fsetup + '.r.ubuttons.canvas','configure','-width',wSize[fontSize][2])
             xPos = int((root_window.winfo_screenwidth() - wSize[fontSize][0]) / 2)
             yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
             rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
@@ -471,7 +471,7 @@ def param_toggle(state):
         rC('grid','forget','.toolparam')
         rC('grid','forget',fparam)
         show_default()
- 
+
 def conv_toggle(state, convSent=False):
     global CONV, convFirstRun, preConvFile, loaded_file, lastViewType
     if int(state):
@@ -1725,7 +1725,7 @@ def get_jog_speed(a):
 
 
 ##############################################################################
-# MONKEYPATCHED FUNCTIONS                                                       #
+# MONKEYPATCHED FUNCTIONS                                                    #
 ##############################################################################
 def get_view_type():    # from axis.py
     if str(widgets.view_x['relief']) == 'sunken':
@@ -2881,7 +2881,7 @@ def get_button_num(name):
 
 
 ##############################################################################
-# HELP TEXT                                                                      #
+# HELP TEXT                                                                  #
 ##############################################################################
 def set_help_text():
     global kb_text_1, kb_text_2, kp_text_1
@@ -2953,7 +2953,7 @@ def set_help_text():
     ]
 
 ##############################################################################
-# KEYBOARD BINDINGS                                                                      #
+# KEYBOARD BINDINGS                                                          #
 ##############################################################################
 def key_pressed(key):
     global keyDelay
@@ -3129,9 +3129,11 @@ def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
 
 def color_torch():
     if hal.get_value('plasmac.torch-enable'):
-        rC('.fbuttons.torch-enable','configure','-bg',colorActive,'-activebackground',colorActive,'-text',torchEnable['enabled'].replace('\\','\n'))
+        rC('.fbuttons.torch-enable','configure','-fg',colorFore,'-bg',colorActive,
+           '-activebackground',colorActive,'-text',torchEnable['enabled'].replace('\\','\n'))
     else:
-        rC('.fbuttons.torch-enable','configure','-bg',colorWarn,'-activebackground',colorWarn,'-text',torchEnable['disabled'].replace('\\','\n'))
+        rC('.fbuttons.torch-enable','configure','-fg',colorFore,'-bg',colorWarn,
+           '-activebackground',colorWarn,'-text',torchEnable['disabled'].replace('\\','\n'))
 
 def get_all_children(parent):
     _list = []
@@ -4424,9 +4426,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('entry',fsetup + '.r.torch.disabled','-bd',1,'-width',14)
     rC('grid',fsetup + '.r.torch.blankL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0))
     rC('grid',fsetup + '.r.torch.enabledL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
-    rC('grid',fsetup + '.r.torch.disabledL','-column',2,'-row',0,'-sticky','nw','-padx',(4,0))
+    rC('grid',fsetup + '.r.torch.disabledL','-column',2,'-row',0,'-sticky','nw','-padx',4)
     rC('grid',fsetup + '.r.torch.enabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
-    rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
+    rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',4,'-pady',(0,4))
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
     # canvas for scrolling
@@ -4435,17 +4437,19 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
     rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview')
     rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
-    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,0,800))
+    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,1600,800))
+    rC(fsetup + '.r.ubuttons.canvas','configure','-xscrollcommand',fsetup + '.r.ubuttons.xscroll set')
     rC(fsetup + '.r.ubuttons.canvas','configure','-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
     # layout the canvas
     rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas','-column',1,'-row',0,'-sticky','nsew')
+    rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','new','-padx',(4,0))
     rC('grid','columnconfigure',fsetup + '.r.ubuttons',1,'-weight',1)
     rC('grid','rowconfigure',fsetup + '.r.ubuttons',0,'-weight',1)
     # user button widgets
     rC('label',fsetup + '.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
     rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',36,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',60,'-anchor','w')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
@@ -4457,14 +4461,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # frame for shutdown message
     rC('labelframe',fsetup + '.r.shutdown','-text','Shutdown Message','-relief','groove')
-    rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1)#,'-width',54)
+    rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1,'-width',54)
     rC('grid',fsetup + '.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
     rC('grid','columnconfigure',fsetup + '.r.shutdown',0,'-weight',1)
 
     # populate right panel
-    rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','new')
-    rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','nsew')
-    rC('grid',fsetup + '.r.shutdown','-column',0,'-row',2,'-sticky','new')
+    rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','nw')
+    rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','nsw')
+    rC('grid',fsetup + '.r.shutdown','-column',0,'-row',2,'-sticky','nw')
     rC('grid','rowconfigure',fsetup + '.r',1,'-weight',1)
 
     # populate settings frame
@@ -5278,6 +5282,19 @@ def user_live_update():
         previewSize = {'w':rC('winfo','width',tabs_preview), 'h':rC('winfo','height',tabs_preview)}
         root_window.update_idletasks()
         commands.set_view_t()
+    # show/hide scrollbars for user buttons setup
+    if int(rC('winfo','height',fsetup + '.r.ubuttons.canvas.frame')) > \
+       int(rC('winfo','height',fsetup + '.r.ubuttons')) - \
+       (int(fontSize) * 2 + 16 * rC('winfo','ismapped',fsetup + '.r.ubuttons.xscroll')):
+        rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
+    else:
+        rC('grid','forget',fsetup + '.r.ubuttons.yscroll')
+    if int(rC('winfo','reqwidth',fsetup + '.r.ubuttons.canvas.frame')) > \
+       int(rC('winfo','width',fsetup + '.r')) - \
+       (20 * rC('winfo','ismapped',fsetup + '.r.ubuttons.yscroll')):
+        rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','new','-padx',(4,0))
+    else:
+        rC('grid','forget',fsetup + '.r.ubuttons.xscroll')
     # run users custom periodic commands if it exists
     if os.path.isfile(upFile):
         exec(open(upFile).read())
