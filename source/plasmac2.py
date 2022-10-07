@@ -2036,7 +2036,9 @@ def user_button_setup():
             outCode['code'] = []
             for cn in range(len(codes)):
                 if codes[cn][0] == '%':
-                    if WHICH(codes[cn].split()[0][1:]) is not None:
+                    if codes[cn][-3:] == '.py' and os.path.exists(os.path.expanduser(codes[cn][1:])):
+                        outCode['code'].append(['python', os.path.expanduser(codes[cn][1:])])
+                    elif WHICH(codes[cn].split()[0][1:]) is not None:
                         outCode['code'].append(['shell', codes[cn][1:]])
                     else:
                         outCode = {'code': None}
@@ -2157,7 +2159,9 @@ def user_button_pressed(button, code):
         hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
     else:
         for n in range(len(code['code'])):
-            if code['code'][n][0] == 'shell':
+            if code['code'][n][0] == 'python':
+                os.system('python3 {}'.format(code['code'][n][1]))
+            elif code['code'][n][0] == 'shell':
                 Popen(code['code'][n][1], stdout=PIPE, stderr=PIPE, shell=True)
             elif code['code'][n][0] in ['gcode', 'ocode']:
                 if manual_ok():
