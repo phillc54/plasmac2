@@ -388,7 +388,6 @@ def set_window_size():
                  '14': [1252, 710,  940],
                  '15': [1334, 740, 1016],
                  '16': [1416, 786, 1092]}
-        rC(fsetup + '.r.ubuttons.canvas','configure','-width',wSize[fontSize][2])
         if size == 'maximized':
             rC('wm','attributes','.','-fullscreen', 0)
             rC('wm','attributes','.','-zoomed',1)
@@ -410,6 +409,8 @@ def set_window_size():
             yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
             rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
             rC('wm','minsize','.',wSize[fontSize][0], wSize[fontSize][1])
+        rC(fsetup + '.r.ubuttons.canvas','xview','moveto',0.0)
+        rC(fsetup + '.r.ubuttons.canvas','yview','moveto',0.0)
 
 def wcs_rotation(mode):
     global currentX, currentY, currentRot
@@ -2215,12 +2216,14 @@ def user_button_released(button, code):
         pass
 
 def user_button_add():
+    global ubAdded
     for n in range(1, 21):
         if not rC('winfo','ismapped',fsetup + '.r.ubuttons.canvas.frame.num' + str(n)):
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
             rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
             break
+    ubAdded = True
 
 def user_button_load():
     rC(fsetup + '.r.torch.enabled','delete',0,'end')
@@ -3568,6 +3571,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
                     'view_x','view_y','view_y2','view_p','rotate','clear_plot']
     matButtons   = ['delete','new','reload','save']
+    ubAdded = False
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
     # allow right-click to select start from line
@@ -4437,12 +4441,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # frame for user buttons
     rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
     # canvas for scrolling
-    rC('canvas',fsetup + '.r.ubuttons.canvas','-height',100,'-width',760)
+    rC('canvas',fsetup + '.r.ubuttons.canvas')
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
     rC('scrollbar',fsetup + '.r.ubuttons.yscroll','-orient','vertical','-command',fsetup + '.r.ubuttons.canvas yview')
     rC('scrollbar',fsetup + '.r.ubuttons.xscroll','-orient','horizontal','-command',fsetup + '.r.ubuttons.canvas xview')
     rC(fsetup + '.r.ubuttons.canvas','create','window',0,0,'-anchor','nw','-window',fsetup + '.r.ubuttons.canvas.frame')
-    rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',(0,0,1600,800))
     rC(fsetup + '.r.ubuttons.canvas','configure','-xscrollcommand',fsetup + '.r.ubuttons.xscroll set')
     rC(fsetup + '.r.ubuttons.canvas','configure','-yscrollcommand',fsetup + '.r.ubuttons.yscroll set')
     # layout the canvas
@@ -4471,20 +4474,21 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid','columnconfigure',fsetup + '.r.shutdown',0,'-weight',1)
 
     # populate right panel
-    rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','nw')
-    rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','nsw')
-    rC('grid',fsetup + '.r.shutdown','-column',0,'-row',2,'-sticky','nw')
+    rC('grid',fsetup + '.r.torch','-column',0,'-row',0,'-sticky','new')
+    rC('grid',fsetup + '.r.ubuttons','-column',0,'-row',1,'-sticky','nsew')
+    rC('grid',fsetup + '.r.shutdown','-column',0,'-row',2,'-sticky','new')
     rC('grid','rowconfigure',fsetup + '.r',1,'-weight',1)
+    rC('grid','columnconfigure',fsetup + '.r',0,'-weight',1)
 
     # populate settings frame
     rC('grid',fsetup + '.l','-column',0,'-row',0,'-sticky','nw','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.m','-column',2,'-row',0,'-sticky','nw','-padx',(4,4),'-pady',(4,4))
-    rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','nse','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.r','-column',4,'-row',0,'-sticky','nsew','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup,0,'-weight',0)
     rC('grid','columnconfigure',fsetup,1,'-weight',1)
     rC('grid','columnconfigure',fsetup,2,'-weight',0)
     rC('grid','columnconfigure',fsetup,3,'-weight',1)
-    rC('grid','columnconfigure',fsetup,4,'-weight',1)
+    rC('grid','columnconfigure',fsetup,4,'-weight',9)
     rC('grid','rowconfigure',fsetup,0,'-weight',1)
 
     # run panel
@@ -4869,7 +4873,7 @@ def user_live_update():
     global currentTool, pmx485, homeInProgress
     global materialChangePin, materialChangeNumberPin
     global materialReloadPin, materialTempPin
-    global materialChangeTimeoutPin
+    global materialChangeTimeoutPin, ubAdded
     # set machine state variables
     isIdle = s.task_state == linuxcnc.STATE_ON and s.interp_state == linuxcnc.INTERP_IDLE
     isIdleHomed = isIdle and all_homed()
@@ -5288,18 +5292,28 @@ def user_live_update():
         root_window.update_idletasks()
         commands.set_view_t()
     # show/hide scrollbars for user buttons setup
-    if int(rC('winfo','height',fsetup + '.r.ubuttons.canvas.frame')) > \
-       int(rC('winfo','height',fsetup + '.r.ubuttons')) - \
-       (int(fontSize) * 2 + 16 * rC('winfo','ismapped',fsetup + '.r.ubuttons.xscroll')):
-        rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
-    else:
-        rC('grid','forget',fsetup + '.r.ubuttons.yscroll')
-    if int(rC('winfo','reqwidth',fsetup + '.r.ubuttons.canvas.frame')) > \
-       int(rC('winfo','width',fsetup + '.r')) - \
-       (20 * rC('winfo','ismapped',fsetup + '.r.ubuttons.yscroll')):
-        rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','new','-padx',(4,0))
-    else:
-        rC('grid','forget',fsetup + '.r.ubuttons.xscroll')
+    if rC('winfo','ismapped',fsetup):
+        if int(rC('winfo','width',fsetup + '.r.ubuttons.canvas.frame')) > \
+           int(rC('winfo','width',fsetup + '.r')) - \
+           (20 * rC('winfo','ismapped',fsetup + '.r.ubuttons.yscroll')):
+            if not rC('winfo','ismapped',fsetup + '.r.ubuttons.xscroll'):
+                rC('grid',fsetup + '.r.ubuttons.xscroll','-column',1,'-row',1,'-sticky','new','-padx',(4,0))
+        else:
+            if rC('winfo','ismapped',fsetup + '.r.ubuttons.xscroll'):
+                rC('grid','forget',fsetup + '.r.ubuttons.xscroll')
+        if int(rC('winfo','height',fsetup + '.r.ubuttons.canvas.frame')) > \
+           int(rC('winfo','height',fsetup + '.r.ubuttons')) - \
+           (int(fontSize) * 2 + 16 * rC('winfo','ismapped',fsetup + '.r.ubuttons.xscroll')):
+            if not rC('winfo','ismapped',fsetup + '.r.ubuttons.yscroll'):
+                rC('grid',fsetup + '.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
+        else:
+            if rC('winfo','ismapped',fsetup + '.r.ubuttons.yscroll'):
+                rC('grid','forget',fsetup + '.r.ubuttons.yscroll')
+        cbbox = rC(fsetup + '.r.ubuttons.canvas','bbox',"all")
+        rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',cbbox)
+        if ubAdded:
+            rC(fsetup + '.r.ubuttons.canvas','yview','moveto',1)
+            ubAdded = False
     # run users custom periodic commands if it exists
     if os.path.isfile(upFile):
         exec(open(upFile).read())
