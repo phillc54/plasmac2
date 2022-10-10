@@ -3575,7 +3575,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
                     'program_step','program_pause','program_stop','program_blockdelete',
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
-                    'view_x','view_y','view_y2','view_p','rotate','clear_plot']
+                    'view_x','view_y','view_y2','view_p','view_t','rotate','clear_plot']
     matButtons   = ['delete','new','reload','save']
     ubAdded = False
     # spinbox validator
@@ -3710,7 +3710,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('pack','.toolbar.rule10','-side','left','-padx',4,'-pady',4,'-fill','y')
     rC('pack','.toolbar.view_z','-side','left')
     rC('pack','.toolbar.view_p','-side','left')
-    rC('Button','.toolbar.view_t','-text','T','-command','set_view_t','-relief','link','-takefocus',0)
+    rC('Button','.toolbar.view_t','-command','set_view_t','-relief','link','-takefocus',0,'-image',rC('load_image',imagePath + '/view_t'))
     rC('pack','.toolbar.view_t','-side','left')
     rC('pack','.toolbar.rule11','-side','left','-padx',4,'-pady',4,'-fill','y')
     rC('pack','.toolbar.view_zoomout','-side','left')
