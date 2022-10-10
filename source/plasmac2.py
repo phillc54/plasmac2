@@ -1001,6 +1001,8 @@ def save_setup_clicked():
 # GENERAL FUNCTIONS                                                          #
 ##############################################################################
 def update_plasmac2():
+    root_window.config(cursor='watch')
+    root_window.update()
     global VER
     oldVer = VER
     # for development configs:
@@ -1010,6 +1012,7 @@ def update_plasmac2():
     try:
         repo = git.Repo(repoPath)
     except Exception as e:
+        root_window.config(cursor='')
         msg0 = 'Cannot open a git repository at '
         show_dialog('error', _('REPOSITORY ERROR'), msg0 + repoPath + '\n\n' + e.stderr)
         return
@@ -1017,10 +1020,12 @@ def update_plasmac2():
         current = repo.head.commit
         repo.remotes.origin.pull()
     except Exception as e:
+        root_window.config(cursor='')
         msg0 = 'An error occurred while updating'
         show_dialog('error', _('UPDATE ERROR'), msg0 + ':\n\n' + e.stderr)
         return
     if current == repo.head.commit and not dev:
+        root_window.config(cursor='')
         msg0 = 'plasmac2 was up to date'
         show_dialog('info', _('plasmac2 UPDATE'), msg0)
         return
@@ -1040,6 +1045,7 @@ def update_plasmac2():
     else:
         msg0 = 'plasmac2 was updated from v{} to v{}'.format(oldVer, VER)
         msg1 = '\n\nA restart is recommended'
+    root_window.config(cursor='')
     show_dialog('info', _('plasmac2 UPDATE'), '{}{}'.format(msg0, msg1))
 
 def thc_enable_toggled():
