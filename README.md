@@ -3,6 +3,9 @@ A plasma add-on for the AXIS GUI using LinuxCNC master branch. (v2.9)
 
 !['plasmac2'](source/lib/images/plasmac2.svg)
 
+The screenshot above is a window size of 960 x 565 which is the smallest practical size for a 10 point font.
+
+The window may be resized to any larger size and the font size may be changed from 9 to 16 points.
 ## Installation
 ### Requirements for using plasmac2 are:
   * A working version of LinuxCNC Master branch (V2.9)
@@ -52,6 +55,9 @@ From the setup application either a migration or simulator creation may be done.
   * click **Migration** to create a new plasmac2 config based on an existing QtPlasmaC config.
   * click **Simulation** to create a new plasmac2 simulator config.
 
+A migration will create a completely new plasmac2 configuration based on the selected QtPlasmaC configuration.
+
+The existing QtPlasmaC configuration will be left as is.
 
 ### To update plasmac2 there are two options:
 From the plasmac2 GUI:  
