@@ -1911,11 +1911,12 @@ def button_action(button, pressed):
 
 def user_button_setup():
     global buttonNames, buttonCodes, togglePins, pulsePins, machineBounds, criticalButtons
-    global probeButton, probeText, torchButton, torchText, cChangeButton
+    global probeButton, probeText, torchButton, torchText, cChangeButton, invalidButtons
     singleCodes = ['ohmic-test','cut-type','single-cut','manual-cut','probe-test', \
                    'torch-pulse','change-consumables','framing','latest-file']
     buttonNames = {0:{'name':None}}
     buttonCodes = {0:{'code':None}}
+    invalidButtons = []
     criticalButtons = []
     row = 1
     for n in range(1,21):
@@ -2043,8 +2044,13 @@ def user_button_setup():
             outCode['code'] = []
             for cn in range(len(codes)):
                 if codes[cn][0] == '%':
-                    if codes[cn][-3:] == '.py' and os.path.exists(os.path.expanduser(codes[cn][1:])):
-                        outCode['code'].append(['python3', os.path.expanduser(codes[cn][1:])])
+                    if codes[cn][-3:] == '.py':
+                        if '/' not in codes[cn]:
+                            codes[cn] = '%./' + codes[cn].replace('%','')
+                        if os.path.exists(os.path.expanduser(codes[cn][1:])):
+                            outCode['code'].append(['python3', os.path.expanduser(codes[cn][1:])])
+                        else:
+                            outCode = {'code': None}
                     elif WHICH(codes[cn].split()[0][1:]) is not None:
                         outCode['code'].append(['shell', codes[cn][1:]])
                     else:
@@ -2087,6 +2093,7 @@ def user_button_setup():
             notifications.add('error', '{}:\n"{}" {} #{}'.format(title, bCode, msg0, n))
             bName = None
             outCode = {'code':None}
+            invalidButtons.append(n)
         buttonNames[n] = {'name':bName}
         buttonCodes[n] = outCode
     user_button_load()
@@ -2221,34 +2228,18 @@ def user_button_released(button, code):
     else:
         pass
 
-def user_button_add():
-    global ubAdded
-    for n in range(1, 21):
-        if not rC('winfo','ismapped',fsetup + '.r.ubuttons.canvas.frame.num' + str(n)):
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
-            break
-    ubAdded = True
-
 def user_button_load():
     rC(fsetup + '.r.torch.enabled','delete',0,'end')
     rC(fsetup + '.r.torch.disabled','delete',0,'end')
     rC(fsetup + '.r.torch.enabled','insert','end',getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str))
     rC(fsetup + '.r.torch.disabled','insert','end',getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str))
     for n in range(1, 21):
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.num' + str(n))
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.name' + str(n))
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.code' + str(n))
         rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'delete',0,'end')
         rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'delete',0,'end')
         if getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str) or getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str):
             rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str))
             rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'insert','end',getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
-            rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
-            color_user_buttons()
+    color_user_buttons()
 
 def user_button_save():
     global torchEnable
@@ -2264,10 +2255,6 @@ def user_button_save():
     for n in range(1, 21):
         putPrefs(PREF,'BUTTONS', '{} Name'.format(n), rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'get'), str)
         putPrefs(PREF,'BUTTONS', '{} Code'.format(n), rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'get'), str)
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.num' + str(n))
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.name' + str(n))
-        rC('grid','forget',fsetup + '.r.ubuttons.canvas.frame.code' + str(n))
-        rC('grid','forget','.fbuttons.button' + str(n))
         rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'delete',0,'end')
         rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'delete',0,'end')
     user_button_setup()
@@ -3134,12 +3121,12 @@ def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
         rC('.fbuttons.button' + str(b),'configure','-bg',colorWarn)
     # user button entries in setup frame
     for n in range(1, 21):
-        if buttonNames[n]['name']:
+        if n in invalidButtons:
+            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorWarn)
+            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorWarn)
+        else:
             rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorFore)
             rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorFore)
-        else:
-            rC(fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'configure','-fg',colorDisable)
-            rC(fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'configure','-fg',colorDisable)
 
 def color_torch():
     if hal.get_value('plasmac.torch-enable'):
@@ -3577,7 +3564,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
                     'view_x','view_y','view_y2','view_p','view_t','rotate','clear_plot']
     matButtons   = ['delete','new','reload','save']
-    ubAdded = False
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
     # allow right-click to select start from line
@@ -3616,7 +3602,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.backup_clicked = backup_clicked
     TclCommands.save_setup_clicked = save_setup_clicked
     TclCommands.load_setup_clicked = load_setup_clicked
-    TclCommands.user_button_add = user_button_add
     TclCommands.preview_toggle = preview_toggle
     TclCommands.setup_toggle = setup_toggle
     TclCommands.param_toggle = param_toggle
@@ -3710,6 +3695,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('pack','.toolbar.rule10','-side','left','-padx',4,'-pady',4,'-fill','y')
     rC('pack','.toolbar.view_z','-side','left')
     rC('pack','.toolbar.view_p','-side','left')
+    rC('.toolbar.view_p','configure','-image',rC('load_image',imagePath + '/view_p'))
+    rC('.toolbar.view_z','configure','-image',rC('load_image',imagePath + '/view_z'))
     rC('Button','.toolbar.view_t','-command','set_view_t','-relief','link','-takefocus',0,'-image',rC('load_image',imagePath + '/view_t'))
     rC('pack','.toolbar.view_t','-side','left')
     rC('pack','.toolbar.rule11','-side','left','-padx',4,'-pady',4,'-fill','y')
@@ -3724,13 +3711,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('frame','.toolsetup','-borderwidth',1,'-relief','raised')
     rC('Button','.toolsetup.save','-command','save_setup_clicked','-width',8,'-takefocus',0,'-text',_('Save All'),'-padx',0)
     rC('Button','.toolsetup.reload','-command','load_setup_clicked','-width',8,'-takefocus',0,'-text',_('Reload'),'-padx',0)
-    rC('Button','.toolsetup.add','-command','user_button_add','-width',8,'-takefocus',0,'-text',_('Add'),'-padx',0)
     rC('Button','.toolsetup.bkp','-command','backup_clicked','-width',8,'-takefocus',0,'-text',_('Backup'),'-padx',0)
     rC('Button','.toolsetup.close','-command','setup_toggle 0','-width',8,'-takefocus',0,'-text',_('Close'),'-padx',0)
     # populate the tool bar
     rC('pack','.toolsetup.save','-side','left')
     rC('pack','.toolsetup.reload','-side','left','-padx',(8,0))
-    rC('pack','.toolsetup.add','-side','left','-padx',(8,0))
     rC('pack','.toolsetup.bkp','-side','left','-padx',(8,0))
     rC('pack','.toolsetup.close','-side','left','-padx',(16,0))
     rC('grid','forget','.toolsetup')
@@ -4468,6 +4453,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-bd',1)
+        rC('grid',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-column',0,'-row',n,'-sticky','ne','-padx',(4,0),'-pady',(0,4))
+        rC('grid',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-column',1,'-row',n,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
+        rC('grid',fsetup + '.r.ubuttons.canvas.frame.code' + str(n),'-column',2,'-row',n,'-sticky','new','-padx',(4,4),'-pady',(0,4))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.numL','-column',0,'-row',0,'-sticky','ne','-padx',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
     rC('grid',fsetup + '.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4))
@@ -4879,7 +4867,7 @@ def user_live_update():
     global currentTool, pmx485, homeInProgress
     global materialChangePin, materialChangeNumberPin
     global materialReloadPin, materialTempPin
-    global materialChangeTimeoutPin, ubAdded
+    global materialChangeTimeoutPin
     # set machine state variables
     isIdle = s.task_state == linuxcnc.STATE_ON and s.interp_state == linuxcnc.INTERP_IDLE
     isIdleHomed = isIdle and all_homed()
@@ -5317,9 +5305,6 @@ def user_live_update():
                 rC('grid','forget',fsetup + '.r.ubuttons.yscroll')
         cbbox = rC(fsetup + '.r.ubuttons.canvas','bbox',"all")
         rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',cbbox)
-        if ubAdded:
-            rC(fsetup + '.r.ubuttons.canvas','yview','moveto',1)
-            ubAdded = False
     # run users custom periodic commands if it exists
     if os.path.isfile(upFile):
         exec(open(upFile).read())
