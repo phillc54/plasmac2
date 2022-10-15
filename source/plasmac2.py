@@ -2737,7 +2737,7 @@ def pmx485_mesh_enable_toggled():
         rC('.runs.material.cut-mode','configure','-state','disabled')
         pmx485['meshMode'] = True
         hal.set_p('plasmac.mesh-enable', '1')
-    elif not hal.get_value('plasmac.mesh-enable') and pmx485['meshMode']:
+    elif hal.get_value('plasmac.mesh-enable') and pmx485['meshMode']:
         pVars.cutMode.set(pmx485['oldMode'])
         rC('.runs.material.cut-mode','configure','-state','normal')
         pmx485['meshMode'] = False
@@ -3554,7 +3554,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     lastViewType = None
     preConvFile = os.path.join(tmpPath, 'pre_conv.ngc')
     keyDelay = {}
-    pmx485 = {'exists':False}
+    pmx485 = {'exists':False, 'meshMode':False}
     spinBoxes = []
     widgetValues = {}
     statValues = {'length':0, 'pierce':0, 'rapid':0, 'probe':0, 'torch':0, 'cut':0, 'paused':0, 'run':0}
