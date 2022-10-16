@@ -76,7 +76,7 @@ class plasmacTempMaterial(tempP):
 
 # class for popup dialogs
 class plasmacDialog:
-    def __init__(self, func, title, msg, system=None):
+    def __init__(self, func, title, msg, vkb, system=None):
         dlg = self.dlg = Tkinter.Toplevel(root_window, bg=colorBack)
         dlg.attributes('-type', 'dock')
         rE('tk::PlaceWindow {} center'.format(dlg))
@@ -161,16 +161,17 @@ class plasmacDialog:
             b2.pack(side='left', padx=(8,0))
         bbox.pack(padx=4, pady=4)
         frm.pack()
+        if vkb:
+            vkbData['required'] = True
+            vkb_show(vkb)
 
     def dlg_complete(self, value, func):
         if func == 'rfl':
             self.reply = value, self.leadIn.get(), float(self.leadLength.get()), float(self.leadAngle.get())
         elif func in ['entry']:
-#            text = None if not self.entry.get() else self.entry.get()
             self.reply = value, self.entry.get()
         elif func in ['touch']:
-#            text = None if not self.entry.get() else self.entry.get()
-            self.reply = value, self.entry.get(), self.c.get()
+             self.reply = value, self.entry.get(), self.c.get()
         else:
             self.reply = value
         self.dlg.destroy()
@@ -355,6 +356,8 @@ def font_size_changed():
         set_window_size()
 
 def close_window():
+    rC('focus','.fbuttons.torch-enable')
+    vkb_hide()
     if pVars.closeDialog.get():
         msgs = ''
         if pVars.closeText.get():
@@ -456,6 +459,8 @@ def setup_toggle(state):
         rC('grid','.toolsetup','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
         rC('grid',fsetup,'-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
         keyboard_bindings(False)
+        vkbData['required'] = True
+        vkb_show('keyboard')
     else:
         rC('grid','forget','.toolsetup')
         rC('grid','forget',fsetup)
@@ -468,6 +473,8 @@ def param_toggle(state):
         rC('grid','.toolparam','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
         rC('grid',fparam,'-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
         keyboard_bindings(False)
+        vkbData['required'] = True
+        vkb_show('numpad')
     else:
         rC('grid','forget','.toolparam')
         rC('grid','forget',fparam)
@@ -500,6 +507,8 @@ def conv_toggle(state, convSent=False):
             COPY(loaded_file, preConvFile)
         CONV.start(materialFileDict, matIndex, vars.taskfile.get(), s.g5x_index, commands.set_view_z)
         keyboard_bindings(False)
+        vkbData['required'] = True
+        vkb_show('numpad')
     else:
         preview_toggle()
         rC('grid','forget','.toolconv')
@@ -594,6 +603,7 @@ def show_default():
         rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
     enable_menus(True)
     keyboard_bindings(pVars.kbShortcuts.get())
+    vkbData['required'] = False
     rC('focus','.')
 
 def enable_menus(state):
@@ -847,7 +857,7 @@ def param_changed(widget, value):
 
 def validate_spinbox(widget, spinType, resolution, value, original):
     dbPrint = True if (not firstRun and comp['development']) else False
-    if dbPrint: print('validating', widget)
+    if dbPrint: print('\nvalidating', widget)
     if value == '':
         if dbPrint: print('blank = still valid')
         return True
@@ -911,15 +921,15 @@ def load_param_clicked():
             continue
         # convert to int here if required
         value = value if widget[2] > 0 else int(value)
-        rC(fparam + widget[0] + '.' + widget[1],'set',value)
-        widgetValues[fparam + widget[0] + '.' + widget[1]] = value
+        rC(widget[0] + '.' + widget[1],'set',value)
+        widgetValues[widget[0] + '.' + widget[1]] = value
     value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', False, bool)
     pVars.thcAuto.set(value)
     mode_changed()
 
 def save_param_clicked():
     for widget in cpList:
-        value = rC(fparam + widget[0] + '.' + widget[1],'get')
+        value = rC(widget[0] + '.' + widget[1],'get')
         if widget[2] > 0:
             putPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), value, float)
         else:
@@ -945,9 +955,16 @@ def load_setup_clicked():
     if pVars.matDefault.get() != restoreSetup['matDefault']:
         pVars.matDefault.set(restoreSetup['matDefault'])
         display_selected_material(restoreSetup['matDefault'])
-    if pVars.kbShortcuts.get() != restoreSetup['kbShortcuts']:
-        pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
-        keyboard_bindings(restoreSetup['kbShortcuts'])
+    if pVars.useVirtKB.get() != restoreSetup['useVirtKB']:
+        pVars.useVirtKB.set(restoreSetup['useVirtKB'])
+        virtual_kb_changed()
+    if pVars.useVirtKB.get():
+        pVars.kbShortcuts.set(0)
+        keyboard_bindings(0)
+    else:
+        if pVars.kbShortcuts.get() != restoreSetup['kbShortcuts']:
+            pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
+            keyboard_bindings(restoreSetup['kbShortcuts'])
     if int(rC(fsetup + '.l.cr.speed','get')) == restoreSetup['crPercent']:
         rC(fcrspeed + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     else:
@@ -985,6 +1002,8 @@ def save_setup_clicked():
     rC(fcrspeed + '.display.cut-rec-speed','set',restoreSetup['crPercent'])
     restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
+    restoreSetup['useVirtKB'] = pVars.useVirtKB.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'Use soft keyboard', restoreSetup['useVirtKB'], bool)
     user_button_save()
     putPrefs(PREF,'GUI_OPTIONS', 'Foreground color', colorFore, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Background color', colorBack, str)
@@ -1150,9 +1169,10 @@ def update_preview(clear):
     if clear:
        live_plotter.clear()
 
-def show_dialog(func, title, msg):
-    dlg = plasmacDialog(func, title, msg)
+def show_dialog(func, title, msg, vkb=None):
+    dlg = plasmacDialog(func, title, msg, vkb)
     root_window.wait_window(dlg.dlg)
+    vkbData['required'] = False
     return(dlg.reply)
 
 
@@ -1687,8 +1707,9 @@ def task_run_line():
         # get user input
         rfl = {}
         title = _('RUN FROM LINE')
-        dlg = plasmacDialog('rfl', title, None)
+        dlg = plasmacDialog('rfl', title, None, 'numpad')
         root_window.wait_window(dlg.dlg)
+        vkbData['required'] = False
         valid, rfl['do'], rfl['length'], rfl['angle'] = dlg.reply
         # rfl cancel clicked
         if not valid:
@@ -1852,8 +1873,9 @@ def install_kp_text(app):
 def prompt_touchoff(title, text, default, tool_only, system=None):
     title = _('TOUCH OFF')
     text = text.replace(':', '') % _('workpiece')
-    dlg = plasmacDialog('touch', title, text, system)
+    dlg = plasmacDialog('touch', title, text, 'numpad', system)
     root_window.wait_window(dlg.dlg)
+    vkbData['required'] = False
     valid, value, system = dlg.reply
     try:
         v = float(value)
@@ -2102,10 +2124,8 @@ def user_button_pressed(button, code):
     global colorBack, activeFunction
     global probePressed, probeStart, probeTimer, probeButton
     global torchPressed, torchStart, torchTimer, torchButton
-
     if rC('.fbuttons.button' + button,'cget','-state') == 'disabled' or not code:
         return
-    from subprocess import Popen,PIPE
     if code['code'] == 'ohmic-test':
         hal.set_p('plasmac.ohmic-test','1')
 #FIXME: TEMPORARY PRINT FOR REPORTING WINDOW SIZES
@@ -2278,7 +2298,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Number')
     msgs = msg1
     while(1):
-        valid, num = show_dialog('entry', title, '{}:'.format(msgs))
+        valid, num = show_dialog('entry', title, '{}:'.format(msgs), 'numpad')
         if not valid:
             return
         if not num:
@@ -2303,7 +2323,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Name')
     msgs = msg1
     while(1):
-        valid, nam = show_dialog('entry', title, '{}:'.format(msgs))
+        valid, nam = show_dialog('entry', title, '{}:'.format(msgs), 'keyboard')
         if not valid:
             return
         if not nam:
@@ -2999,6 +3019,27 @@ def key_released(key):
 def kb_shortcuts_changed():
     keyboard_bindings(pVars.kbShortcuts.get())
 
+def virtual_kb_changed():
+    if pVars.useVirtKB.get():
+        if not vkbData['valid']:
+            title = _('VIRTUAL KEYBOARD ERROR')
+            msg0 = _('a valid "onboard" virtual keyboard is not installed')
+            notifications.add('error', '{}:\n{}\n'.format(title, msg0))
+            return
+        pVars.kbShortcuts.set(0)
+        rC(fsetup + '.l.gui.kbShortcutsL','configure','-state','disabled')
+        rC(fsetup + '.l.gui.kbShortcuts','configure','-state','disabled')
+        if rC('winfo','ismapped','.fconv'):
+            vkb_show('numpad')
+        elif rC('winfo','ismapped',fparam):
+            vkb_show('numpad')
+        elif rC('winfo','ismapped',fsetup):
+            vkb_show('keyboard')
+    else:
+        rC(fsetup + '.l.gui.kbShortcutsL','configure','-state','normal')
+        rC(fsetup + '.l.gui.kbShortcuts','configure','-state','normal')
+        vkb_hide()
+
 def make_lambda(func, value, state=None):
     if state is not None:
         return lambda event:func(value, state)
@@ -3098,7 +3139,65 @@ def keyboard_bindings(state):
         rC('setup_menu_accel','.menu.help','end',_('Keyboard Shortcuts'))
         rC('.menu.help','add','command','-command','wm transient .keyp .;wm deiconify .keyp; focus .keyp.ok')
         rC('setup_menu_accel','.menu.help','end',_('Keypad Shortcuts'))
+    # use arrow buttons for spinboxes
+    for item in rpList + cpList:
+        widget = item[0] + '.' + item[1]
+        rC('bind',widget,'<Up>','%W invoke buttonup')
+        rC('bind',widget,'<Down>','%W invoke buttondown')
+        rC('bind',widget,'<Left>','::tk::EntrySetCursor %W [expr {[%W index insert] - 1}]')
+        rC('bind',widget,'<Right>','::tk::EntrySetCursor %W [expr {[%W index insert] + 1}]')
 
+
+##############################################################################
+# ONBOARD VIRTUAL KEYBOARD                                                   #
+##############################################################################
+def vkb_validate():
+    global vkbData
+    vkbData = {'valid':False, 'visible':False, 'required':False, 'layout':None, 'width':0, 'height':0}
+    if os.path.isfile('/usr/bin/onboard'):
+        try:
+            cmd = 'gsettings get org.onboard layout'
+            vkbData['layout'] = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()[0].decode().strip()
+            cmd = 'gsettings get org.onboard.window.landscape width'
+            vkbData['width'] = int(Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()[0].decode().strip())
+            cmd = 'gsettings get org.onboard.window.landscape height'
+            vkbData['height'] = int(Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()[0].decode().strip())
+            vkbData['valid'] = True
+        except:
+            pass
+
+def vkb_show(layout):
+    global vkbData
+    if firstRun: return
+    if not pVars.useVirtKB.get(): return
+    w = 240 if layout == 'numpad' else 740
+    vkbData['visible'] = True
+    vkb_settings(os.path.join(libPath, layout), w, 240)
+    time.sleep(0.1)
+    cmd  = 'dbus-send'
+    cmd += ' --type=method_call'
+    cmd += ' --dest=org.onboard.Onboard'
+    cmd += ' /org/onboard/Onboard/Keyboard'
+    cmd += ' org.onboard.Onboard.Keyboard.Show'
+    Popen(cmd, stdout=PIPE, shell=True)
+
+def vkb_hide(custom=False):
+    vkbData['visible'] = False
+    cmd  = 'dbus-send'
+    cmd += ' --type=method_call'
+    cmd += ' --dest=org.onboard.Onboard'
+    cmd += ' /org/onboard/Onboard/Keyboard'
+    cmd += ' org.onboard.Onboard.Keyboard.Hide'
+    Popen(cmd, stdout=PIPE, shell=True)
+    vkb_settings(vkbData['layout'], vkbData['width'], vkbData['height'])
+
+def vkb_settings(layout, width, height):
+    Popen('gsettings set org.onboard layout {}'.format(layout), stdout=PIPE, shell=True)
+    Popen('gsettings set org.onboard.window.landscape width {}'.format(width - 1), stdout=PIPE, shell=True)
+    Popen('gsettings set org.onboard.window.landscape height {}'.format(height - 1), stdout=PIPE, shell=True)
+    time.sleep(0.1)
+    Popen('gsettings set org.onboard.window.landscape width {}'.format(width), stdout=PIPE, shell=True)
+    Popen('gsettings set org.onboard.window.landscape height {}'.format(height), stdout=PIPE, shell=True)
 
 ##############################################################################
 # COLOR CHANGE                                                               #
@@ -3327,6 +3426,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     from glob import glob as GLOB
     from shutil import copy as COPY
     from shutil import which as WHICH
+    from subprocess import Popen, PIPE
     from importlib import reload
     from plasmac import run_from_line as RFL
     import conversational
@@ -3428,6 +3528,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('closeText', StringVar),
              ('closeDialog', BooleanVar),
              ('kbShortcuts', BooleanVar),
+             ('useVirtKB', BooleanVar),
              ('winSize', StringVar),
              ('startLine', IntVar),
              ('rflActive', BooleanVar),
@@ -3640,6 +3741,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.set_peripheral_offsets = set_peripheral_offsets
     TclCommands.update_plasmac2 = update_plasmac2
     TclCommands.kb_shortcuts_changed = kb_shortcuts_changed
+    TclCommands.virtual_kb_changed = virtual_kb_changed
     TclCommands.key_pressed = key_pressed
     TclCommands.key_released = key_released
     TclCommands.color_set = color_set
@@ -4192,59 +4294,63 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fparam + '.c2.thc.thc-autoL','-text','Auto','-width',15,'-anchor','e')
     rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0)
     rC(fparam + '.c2.thc.thc-auto','configure','-variable','thcAuto','-command','mode_changed')
-    #  (parent, name, label text, prefs option)
-    cp1=['.c1.probe','float-switch-travel','Float Travel','Float Switch Travel']
-    # decimals, value, min, max, increment,
-    cp1[2:1] = [2,1.5,-25,25,0.01] if s.linear_units == 1 else [3,0.06,-1,1,0.001]
-    cp2=['.c1.probe','probe-feed-rate','Probe Speed','Probe Feed Rate']
-    cp2[2:1] = [0,300,1,thcFeedRate,1] if s.linear_units == 1 else [1,12,0.1,thcFeedRate,.1]
-    cp3=['.c1.probe','probe-start-height','Probe Height','Probe Start Height']
-    cp3[2:1] = [0,38,1,maxHeight,1] if s.linear_units == 1 else [2,1.5,.1,maxHeight,0.01]
-    cp4=['.c1.probe','ohmic-probe-offset','Ohmic Z Offset','Ohmic Probe Offset']
-    cp4[2:1] = [2,0,-25,+25,0.01] if s.linear_units == 1 else [3,0,-1,1,0.001]
-    cp5=['.c1.probe','skip-ihs-distance','Skip IHS','Skip IHS Distance']
-    cp5[2:1] = [0,0,0,999,1] if s.linear_units == 1 else [1,0,0,99,.1]
-    cp6=['.c1.motion','setup-feed-rate','Setup Speed','Setup Feed Rate']
-    cp6[2:1] = [0,int(thcFeedRate * 0.8),1,thcFeedRate,1] if s.linear_units == 1 else [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
-    cp7=['.c1.safety','safe-height','Safe Height','Safe Height']
-    cp7[2:1] = [0,20,0,maxHeight,1] if s.linear_units == 1 else [2,0.75,0,maxHeight,0.01]
-    cp8=['.c3.arc','height-per-volt','Height Per Volt','Height Per Volt']
-    cp8[2:1] = [3,0.1,0.025,0.5,0.01] if s.linear_units == 1 else [4,0.004,0.001,0.020,0.001]
-    cpList = [cp1, cp2, cp3, cp4, \
-              ['.c1.probe','ohmic-max-attempts',0,0,0,10,1,'Ohmic Retries','Ohmic Maximum Attempts'], \
-              cp5, cp6, \
-              ['.c2.thc','thc-delay',1,0.5,0,9,0.1,'Start Delay','THC Delay'], \
-              ['.c2.thc','thc-sample-counts',0,50,10,1000,1,'Auto Counts','THC Sample Counts'], \
-              ['.c2.thc','thc-sample-threshold',1,1,0.1,9,0.1,'Auto Threshold (V)','THC Sample Threshold'], \
-              ['.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Cut Threshold (V)','THC Threshold'], \
-              ['.c2.thc','pid-p-gain',0,10,0,1000,1,'PID P Gain (Speed)','Pid P Gain'], \
-              ['.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
-              ['.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
-              ['.c2.thc','cornerlock-threshold',0,90,1,99,1,'VAD Threshold (%)','Velocity Anti Dive Threshold'], \
-              ['.c2.thc','voidlock-slope',0,500,1,10000,1,'Void Slope (V/sec)','Void Sense Slope'], \
-              cp7, \
-              ['.c3.arc','arc-fail-delay',1,3,0.1,60,0.1,'Fail Timeout','Arc Fail Timeout'], \
-              ['.c3.arc','arc-max-starts',0,3,1,9,1,'Max. Attempts','Arc Maximum Starts'], \
-              ['.c3.arc','restart-delay',0,3,1,60,1,'Retry Delay','Arc Restart Delay'], \
-              ['.c3.arc','arc-voltage-scale',6,1,-9999,9999,0.000001,'Voltage Scale','Arc Voltage Scale'], \
-              ['.c3.arc','arc-voltage-offset',3,0,-999999,999999,0.001,'Voltage Offset','Arc Voltage Offset'], \
-              ['.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
-              ['.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
-              cp8, \
-              ['.c2.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
-              ['.c2.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
-              ['.c3.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
-              ['.c3.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
+    # spinboxes [parent, name, decimals, value, min, max, increment, label text, prefs option]
+    cpList = [[fparam + '.c1.probe','float-switch-travel',2,1.5,-25,25,0.01,'Float Travel','Float Switch Travel'], \
+              [fparam + '.c1.probe','probe-feed-rate',0,300,1,thcFeedRate,1,'Probe Speed','Probe Feed Rate'], \
+              [fparam + '.c1.probe','probe-start-height',0,38,1,maxHeight,1,'Probe Height','Probe Start Height'], \
+              [fparam + '.c1.probe','ohmic-probe-offset',2,0,-25,+25,0.01,'Ohmic Z Offset','Ohmic Probe Offset'], \
+              [fparam + '.c1.probe','ohmic-max-attempts',0,0,0,10,1,'Ohmic Retries','Ohmic Maximum Attempts'], \
+              [fparam + '.c1.probe','skip-ihs-distance',0,0,0,999,1,'Skip IHS','Skip IHS Distance'], \
+              [fparam + '.c1.motion','setup-feed-rate',0,int(thcFeedRate * 0.8),1,thcFeedRate,1,'Setup Speed','Setup Feed Rate'], \
+              [fparam + '.c2.thc','thc-delay',1,0.5,0,9,0.1,'Start Delay','THC Delay'], \
+              [fparam + '.c2.thc','thc-sample-counts',0,50,10,1000,1,'Auto Counts','THC Sample Counts'], \
+              [fparam + '.c2.thc','thc-sample-threshold',1,1,0.1,9,0.1,'Auto Threshold (V)','THC Sample Threshold'], \
+              [fparam + '.c2.thc','thc-threshold',2,1,0.05,9,0.01,'Cut Threshold (V)','THC Threshold'], \
+              [fparam + '.c2.thc','pid-p-gain',0,10,0,1000,1,'PID P Gain (Speed)','Pid P Gain'], \
+              [fparam + '.c2.thc','pid-i-gain',0,0,0,1000,1,'PID I Gain','Pid I Gain'], \
+              [fparam + '.c2.thc','pid-d-gain',0,0,0,1000,1,'PID D Gin','Pid D Gain'], \
+              [fparam + '.c2.thc','cornerlock-threshold',0,90,1,99,1,'VAD Threshold (%)','Velocity Anti Dive Threshold'], \
+              [fparam + '.c2.thc','voidlock-slope',0,500,1,10000,1,'Void Slope (V/sec)','Void Sense Slope'], \
+              [fparam + '.c1.safety','safe-height',0,20,0,maxHeight,1,'Safe Height','Safe Height'], \
+              [fparam + '.c3.arc','arc-fail-delay',1,3,0.1,60,0.1,'Fail Timeout','Arc Fail Timeout'], \
+              [fparam + '.c3.arc','arc-max-starts',0,3,1,9,1,'Max. Attempts','Arc Maximum Starts'], \
+              [fparam + '.c3.arc','restart-delay',0,3,1,60,1,'Retry Delay','Arc Restart Delay'], \
+              [fparam + '.c3.arc','arc-voltage-scale',6,1,-9999,9999,0.000001,'Voltage Scale','Arc Voltage Scale'], \
+              [fparam + '.c3.arc','arc-voltage-offset',3,0,-999999,999999,0.001,'Voltage Offset','Arc Voltage Offset'], \
+              [fparam + '.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
+              [fparam + '.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
+              [fparam + '.c3.arc','height-per-volt',3,0.1,0.025,0.5,0.01,'Height Per Volt','Height Per Volt'], \
+              [fparam + '.c2.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
+              [fparam + '.c2.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
+              [fparam + '.c3.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
+              [fparam + '.c3.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
              ]
     cpRow = 0
-    cpFrame = cp1[0]
+    cpFrame = cpList[0][0]
     for cpItem in cpList:
+        if s.linear_units != 1:
+            if rpItem[1] == 'float-switch-travel':
+                rpItem[2:7] = [3,0.06,-1,1,0.001]
+            elif rpItem[1] == 'probe-feed-rate':
+                rpItem[2:7] = [1,12,0.1,thcFeedRate,.1]
+            elif rpItem[1] == 'probe-start-height':
+                rpItem[2:7] = [2,1.5,.1,maxHeight,0.01]
+            elif rpItem[1] == 'ohmic-probe-offset':
+                rpItem[2:7] = [3,0,-1,1,0.001]
+            elif rpItem[1] == 'skip-ihs-distance':
+                rpItem[2:7] = [1,0,0,99,.1]
+            elif rpItem[1] == 'setup-feed-rate':
+                rpItem[2:7] = [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
+            elif rpItem[1] == 'safe-height':
+                rpItem[2:7] = [2,0.75,0,maxHeight,0.01]
+            elif rpItem[1] == 'height-per-volt':
+                rpItem[2:7] = [4,0.004,0.001,0.020,0.001]
         if cpItem[0] != cpFrame:
             cpFrame = cpItem[0]
             cpRow = 0
         if cpItem[1] == 'thc-delay':
             cpRow += 1
-        cpName = fparam + cpItem[0] + '.' + cpItem[1]
+        cpName = cpItem[0] + '.' + cpItem[1]
         cpType = 'flt' if cpItem[2] > 0 else 'int'
         rC('label',cpName + 'L','-text',cpItem[7],'-width',15,'-anchor','e')
         rC('spinbox',cpName,'-width', 8,'-justify','right','-wrap','true')
@@ -4253,10 +4359,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
         rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
         if cpItem[1] == 'setup-feed-rate':
-            rC('label',fparam + cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
-            rC('label',fparam + cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',8,'-anchor','e')
-            rC('grid', fparam + cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(0,0),'-pady',(4,0))
-            rC('grid', fparam + cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
+            rC('label',cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
+            rC('label',cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',8,'-anchor','e')
+            rC('grid',cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(0,0),'-pady',(4,0))
+            rC('grid',cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
             cpRow += 1
         rC('grid', cpName + 'L','-column',0,'-row',cpRow,'-sticky','e','-padx',(4,0),'-pady',(4,0))
         rC('grid', cpName,'-column',1,'-row',cpRow,'-sticky','e','-padx',(0,4),'-pady',(4,0))
@@ -4298,6 +4404,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     spinBoxes.append(fsetup + '.l.gui.zoom')
     rC('label',fsetup + '.l.gui.kbShortcutsL','-text','Use KB Shortcuts','-anchor','e')
     rC('checkbutton',fsetup + '.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0)
+    rC('label',fsetup + '.l.gui.useVirtKBL','-text','Use Virtual KB','-anchor','e')
+    rC('checkbutton',fsetup + '.l.gui.useVirtKB','-variable','useVirtKB','-command','virtual_kb_changed','-width',2,'-anchor','w','-indicatoron',0)
     # populate gui frame
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
     rC('grid',fsetup + '.l.gui.closedialog','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,0))
@@ -4311,6 +4419,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.kbShortcutsL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.kbShortcuts','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.useVirtKBL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.useVirtKB','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
 #    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
@@ -4491,19 +4601,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # materials frame
     rC('ComboBox','.runs.materials','-modifycmd','material_changed','-textvariable','matCurrent','-width',10,'-editable',0)
     rC('labelframe','.runs.material','-text','Material','-relief','groove')
-    #  (parent, name, label text)
-    rp1=['.runs.material','kerf-width','Kerf Width']
-    #  (decimals, value, min, max, increment
-    rp1[2:1] = [2,0.5,0,5,0.01] if s.linear_units == 1 else [4,0.02,0,1,0.0001]
-    rp2=['.runs.material','pierce-height','Pierce Height']
-    rp2[2:1] = [2,4,0,25,0.01] if s.linear_units == 1 else [3,0.16,0,1,0.001]
-    rp3=['.runs.material','cut-height','Cut Height']
-    rp3[2:1] = [2,1,0,25,0.01] if s.linear_units == 1 else [3,0.04,0,1,0.001]
-    rp4=['.runs.material','cut-feed-rate','Feed Rate']
-    rp4[2:1] = [0,4000,0,19999,1] if s.linear_units == 1 else [0,160,0,999,0.1]
-    rpList = [rp1, rp2, \
+    # spinboxes [parent, name, decimals, value, min, max, increment, label text]
+    rpList = [['.runs.material','kerf-width',2,0.5,0,5,0.01,'Kerf Width'], \
+              ['.runs.material','pierce-height',2,4,0,25,0.01,'Pierce Height'], \
               ['.runs.material','pierce-delay',1,0.0,0,10,0.1,'Pierce Delay'], \
-              rp3, rp4, \
+              ['.runs.material','cut-height',2,1,0,25,0.01,'Cut Height'], \
+              ['.runs.material','cut-feed-rate',0,4000,0,19999,1,'Feed Rate'], \
               ['.runs.material','cut-amps',0,45,0,999,1,'Cut Amps'], \
               ['.runs.material','cut-volts',0,122,50,300,1,'Cut Volts'], \
               ['.runs.material','puddle-jump-height',0,0,0,200,1,'P-Jump Height'], \
@@ -4514,6 +4617,15 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ]
     rpRow = 0
     for rpItem in rpList:
+        if s.linear_units != 1:
+            if rpItem[1] == 'kerf-width':
+                rpItem[2:7] = [4,0.02,0,1,0.0001]
+            elif rpItem[1] == 'pierce-height':
+                rpItem[2:7] = [3,0.16,0,1,0.001]
+            elif rpItem[1] == 'cut-height':
+                rpItem[2:7] = [3,0.04,0,1,0.001]
+            elif rpItem[1] == 'cut-feed-rate':
+                rpItem[2:7] = [0,160,0,999,0.1]
         rpName = rpItem[0] + '.' + rpItem[1]
         rpType = 'flt' if rpItem[2] > 0 else 'int'
         rC('spinbox',rpName,'-width', '9','-justify','right','-wrap','true')
@@ -4645,7 +4757,22 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
     restoreSetup['crPercent'] = value
     rC(fsetup + '.l.cr.speed','set',value)
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
+    # check for valid onboard virtual keyboard
+    vkb_validate()
+    if vkbData['valid']:
+        value = getPrefs(PREF,'GUI_OPTIONS', 'Use soft keyboard', False, bool)
+    else:
+        value = False
+    pVars.useVirtKB.set(value)
+    restoreSetup['useVirtKB'] = value
+    virtual_kb_changed()
+    # disable keyboard shortcuts if virtual keyboard enabled
+    if value:
+        value = False
+        rC(fsetup + '.l.gui.kbShortcutsL','configure','-state','disabled')
+        rC(fsetup + '.l.gui.kbShortcuts','configure','-state','disabled')
+    else:
+        value = getPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
     pVars.kbShortcuts.set(value)
     restoreSetup['kbShortcuts'] = value
     keyboard_bindings(value)
@@ -5305,6 +5432,13 @@ def user_live_update():
                 rC('grid','forget',fsetup + '.r.ubuttons.yscroll')
         cbbox = rC(fsetup + '.r.ubuttons.canvas','bbox',"all")
         rC(fsetup + '.r.ubuttons.canvas','configure','-scrollregion',cbbox)
+    # show/hide virtual keyboard for materials
+    if str(rC('focus'))[:15] == '.runs.material.':
+        if pVars.useVirtKB.get() and not vkbData['visible']:
+            vkb_show('numpad')
+    else:
+        if vkbData['visible'] and not vkbData['required']:
+            vkb_hide()
     # run users custom periodic commands if it exists
     if os.path.isfile(upFile):
         exec(open(upFile).read())
