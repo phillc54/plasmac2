@@ -352,8 +352,7 @@ def font_size_changed():
         rC('.toolbar.{}'.format(w),'configure','-width',bSize,'-height',bSize)
     for w in matButtons:
         rC('.toolmat.{}'.format(w),'configure','-width',bSize,'-height',bSize)
-    if not firstRun:
-        set_window_size()
+    set_window_size()
 
 def close_window():
     rC('focus','.fbuttons.torch-enable')
@@ -3978,12 +3977,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     if increments:
         rC(fjogf + '.jog.jogincr','list','insert','end',*increments)
     rC('labelframe',fjogf + '.zerohome','-text',_('Zero:'),'-relief','flat','-bd',0)
-    rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',6)
+    rC('button',fjogf + '.zerohome.home','-command','home_joint','-height',1,'-width',8,'-padx',0)
     rC('setup_widget_accel',fjogf + '.zerohome.home',_('Home Axis'))
-    rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',3)
+    rC('button',fjogf + '.zerohome.zero','-command','touch_off_system','-height',1,'-width',5,'-padx',0)
     rC('setup_widget_accel',fjogf + '.zerohome.zero','X0')
-    rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',3,'-text',_('X0Y0'))
-    rC('button',fjogf + '.zerohome.laser','-height',1,'-width',3,'-textvariable','laserText')
+    rC('button',fjogf + '.zerohome.zeroxy','-height',1,'-width',5,'-text',_('X0Y0'),'-padx',0)
+    rC('button',fjogf + '.zerohome.laser','-height',1,'-width',5,'-textvariable','laserText','-padx',0)
     rC('button',fjogf + '.zerohome.tooltouch') # unused... kept for tk hierarchy
     # widget bindings
     rC('bind',fjogf + '.jog.jogminus','<Button-1>','if [is_continuous] {jog_minus}')
@@ -3999,9 +3998,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fjogf + '.jog.jogincr','-row',0,'-column',1,'-sticky','nsew','-padx',8)
     rC('grid',fjogf + '.jog.jogplus','-row',0,'-column',2,'-sticky','nsew')
     rC('grid',fjogf + '.jog','-row',0,'-column',0,'-sticky','ew')
-    rC('grid',fjogf + '.zerohome.home','-row',0,'-column',0,'-padx',(0,6))
-    rC('grid',fjogf + '.zerohome.zero','-row',0,'-column',1,'-padx',(0,6))
-    rC('grid',fjogf + '.zerohome.zeroxy','-row',0,'-column',2,'-padx',(0,6))
+    rC('grid',fjogf + '.zerohome.home','-row',0,'-column',0,'-padx',(0,4))
+    rC('grid',fjogf + '.zerohome.zero','-row',0,'-column',1,'-padx',(0,4))
+    rC('grid',fjogf + '.zerohome.zeroxy','-row',0,'-column',2,'-padx',(0,4))
     rC('grid',fjogf + '.zerohome','-row',1,'-column',0,'-pady',(2,0),'-sticky','w')
     rC('grid',fjogf,'-column',0,'-row',1,'-padx',2,'-pady',(0,0),'-sticky','w')
 
@@ -4048,14 +4047,15 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('labelframe',foverride,'-text',_('THC Height Override:'),'-relief','flat','-bd',0)
     rC('Button',foverride + '.lower','-text','-','-width',1,'-takefocus',0)
     rC('Button',foverride + '.raise','-text','+','-width',1,'-takefocus',0)
-    rC('label',foverride + '.height-override','-width',6,'-justify','center','-text','%0.1fV' % (torchHeight))
+    rC('label',foverride + '.height-override','-text','%0.1fV' % (torchHeight),'-width',20)
     rC('Button',foverride + '.reset','-text',_('Reset'),'-width',1,'-takefocus','0','-width',3)
     # populate the frame
-    rC('pack',foverride + '.lower','-side','left')
-    rC('pack',foverride + '.raise','-side','left','-padx',(8,0))
-    rC('pack',foverride + '.height-override','-side','left')
-    rC('pack',foverride + '.reset','-side','right')
-    rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','w')
+    rC('grid',foverride + '.lower','-column',0,'-row',0,)
+    rC('grid',foverride + '.raise','-column',1,'-row',0,'-padx',(4,0))
+    rC('grid',foverride + '.height-override','-column',2,'-row',0,'-sticky','ew')
+    rC('grid',foverride + '.reset','-column',3,'-row',0,)
+    rC('grid',foverride,'-column',0,'-row',3,'-padx',2,'-pady',(0,4),'-sticky','ew')
+    rC('grid','columnconfigure',foverride,2,'-weight',1)
     # widget bindings
     rC('bind',foverride + '.lower','<ButtonPress-1>','height_lower')
     rC('bind',foverride + '.raise','<ButtonPress-1>','height_raise')
@@ -4067,11 +4067,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
     rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4)
     rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',14)
+    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',11)
     rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',14)
+    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',11)
     rC('checkbutton',fplasma + '.void','-variable','voidEnable','-command','void_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',14)
+    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',11)
     # populate the frame
     rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e','-pady',(0,2))
     rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','e','-pady',(0,2))
@@ -4081,6 +4081,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fplasma + '.voidL','-column',3,'-row',2,'-sticky','e','-pady',(0,2))
     rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','ew')
     rC('grid','columnconfigure',fplasma,1,'-weight',1)
+    # shorten some text for nicer layout.
+    rC('.pane.top.rapidoverride.l','configure','-text','Rapid Ovr:')
+    rC('.pane.top.feedoverride.l','configure','-text','Feed Ovr:')
 
     # hide bottom pane until modified
     rC('pack','forget','.pane.bottom.t.text')
@@ -4188,7 +4191,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # set pane column growth
     rC('grid','columnconfigure','.pane.top',0,'-weight',1)
     rC('grid','columnconfigure','.pane.top',1,'-weight',255)
-    # set rot column growth
+    # set root window column growth
     rC('grid','columnconfigure','.',0,'-weight',0)
     rC('grid','columnconfigure','.',1,'-weight',1)
     rC('grid','columnconfigure','.',2,'-weight',0)
@@ -4709,7 +4712,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 ##############################################################################
     # reinitialize notifications to keep them on top of new widgets
     notifications.__init__(root_window)
-    font_size_changed()
     update_title()
     o.show_overlay = False
     pVars.jogMultiplier.set(1)
@@ -4834,7 +4836,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
             msg1 = _('Install python3-serial or linuxcnc-dev')
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
-    set_window_size()
+    font_size_changed()
     ucFile = os.path.join(configPath, 'user_commands.py')
     if os.path.isfile(ucFile):
         exec(compile(open(ucFile, "rb").read(), ucFile, 'exec'))
@@ -5439,6 +5441,10 @@ def user_live_update():
     else:
         if vkbData['visible'] and not vkbData['required']:
             vkb_hide()
+    # resize manual tab
+    rC('.pane.top.tabs','configure','-width','{}'.format( 18 + \
+        rC('winfo','width',fjogf + '.zerohome.home') + \
+        rC('winfo','width',fjogf + '.zerohome.zero') * 3))
     # run users custom periodic commands if it exists
     if os.path.isfile(upFile):
         exec(open(upFile).read())
