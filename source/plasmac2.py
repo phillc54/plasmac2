@@ -352,6 +352,7 @@ def font_size_changed():
         rC('.toolbar.{}'.format(w),'configure','-width',bSize,'-height',bSize)
     for w in matButtons:
         rC('.toolmat.{}'.format(w),'configure','-width',bSize,'-height',bSize)
+    get_coordinate_font(None)
     set_window_size()
 
 def close_window():
@@ -1754,6 +1755,19 @@ def get_jog_speed(a):
 ##############################################################################
 # MONKEYPATCHED FUNCTIONS                                                    #
 ##############################################################################
+
+def get_coordinate_font(large):
+    global coordinate_font
+    global coordinate_linespace
+    global coordinate_charwidth
+    global fontbase
+    coordinate_font = 'monospace {}'.format(fontSize)
+    if coordinate_font not in font_cache:
+        font_cache[coordinate_font] = \
+            glnav.use_pango_font(coordinate_font, 0, 128)
+    fontbase, coordinate_charwidth, coordinate_linespace = \
+            font_cache[coordinate_font]
+
 def get_view_type():    # from axis.py
     if str(widgets.view_x['relief']) == 'sunken':
         view = 'x'
@@ -3670,6 +3684,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     o.bind('<Button-3>', rClicker)
     # monkeypatched functions from axis.py
     o.get_view = get_view
+    get_coordinate_font = get_coordinate_font
     install_help = install_help
     prompt_touchoff = prompt_touchoff
     # monkeypatched functions from glcanon.py
@@ -4141,6 +4156,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # menu alterations
     # delete existing
     rC('.menu.file','delete','last')
+    rC('.menu.view','delete',20)
     rC('.menu','delete','last')
     # add new menu items
     rC('.menu.file','add','command','-command','close_window')
