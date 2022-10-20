@@ -383,46 +383,47 @@ def set_window_size():
         notifications.add('error', '{}:\n{}\n'.format(title, msg0))
         return False
     else:
-        # minimum window size = fontSize: window width, window height, pane.top minimum, pane.bottom minimum
-        wSize = { '7': [ 780, 456, 310,  92],
-                  '8': [ 826, 482, 328, 102],
-                  '9': [ 884, 516, 350, 108],
-                 '10': [ 960, 558, 380, 116],
-                 '11': [1000, 584, 394, 124],
-                 '12': [1048, 612, 412, 132],
-                 '13': [1148, 670, 456, 140],
-                 '14': [1200, 700, 474, 148],
-                 '15': [1248, 728, 492, 156],
-                 '16': [1320, 770, 522, 164],
-                 '17': [1396, 814, 552, 172],
-                 '18': [1454, 848, 576, 180],
-                 '19': [1494, 872, 584, 188],
-                 '20': [1564, 912, 618, 196],
+        wSize = { '7': [456, 310,  92],
+                  '8': [482, 328, 102],
+                  '9': [516, 350, 108],
+                 '10': [556, 380, 116],
+                 '11': [582, 394, 124],
+                 '12': [610, 412, 132],
+                 '13': [668, 456, 140],
+                 '14': [697, 474, 148],
+                 '15': [727, 492, 156],
+                 '16': [769, 522, 164],
+                 '17': [811, 552, 172],
+                 '18': [847, 576, 180],
+                 '19': [866, 584, 188],
+                 '20': [912, 618, 196],
                 }
-        rE('.pane paneconfigure $pane_top -minsize {}'.format(wSize[fontSize][2]))
-        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][3]))
+        height = wSize[fontSize][0]
+        width = int(height * 1.75)
+        rE('.pane paneconfigure $pane_top -minsize {}'.format(wSize[fontSize][1]))
+        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][2]))
         if size == 'maximized':
-            rC('wm','attributes','.','-fullscreen', 0)
+            rC('wm','attributes','.','-fullscreen',0)
             rC('wm','attributes','.','-zoomed',1)
         elif size == 'fullscreen':
-            rC('wm','attributes','.','-zoomed', 0)
+            rC('wm','attributes','.','-zoomed',0)
             rC('wm','attributes','.','-fullscreen',1)
         elif size == 'last':
-            size = getPrefs(PREF,'GUI_OPTIONS', 'Window last', 'none', str)
+            size = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
             if size == 'none':
                 size = 'default'
             else:
-                rC('wm','attributes','.','-zoomed', 0)
-                rC('wm','attributes','.','-fullscreen', 0)
+                rC('wm','attributes','.','-zoomed',0)
+                rC('wm','attributes','.','-fullscreen',0)
                 rC('wm','geometry','.',size)
         if size == 'default':
-            rC('wm','attributes','.','-zoomed', 0)
-            rC('wm','attributes','.','-fullscreen', 0)
-            xPos = int((root_window.winfo_screenwidth() - wSize[fontSize][0]) / 2)
-            yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
-            rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
-            rC('wm','minsize','.',wSize[fontSize][0], wSize[fontSize][1])
-        rE('.pane paneconfigure $pane_bottom -height {}'.format(wSize[fontSize][3]))
+            rC('wm','attributes','.','-zoomed',0)
+            rC('wm','attributes','.','-fullscreen',0)
+            rC('wm','minsize','.',width,height)
+            xPos = int((root_window.winfo_screenwidth() - width) / 2)
+            yPos = int((root_window.winfo_screenheight() - height) / 2)
+            rC('wm','geometry','.','{}x{}+{}+{}'.format(width, height, xPos, yPos))
+        rE('.pane paneconfigure $pane_bottom -height {}'.format(wSize[fontSize][2]))
         rC(fsetup + '.r.ubuttons.canvas','xview','moveto',0.0)
         rC(fsetup + '.r.ubuttons.canvas','yview','moveto',0.0)
 
@@ -440,6 +441,7 @@ def wcs_rotation(mode):
             reload_file()
 
 def preview_toggle(conv=False):
+    global bPaneHeight
     if pVars.previewLarge.get() or conv:
         rC('grid','forget','.fbuttons')
         rC('grid','forget','.pane.top.tabs')
@@ -447,7 +449,10 @@ def preview_toggle(conv=False):
         rC('grid','forget',ftop + '.rapidoverride')
         rC('grid','forget',ftop + '.jogspeed')
         rC('grid','forget',ftop + '.ajogspeed')
-        rC('.pane','forget','.pane.bottom')
+        if not bPaneHeight:
+            bPaneHeight = rE('winfo height .pane.bottom')
+        rE('.pane paneconfigure $pane_bottom -minsize 1')
+        rE('.pane paneconfigure $pane_bottom -height 1')
         rC('grid','forget','.toolmat')
         rC('grid','forget','.runs')
     else:
@@ -456,12 +461,12 @@ def preview_toggle(conv=False):
         rC('grid','.pane.top.feedoverride','-column',0,'-row',2,'-sticky','new')
         rC('grid','.pane.top.rapidoverride','-column',0,'-row',3,'-sticky','new')
         rC('grid','.pane.top.jogspeed','-column',0,'-row',5,'-sticky','new')
-        # test if we need the angular jog slider, 56==0x38==000111000==ABC
+        # test if we need the angular jog slider (56 = 0x38 = 000111000 = ABC)
         if s.axis_mask & 56 == 0 and 'ANGULAR' in joint_type:
             rC('grid','.pane.top.ajogspeed','-column',0,'-row',6,'-sticky','new')
-        rC('.pane','add','.pane.bottom','-sticky','nsew')
-        # resize required as it was lost when forgotten
-        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][3]))
+        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][2]))
+        rE('.pane paneconfigure $pane_bottom -height {}'.format(bPaneHeight))
+        bPaneHeight = 0
         rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
         rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
 
@@ -4870,6 +4875,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
             msg1 = _('Install python3-serial or linuxcnc-dev')
             notifications.add('error', '{}:\n{}\n{}\n'.format(title, msg0, msg1))
             pmPort = None
+    bPaneHeight = 0
     font_size_changed()
     ucFile = os.path.join(configPath, 'user_commands.py')
     if os.path.isfile(ucFile):
