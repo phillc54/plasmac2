@@ -375,6 +375,7 @@ def close_window():
     root_window.destroy()
 
 def set_window_size():
+    global wSize
     size = pVars.winSize.get()
     if size not in ['default', 'last', 'fullscreen', 'maximized']:
         title = _('WINDOW ERROR')
@@ -382,15 +383,24 @@ def set_window_size():
         notifications.add('error', '{}:\n{}\n'.format(title, msg0))
         return False
     else:
-        # minimm window size = fontSize: window width, window height, user button canvas width
-        wSize = { '9': [ 960, 550,  636],
-                 '10': [ 960, 565,  636],
-                 '11': [1024, 590,  712],
-                 '12': [1092, 620,  788],
-                 '13': [1176, 676,  864],
-                 '14': [1252, 710,  940],
-                 '15': [1334, 740, 1016],
-                 '16': [1416, 786, 1092]}
+        # minimum window size = fontSize: window width, window height, pane.top minimum, pane.bottom minimum
+        wSize = { '7': [ 780, 456, 310,  92],
+                  '8': [ 826, 482, 328, 102],
+                  '9': [ 884, 516, 350, 108],
+                 '10': [ 960, 558, 380, 116],
+                 '11': [1000, 584, 394, 124],
+                 '12': [1048, 612, 412, 132],
+                 '13': [1148, 670, 456, 140],
+                 '14': [1200, 700, 474, 148],
+                 '15': [1248, 728, 492, 156],
+                 '16': [1320, 770, 522, 164],
+                 '17': [1396, 814, 552, 172],
+                 '18': [1454, 848, 576, 180],
+                 '19': [1494, 872, 584, 188],
+                 '20': [1564, 912, 618, 196],
+                }
+        rE('.pane paneconfigure $pane_top -minsize {}'.format(wSize[fontSize][2]))
+        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][3]))
         if size == 'maximized':
             rC('wm','attributes','.','-fullscreen', 0)
             rC('wm','attributes','.','-zoomed',1)
@@ -412,6 +422,7 @@ def set_window_size():
             yPos = int((root_window.winfo_screenheight() - wSize[fontSize][1]) / 2)
             rC('wm','geometry','.','{}x{}+{}+{}'.format(wSize[fontSize][0], wSize[fontSize][1], xPos, yPos))
             rC('wm','minsize','.',wSize[fontSize][0], wSize[fontSize][1])
+        rE('.pane paneconfigure $pane_bottom -height {}'.format(wSize[fontSize][3]))
         rC(fsetup + '.r.ubuttons.canvas','xview','moveto',0.0)
         rC(fsetup + '.r.ubuttons.canvas','yview','moveto',0.0)
 
@@ -449,6 +460,8 @@ def preview_toggle(conv=False):
         if s.axis_mask & 56 == 0 and 'ANGULAR' in joint_type:
             rC('grid','.pane.top.ajogspeed','-column',0,'-row',6,'-sticky','new')
         rC('.pane','add','.pane.bottom','-sticky','nsew')
+        # resize required as it was lost when forgotten
+        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][3]))
         rC('grid','.toolmat','-column',3,'-row',0,'-sticky','nesw')
         rC('grid','.runs','-column',3,'-row',1,'-rowspan',2,'-sticky','nsew','-padx',1,'-pady',1)
 
@@ -1628,6 +1641,10 @@ def update_jog_slider_vel(value):
     if not manualCut['state']:
         rE('set jog_speed {}'.format(int(float(value) * vars.max_speed.get() * 60)))
 
+# we set our own min sizes dependent on font size
+def set_pane_minsize():
+    pass
+
 
 ##############################################################################
 # PYTHON FUNCTIONS HIJACKED FROM AXIS.PY                                     #
@@ -1798,7 +1815,7 @@ def draw_grid():    # from glcanon.py
     o.draw_grid_permuted(rotation, permutations[2],
             inverse_permutations[2])
 
-def posstrs():
+def posstrs():    # from glcanon.py
     s = o.stat
     limit = list(s.limit[:])
     homed = list(s.homed[:])
@@ -1858,7 +1875,7 @@ def posstrs():
     else:
         return o.joint_dro_format(s,spd,o.get_num_joints(),limit, homed)
 
-def install_help(app):
+def install_help(app):    # from axis.py
     # we use install_kb_text instead so we can change colors
     return
 
@@ -1883,7 +1900,7 @@ def install_kp_text(app):
         Label(keyp, text=a, font=fixed, padx=4, pady=0, highlightthickness=0).grid(row=i, column=0, sticky="w")
         Label(keyp, text=b, padx=4, pady=0, highlightthickness=0).grid(row=i, column=1, sticky="w")
 
-def prompt_touchoff(title, text, default, tool_only, system=None):
+def prompt_touchoff(title, text, default, tool_only, system=None):    # from axis.py
     title = _('TOUCH OFF')
     text = text.replace(':', '') % _('workpiece')
     dlg = plasmacDialog('touch', title, text, 'numpad', system)
@@ -3703,6 +3720,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # tcl functions hijacked from axis.tcl
     TclCommands.update_title = update_title
     TclCommands.update_jog_slider_vel = update_jog_slider_vel
+    TclCommands.set_pane_minsize = set_pane_minsize
     # new functions
     TclCommands.set_view_t = set_view_t
     TclCommands.param_changed = param_changed
@@ -4413,7 +4431,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
     rC('label',fsetup + '.l.gui.fsizeL','-text','Font Size','-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.fsize','-modifycmd','font_size_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
-    rC(fsetup + '.l.gui.fsize','configure','-values',[9,10,11,12,13,14,15,16])
+    rC(fsetup + '.l.gui.fsize','configure','-values',[7,8,9,10,11,12,13,14,15,16,17,18,19,20])
     rC('label',fsetup + '.l.gui.coneL','-text','Cone Size','-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
