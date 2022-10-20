@@ -4359,7 +4359,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
               [fparam + '.c3.arc','restart-delay',0,3,1,60,1,'Retry Delay','Arc Restart Delay'], \
               [fparam + '.c3.arc','arc-voltage-scale',6,1,-9999,9999,0.000001,'Voltage Scale','Arc Voltage Scale'], \
               [fparam + '.c3.arc','arc-voltage-offset',3,0,-999999,999999,0.001,'Voltage Offset','Arc Voltage Offset'], \
-              [fparam + '.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Ark OK High'], \
+              [fparam + '.c3.arc','arc-ok-high',0,99999,0,99999,1,'OK High Volts','Arc OK High'], \
               [fparam + '.c3.arc','arc-ok-low',0,60,0,100,1,'OK Low Volts','Arc OK Low'], \
               [fparam + '.c3.arc','height-per-volt',3,0.1,0.025,0.5,0.01,'Height Per Volt','Height Per Volt'], \
               [fparam + '.c2.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
@@ -4560,8 +4560,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.m.colors.warn','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.voltL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.volt','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',fsetup + '.m.colors.troughL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
-    rC('grid',fsetup + '.m.colors.trough','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.troughL','-column',0,'-row',6,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.trough','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.m.colors',0,'-weight',1)
     # populate middle panel
     rC('grid',fsetup + '.m.utilities','-column',0,'-row',0,'-sticky','new')
