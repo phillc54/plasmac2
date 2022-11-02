@@ -1938,27 +1938,41 @@ def validate_hal_pin(halpin, button, usage):
     if not valid:
         msg0 = _('does not exist for user button')
         notifications.add('error', '{}:\n{} {} #{}'.format(title, halpin, msg0, button))
-    if not pBit:
+    elif not pBit:
         msg0 = _('must be a bit pin for user button')
         notifications.add('error', '{}:\n{} {} #{}'.format(title, usage, msg0, button))
         valid = False
     return valid
 
 def validate_ini_param(code, button):
-    title = _('PARAMETER ERROR')
-    valid = [False, None]
-    try:
-        parm = code[code.index('{') + len('') + 1: code.index('}')]
-        value = inifile.find(parm.split()[0], parm.split()[1]) or None
-        if value:
-            valid = [True, code.replace('{{{}}}'.format(parm), value)]
-    except:
-        pass
-    if not valid[0]:
-        msg0 = _('invalid parameter')
-        msg1 = _('for user button')
-        notifications.add('error', '{}:\n{} {} {} #{}'.format(title, msg0, code, msg1, button))
-    return valid
+    title = _('INI PARAMETER ERROR')
+    if '{' in code and '}' in code:
+        data = ['{', '}', ' ']
+        valid, code = get_ini_param(code, data)
+    if '#<_ini[' in code and '>' in code:
+        data = ['#<_ini[', '>', ']']
+        valid, code = get_ini_param(code, data)
+    if not valid:
+        msg0 = _('is an invalid ini parameter for user button')
+        notifications.add('error', '{}:\n{} {} #{}'.format(title, code, msg0, button))
+    return valid, code
+
+def get_ini_param(code, data):
+    valid = False
+    if code.count(data[0]) == code.count(data[1]):
+        for p in code.split(data[0])[1:]:
+            parm = p.split(data[1])[0]
+            value = inifile.find(parm.split(data[2])[0].upper(), parm.split(data[2])[1].upper()) or None
+            if value is not None:
+                code = code.replace('{}{}{}'.format(data[0], parm, data[1]), value)
+                valid = True
+            else:
+                valid = False
+                code = f'[{parm.split(data[2])[0]}] {parm.split(data[2])[1]}'
+                break
+    else:
+        valid = False
+    return valid, code
 
 def button_action(button, pressed):
     if int(pressed):
@@ -1981,6 +1995,7 @@ def user_button_setup():
         bName = getPrefs(PREF,'BUTTONS', str(n) + ' Name', '', str)
         bCode = getPrefs(PREF,'BUTTONS', str(n) + ' Code', '', str)
         outCode = {'code':None}
+        parmError = False
         if bCode.strip() == 'ohmic-test' and not 'ohmic-test' in [(v['code']) for k, v in buttonCodes.items()]:
             outCode['code'] = 'ohmic-test'
         elif bCode.strip() == 'cut-type' and not 'cut-type' in buttonCodes:
@@ -2085,6 +2100,8 @@ def user_button_setup():
                         pulsePins[str(n)] = {'button':str(n), 'pin':outCode['pin'], 'text':None, 'timer':0, 'counter':0, 'state':False}
                     except:
                         outCode = {'code':None}
+                else:
+                    parmError = True
         elif bCode.startswith('toggle-halpin '):
             if len(bCode.split()) > 1 and len(bCode.split()) < 4:
                 codes = bCode.strip().split()
@@ -2095,6 +2112,8 @@ def user_button_setup():
                         outCode['critical'] = True
                         criticalButtons.append(n)
                     togglePins[str(n)] = {'button':str(n), 'pin':outCode['pin'], 'state':hal.get_value(outCode['pin']), 'runcritical':outCode['critical']}
+                else:
+                    parmError = True
         elif bCode and bCode not in singleCodes:
             codes = bCode.strip().split('\\')
             codes = [x.strip() for x in codes]
@@ -2115,13 +2134,14 @@ def user_button_setup():
                 elif codes[cn][:2].lower() == 'o<':
                     outCode['code'].append(['ocode', codes[cn]])
                 elif codes[cn][0].lower() in 'gm':
-                    if not '{' in codes[cn]:
+                    if not '{' in codes[cn] and not '#<_ini' in codes[cn]:
                         outCode['code'].append(['gcode', codes[cn]])
                     else:
-                        reply = validate_ini_param(codes[cn], n)
-                        if reply[0]:
-                            outCode['code'].append(['gcode', reply[1]])
+                        valid, code = validate_ini_param(codes[cn], n)
+                        if valid:
+                            outCode['code'].append(['gcode', code])
                         else:
+                            parmError = True
                             outCode = {'code': None}
                             break
                 else:
@@ -2145,9 +2165,10 @@ def user_button_setup():
             rC('bind','.fbuttons.button{}'.format(n),'<ButtonRelease-1>','button_action {} 0'.format(n))
             row += 1
         elif bName or bCode:
-            title = _('USER BUTTON ERROR')
-            msg0 = _('is invalid code for user button')
-            notifications.add('error', '{}:\n"{}" {} #{}'.format(title, bCode, msg0, n))
+            if not parmError:
+                title = _('USER BUTTON ERROR')
+                msg0 = _('is invalid code for user button')
+                notifications.add('error', '{}:\n"{}" {} #{}'.format(title, bCode, msg0, n))
             bName = None
             outCode = {'code':None}
             invalidButtons.append(n)
