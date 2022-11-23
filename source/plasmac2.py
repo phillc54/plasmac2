@@ -1778,6 +1778,39 @@ def get_jog_speed(a):
         else:
             return vars.jog_aspeed.get() / 60 * pVars.jogMultiplier.get()
 
+def send_mdi_command(command):
+    global mdi_history_index, mdi_history_save_filename
+    if command != "":
+        command= command.lstrip().rstrip()
+        vars.mdi_command.set("")
+        ensure_mode(linuxcnc.MODE_MDI)
+        widgets.mdi_history.selection_clear(0, "end")
+        ## check if input is already in list. If so, then delete old element
+        #idx = 0
+        #for ele in widgets.mdi_history.get(0, "end"):
+        #    if ele == command:
+        #        widgets.mdi_history.delete(idx)
+        #        break
+        #    idx += 1
+        history_size = widgets.mdi_history.size()
+        new_entry = 1
+        if history_size > 1 and widgets.mdi_history.get(history_size - 2) == command:
+            new_entry = 0
+        if new_entry != 0:
+            # if command is already at end of list, don't add it again
+            widgets.mdi_history.insert(history_size - 1, "%s" % command)
+            history_size += 1
+        widgets.mdi_history.see(history_size - 1)
+        if history_size > (mdi_history_max_entries + 1):
+            widgets.mdi_history.delete(0, 0)
+            history_size= (mdi_history_max_entries + 1)
+        # pdb.set_trace()
+        mdi_history_index = widgets.mdi_history.index("end") - 1
+        c.mdi(command)
+        o.tkRedraw()
+        commands.mdi_history_write_to_file(mdi_history_save_filename, history_size)
+        if 'G10' in command.upper().replace(' ',''):
+            reload_file()
 
 ##############################################################################
 # MONKEYPATCHED FUNCTIONS                                                    #
@@ -3735,7 +3768,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     get_coordinate_font = get_coordinate_font
     install_help = install_help
     prompt_touchoff = prompt_touchoff
-    # monkeypatched functions from glcanon.py
+     # monkeypatched functions from glcanon.py
     o.draw_grid = draw_grid
     o.posstrs = posstrs
     # tcl called functions hijacked from axis.py
@@ -3748,6 +3781,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.set_view_p = set_view_p
     TclCommands.set_view_z = set_view_z
     TclCommands.get_jog_speed = get_jog_speed
+    TclCommands.send_mdi_command = send_mdi_command
     # tcl functions hijacked from axis.tcl
     TclCommands.update_title = update_title
     TclCommands.update_jog_slider_vel = update_jog_slider_vel
