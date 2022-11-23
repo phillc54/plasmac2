@@ -1672,7 +1672,12 @@ def reload_file(refilter=True):
         return
     line = vars.highlight_line.get()
     o.set_highlight_line(None)
-    f = pVars.preRflFile.get() if pVars.preRflFile.get() else loaded_file
+    if pVars.preRflFile.get():
+        f = pVars.preRflFile.get()
+    elif '/shape.ngc' in loaded_file:
+        f = os.path.join(tmpPath, 'shape.ngc')
+    else:
+        f = loaded_file
     if refilter or not get_filter(f):
         open_file_guts(f, False, False)
     else:
