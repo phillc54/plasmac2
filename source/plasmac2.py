@@ -4431,22 +4431,22 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     cpFrame = cpList[0][0]
     for cpItem in cpList:
         if s.linear_units != 1:
-            if rpItem[1] == 'float-switch-travel':
-                rpItem[2:7] = [3,0.06,-1,1,0.001]
-            elif rpItem[1] == 'probe-feed-rate':
-                rpItem[2:7] = [1,12,0.1,thcFeedRate,.1]
-            elif rpItem[1] == 'probe-start-height':
-                rpItem[2:7] = [2,1.5,.1,maxHeight,0.01]
-            elif rpItem[1] == 'ohmic-probe-offset':
-                rpItem[2:7] = [3,0,-1,1,0.001]
-            elif rpItem[1] == 'skip-ihs-distance':
-                rpItem[2:7] = [1,0,0,99,.1]
-            elif rpItem[1] == 'setup-feed-rate':
-                rpItem[2:7] = [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
-            elif rpItem[1] == 'safe-height':
-                rpItem[2:7] = [2,0.75,0,maxHeight,0.01]
-            elif rpItem[1] == 'height-per-volt':
-                rpItem[2:7] = [4,0.004,0.001,0.020,0.001]
+            if cpItem[1] == 'float-switch-travel':
+                cpItem[2:7] = [3,0.06,-1,1,0.001]
+            elif cpItem[1] == 'probe-feed-rate':
+                cpItem[2:7] = [1,12,0.1,thcFeedRate,.1]
+            elif cpItem[1] == 'probe-start-height':
+                cpItem[2:7] = [2,1.5,.1,maxHeight,0.01]
+            elif cpItem[1] == 'ohmic-probe-offset':
+                cpItem[2:7] = [3,0,-1,1,0.001]
+            elif cpItem[1] == 'skip-ihs-distance':
+                cpItem[2:7] = [1,0,0,99,.1]
+            elif cpItem[1] == 'setup-feed-rate':
+                cpItem[2:7] = [1,int(thcFeedRate * 0.8),0.1,thcFeedRate,0.1]
+            elif cpItem[1] == 'safe-height':
+                cpItem[2:7] = [2,0.75,0,maxHeight,0.01]
+            elif cpItem[1] == 'height-per-volt':
+                cpItem[2:7] = [4,0.004,0.001,0.020,0.001]
         if cpItem[0] != cpFrame:
             cpFrame = cpItem[0]
             cpRow = 0
