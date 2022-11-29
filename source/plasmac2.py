@@ -400,32 +400,25 @@ def set_window_size():
                 }
         height = wSize[fontSize][0]
         width = int(height * 1.75)
+        last = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
         rE('.pane paneconfigure $pane_top -minsize {}'.format(wSize[fontSize][1]))
         rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][2]))
         if size == 'maximized':
-            rC('wm','attributes','.','-fullscreen',0)
-            rC('wm','attributes','.','-zoomed',1)
+            root_window.attributes('-fullscreen', False, '-zoomed', True)
         elif size == 'fullscreen':
-            rC('wm','attributes','.','-zoomed',0)
-            rC('wm','attributes','.','-fullscreen',1)
-        elif size == 'last':
-            size = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
-            if size == 'none':
-                size = 'default'
+            root_window.attributes('-fullscreen', True, '-zoomed', False)
+        else:
+            root_window.attributes('-fullscreen', False, '-zoomed', False)
+            if size == 'last' and last != 'none':
+                root_window.geometry(last)
             else:
-                rC('wm','attributes','.','-zoomed',0)
-                rC('wm','attributes','.','-fullscreen',0)
-                rC('wm','geometry','.',size)
-        if size == 'default':
-            rC('wm','attributes','.','-zoomed',0)
-            rC('wm','attributes','.','-fullscreen',0)
-            rC('wm','minsize','.',width,height)
-            xPos = int((root_window.winfo_screenwidth() - width) / 2)
-            yPos = int((root_window.winfo_screenheight() - height) / 2)
-            rC('wm','geometry','.','{}x{}+{}+{}'.format(width, height, xPos, yPos))
+                xPos = int((root_window.winfo_screenwidth() - width) / 2)
+                yPos = int((root_window.winfo_screenheight() - height) / 2)
+                root_window.geometry('{}x{}+{}+{}'.format(width, height, xPos, yPos))
         rE('.pane paneconfigure $pane_bottom -height {}'.format(wSize[fontSize][2]))
         rC(fsetup + '.r.ubuttons.canvas','xview','moveto',0.0)
         rC(fsetup + '.r.ubuttons.canvas','yview','moveto',0.0)
+        root_window.update_idletasks()
 
 def wcs_rotation(mode):
     global currentX, currentY, currentRot
