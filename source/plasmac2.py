@@ -1473,19 +1473,19 @@ def frame_error(torch, msgList, units, xMin, yMin, xMax, yMax):
         msgs += _('Do you want to try with the torch?')
         response = show_dialog('yesno', title, msgs)
     else:
-        msgs += _('Framing can not proceed')
+        msgs += _('Framing cannot proceed')
         response = show_dialog('error', title, msgs)
     return response
 
 def frame_job(feed, height):
     global framingState, activeFunction
     if o.canon:
-        msgList, units, xMin, yMin, xMax, yMax = bounds_check('framing', laserOffsets['X'], laserOffsets['Y'])
+        msgList, units, xMin, yMin, xMax, yMax, frame_points = bounds_check('framing', laserOffsets['X'], laserOffsets['Y'])
         if msgList:
             reply = frame_error(False, msgList, units, xMin, yMin, xMax, yMax)
             if not reply:
                 return
-            msgList, units, xMin, yMin, xMax, yMax = bounds_check('framing', 0, 0)
+            msgList, units, xMin, yMin, xMax, yMax, frame_points = bounds_check('framing', 0, 0)
             if msgList:
                 reply = frame_error(True, msgList, units, xMin, yMin, xMax, yMax)
                 return
@@ -1501,13 +1501,32 @@ def frame_job(feed, height):
             if not height:
                 height = machineBounds['Z+'] - (hal.get_value('plasmac.max-offset') * unitsPerMm)
                 c.mdi('G53 G0 Z{:0.4f}'.format(height))
-            c.mdi('G53 G0 X{:0.2f} Y{:0.2f}'.format(xMin, yMin))
-            c.mdi('G53 G1 Y{:0.2f} F{:0.0f}'.format(yMax, feed))
-            c.mdi('G53 G1 X{:0.2f}'.format(xMax))
-            c.mdi('G53 G1 Y{:0.2f}'.format(yMin))
-            c.mdi('G53 G1 X{:0.2f}'.format(xMin))
+            c.mdi('G53 G0 X{:0.2f} Y{:0.2f}'.format(frame_points[1][0], frame_points[1][1]))
+            c.mdi('G53 G1 X{:0.2f} Y{:0.2f} F{:0.0f}'.format(frame_points[2][0], frame_points[2][1], feed))
+            c.mdi('G53 G1 X{:0.2f} Y{:0.2f}'.format(frame_points[3][0], frame_points[3][1]))
+            c.mdi('G53 G1 X{:0.2f} Y{:0.2f}'.format(frame_points[4][0], frame_points[4][1]))
+            c.mdi('G53 G1 X{:0.2f} Y{:0.2f}'.format(frame_points[1][0], frame_points[1][1]))
+            c.mdi('G0 X0 Y0')
             framingState = True
 
+def rotate_frame(coordinates):
+    angle = math.radians(s.rotation_xy)
+    cos = math.cos(angle)
+    sin = math.sin(angle)
+    frame_points = [coordinates[0]]
+    ox = frame_points[0][0]
+    oy = frame_points[0][1]
+    for x, y in coordinates[1:]:
+        tox = x - ox
+        toy = y - oy
+        rx = (tox * cos) - (toy * sin) + ox
+        ry = (tox * sin) + (toy * cos) + oy
+        frame_points.append([rx, ry])
+    xMin = min(frame_points[1:])[0]
+    xMax = max(frame_points[1:])[0]
+    yMin = min(frame_points[1:])[1]
+    yMax = max(frame_points[1:])[1]
+    return frame_points, xMin, yMin, xMax, yMax
 
 ##############################################################################
 # BOUNDS CHECK                                                               #
@@ -1517,13 +1536,24 @@ def bounds_check(boundsType, xOffset , yOffset):
     # glcanon reports in imperial (dinosaur) units, we need to:
     #   test the bounds in machine units
     #   report the error in currently displayed units
+    framing = True if 'framing' in boundsType else False
     boundsMultiplier = 25.4 if s.linear_units == 1 else 1
     if o.canon:
         gcUnits = 'mm' if 210 in o.canon.state.gcodes else 'in'
-        xMin = (round(o.canon.min_extents[0] * boundsMultiplier + xOffset, 5))
-        xMax = (round(o.canon.max_extents[0] * boundsMultiplier + xOffset, 5))
-        yMin = (round(o.canon.min_extents[1] * boundsMultiplier + yOffset, 5))
-        yMax = (round(o.canon.max_extents[1] * boundsMultiplier + yOffset, 5))
+        if framing:
+            xStart = s.g5x_offset[0]
+            yStart = s.g5x_offset[1]
+            xMin = (round(o.canon.min_extents_zero_rxy[0] * boundsMultiplier + xOffset, 5))
+            xMax = (round(o.canon.max_extents_zero_rxy[0] * boundsMultiplier + xOffset, 5))
+            yMin = (round(o.canon.min_extents_zero_rxy[1] * boundsMultiplier + yOffset, 5))
+            yMax = (round(o.canon.max_extents_zero_rxy[1] * boundsMultiplier + yOffset, 5))
+            coordinates = [[xStart, yStart], [xMin, yMin], [xMin, yMax], [xMax, yMax], [xMax, yMin]]
+            frame_points, xMin, yMin, xMax, yMax = rotate_frame(coordinates)
+        else:
+            xMin = (round(o.canon.min_extents[0] * boundsMultiplier + xOffset, 5))
+            xMax = (round(o.canon.max_extents[0] * boundsMultiplier + xOffset, 5))
+            yMin = (round(o.canon.min_extents[1] * boundsMultiplier + yOffset, 5))
+            yMax = (round(o.canon.max_extents[1] * boundsMultiplier + yOffset, 5))
     else:
         gcUnits = 'mm' if s.linear_units == 1 else 'in'
         xMin = xMax = xOffset
@@ -1544,12 +1574,15 @@ def bounds_check(boundsType, xOffset , yOffset):
         amount = xMax - machineBounds['X+']
         msgList.append(['X','MAX','{:0.2f}'.format(amount * reportMultiplier)])
     if yMin < machineBounds['Y-']:
-        amount = machineBounds['T-'] - yMin
+        amount = machineBounds['Y-'] - yMin
         msgList.append(['Y','MIN','{:0.2f}'.format(amount * reportMultiplier)])
     if yMax > machineBounds['Y+']:
         amount = yMax - machineBounds['Y+']
         msgList.append(['Y','MAX','{:0.2f}'.format(amount * reportMultiplier)])
-    return msgList, gcUnits, xMin, yMin, xMax, yMax
+    if framing:
+        return msgList, gcUnits, xMin, yMin, xMax, yMax, frame_points
+    else:
+        return msgList, gcUnits, xMin, yMin, xMax, yMax
 
 
 ##############################################################################
