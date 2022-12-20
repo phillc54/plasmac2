@@ -386,43 +386,37 @@ def set_window_size():
         return False
     else:
         if pVars.orient.get() == 'portrait':
-            wHigh = { '7': [ 714,  750],  '8': [ 752,  792],
-                      '9': [ 808,  850], '10': [ 874,  918],
-                     '11': [ 912,  960], '12': [ 956, 1006],
-                     '13': [1054, 1110], '14': [1100, 1154],
-                     '15': [1144, 1200], '16': [1214, 1276],
-                     '17': [1276, 1348], '18': [1330, 1402],
-                     '19': [1364, 1436], '20': [1440, 1514],
+            # window height, window height with pmx enabled, window width, bottom pane height
+            wSize = { '7': [ 720,  756, 644,  92],  '8': [ 7588,  796, 644, 102],
+                      '9': [ 814,  856, 662, 108], '10': [ 880,  924, 664, 116],
+                     '11': [ 918,  966, 734, 124], '12': [ 962, 1012, 806, 132],
+                     '13': [1058, 1114, 878, 140], '14': [1102, 1158, 950, 148],
+                     '15': [1146, 1206,1024, 156], '16': [1214, 1278,1094, 164],
+                     '17': [1270, 1336,1166, 172], '18': [1334, 1404,1166, 180],
+                     '19': [1366, 1438,1240, 188], '20': [1442, 1514,1310, 196],
                     }
             offset = 1 if pmPort else 0
-            height = wHigh[fontSize][offset]
-            wSize = { '7': [ 644,  714, 310,  92],  '8': [ 644,  752, 328, 102],
-                      '9': [ 662,  808, 350, 108], '10': [ 664,  874, 380, 116],
-                     '11': [ 734,  912, 394, 124], '12': [ 806,  956, 412, 132],
-                     '13': [ 878, 1054, 456, 140], '14': [ 950, 1100, 474, 148],
-                     '15': [1024, 1144, 492, 156], '16': [1094, 1214, 522, 164],
-                     '17': [1166, 1276, 552, 172], '18': [1166, 1330, 576, 180],
-                     '19': [1240, 1364, 584, 188], '20': [1310, 1440, 618, 196],
-                    }
-            width  = wSize[fontSize][0]
-            tPane  = wSize[fontSize][2]
+            height = wSize[fontSize][offset]
+            width  = wSize[fontSize][2]
             bPane  = wSize[fontSize][3]
+
         else:
-            wSize = { '7': [456, 310,  92],  '8': [482, 328, 102],
-                      '9': [516, 350, 108], '10': [562, 380, 116],
-                     '11': [586, 394, 124], '12': [612, 412, 132],
-                     '13': [686, 456, 140], '14': [710, 474, 148],
-                     '15': [736, 492, 156], '16': [784, 522, 164],
-                     '17': [811, 552, 172], '18': [858, 576, 180],
-                     '19': [882, 584, 188], '20': [932, 618, 196],
+            # window height, bottom pane height
+            wSize = { '7': [456,  92],  '8': [482, 102],
+                      '9': [516, 108], '10': [562, 116],
+                     '11': [586, 124], '12': [612, 132],
+                     '13': [686, 140], '14': [710, 148],
+                     '15': [736, 156], '16': [784, 164],
+                     '17': [811, 172], '18': [858, 180],
+                     '19': [882, 188], '20': [932, 196],
                     }
             height = wSize[fontSize][0]
             width = int(height * 1.75)
-            tPane = wSize[fontSize][1]
-            bPane = wSize[fontSize][2]
+            bPane = wSize[fontSize][1]
         last = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
-        rE('.pane paneconfigure $pane_top -minsize {}'.format(tPane))
+        rE('.pane paneconfigure $pane_top -minsize {}'.format(bPane))
         rE('.pane paneconfigure $pane_bottom -minsize {}'.format(bPane))
+        rE('.pane paneconfigure $pane_bottom -height {}'.format(bPane))
         if size == 'maximized':
             root_window.attributes('-fullscreen', False, '-zoomed', True)
         elif size == 'fullscreen':
@@ -435,7 +429,6 @@ def set_window_size():
                 xPos = int((root_window.winfo_screenwidth() - width) / 2)
                 yPos = int((root_window.winfo_screenheight() - height) / 2)
                 root_window.geometry('{}x{}+{}+{}'.format(width, height, xPos, yPos))
-        rE('.pane paneconfigure $pane_bottom -height {}'.format(tPane))
         rC(fsetup + '.r.ubuttons.canvas','xview','moveto',0.0)
         rC(fsetup + '.r.ubuttons.canvas','yview','moveto',0.0)
         root_window.update_idletasks()
@@ -3623,7 +3616,7 @@ def set_orient_frames():
         fruns = '.fportrait.fruns'
         fbuttons = '.fportrait.fbuttons'
         toolmat = fruns + '.toolmat'
-        rC('frame',fportrait,'-relief','flat')#,'-borderwidth',0)
+        rC('frame',fportrait,'-relief','raised','-borderwidth',2)
     else:
         fportrait = '.fportrait'
         fruns = '.fruns'
@@ -3738,7 +3731,7 @@ def make_run_panel():
 #FIXME: move pmx frame up in portrait orientation
 def populate_run_panel():
     if pVars.orient.get() == 'portrait':
-        rC('grid',fportrait,'-column',1,'-row',3,'-sticky','nsew','-padx',0,'-pady',0)
+        rC('grid',fportrait,'-column',1,'-row',3,'-sticky','nsew','-padx',2,'-pady',(0,2))
         rC('grid',fbuttons,'-column',0,'-row',0,'-sticky','nsew','-padx',0,'-pady',0)
         rC('grid',fruns,'-column',2,'-row',0,'-sticky','nsew','-padx',1,'-pady',1)
         rC('grid',fruns + '.check','-column',0,'-row',1,'-sticky','new','-padx',2,'-pady',(0,2))
