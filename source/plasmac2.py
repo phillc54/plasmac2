@@ -399,7 +399,7 @@ def close_window():
     root_window.destroy()
 
 def set_window_size():
-    global wSize
+    global wSize, bPane
     size = pVars.winSize.get()
     if size not in ['default', 'last', 'fullscreen', 'maximized']:
         title = _('WINDOW ERROR')
@@ -469,15 +469,12 @@ def wcs_rotation(mode):
             reload_file()
 
 def preview_toggle(conv=False):
-    global bPaneHeight
     if pVars.previewLarge.get() or conv:
         rC('grid','forget','.pane.top.tabs')
         rC('grid','forget',ftop + '.feedoverride')
         rC('grid','forget',ftop + '.rapidoverride')
         rC('grid','forget',ftop + '.jogspeed')
         rC('grid','forget',ftop + '.ajogspeed')
-        if not bPaneHeight:
-            bPaneHeight = rE('winfo height .pane.bottom')
         rE('.pane paneconfigure $pane_bottom -minsize 1')
         rE('.pane paneconfigure $pane_bottom -height 1')
         if pVars.orient.get() == 'portrait':
@@ -494,9 +491,9 @@ def preview_toggle(conv=False):
         # test if we need the angular jog slider (56 = 0x38 = 000111000 = ABC)
         if s.axis_mask & 56 == 0 and 'ANGULAR' in joint_type:
             rC('grid','.pane.top.ajogspeed','-column',0,'-row',6,'-sticky','new')
-        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(wSize[fontSize][2]))
-        rE('.pane paneconfigure $pane_bottom -height {}'.format(bPaneHeight))
-        bPaneHeight = 0
+        rE('.pane paneconfigure $pane_top -minsize {}'.format(bPane))
+        rE('.pane paneconfigure $pane_bottom -minsize {}'.format(bPane))
+        rE('.pane paneconfigure $pane_bottom -height {}'.format(bPane))
         populate_run_panel()
 
 def setup_toggle(state):
@@ -651,6 +648,7 @@ def hide_default():
 def show_default():
     rC('grid','.toolbar','-column',0,'-row',0,'-columnspan',3,'-sticky','nesw')
     rC('grid','.pane','-column',1,'-row',1,'-rowspan',2,'-sticky','nsew')
+    rE('.pane paneconfigure $pane_bottom -height {}'.format(bPane))
     if not pVars.previewLarge.get():
         populate_run_panel()
     enable_menus(True)
@@ -5122,7 +5120,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     halPinList = hal.get_info_pins()
     load_param_clicked()
     mode_changed()
-    bPaneHeight = 0
     font_size_changed()
     ucFile = os.path.join(configPath, 'user_commands.py')
     if os.path.isfile(ucFile):
