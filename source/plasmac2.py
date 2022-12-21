@@ -122,6 +122,25 @@ class plasmacDialog:
                 self.leadLength.set(0.2)
             leadinAngle.config(width=10, from_=-359, to=359, increment=1, format='%0.0f', wrap=1)
             self.leadAngle.set(0)
+        elif func == 'sc':
+            self.xLength = Tkinter.StringVar()
+            self.yLength = Tkinter.StringVar()
+            f1 = Tkinter.Frame(frm, bg=colorBack)
+            lbl1 = Tkinter.Label(f1, text=_('X Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+            lbl1.pack(side='left')
+            xLength = Tkinter.Entry(f1, fg=colorFore, bg=colorBack, textvariable=self.xLength, width=10)
+            xLength.configure(font=(fontName, fontSize), highlightthickness=0)
+            xLength.pack(side='left')
+            f1.pack(padx=4, pady=4, anchor='w')
+            f2 = Tkinter.Frame(frm, bg=colorBack)
+            lbl2 = Tkinter.Label(f2, text=_('Y Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+            lbl2.pack(side='left')
+            yLength = Tkinter.Entry(f2, fg=colorFore, bg=colorBack, textvariable=self.yLength, width=10)
+            yLength.configure(font=(fontName, fontSize), highlightthickness=0)
+            yLength.pack(side='left')
+            f2.pack(padx=4, pady=4, anchor='w')
+            self.xLength.set(getPrefs(PREF,'SINGLE_CUT', 'X length', 0, float))
+            self.yLength.set(getPrefs(PREF,'SINGLE_CUT', 'Y length', 0, float))
         else:
             label = Tkinter.Label(frm, text=msg, fg=colorFore, bg=colorBack)
             label.pack(padx=4, pady=4)
@@ -141,7 +160,7 @@ class plasmacDialog:
             self.opt.children['menu'].configure(fg=colorFore, bg=colorBack, activeforeground=colorBack, activebackground=colorFore)
             self.opt.pack(padx=4, pady=4)
         bbox = Tkinter.Frame(frm, bg=colorBack)
-        if func == 'rfl':
+        if func in ['rfl', 'sc']:
             b1Text = _('Load')
             b2Text = _('Cancel')
         if func in ['info', 'error', 'warn']:
@@ -169,6 +188,8 @@ class plasmacDialog:
     def dlg_complete(self, value, func):
         if func == 'rfl':
             self.reply = value, self.leadIn.get(), float(self.leadLength.get()), float(self.leadAngle.get())
+        elif func == 'sc':
+            self.reply = value, self.xLength.get(), self.yLength.get()
         elif func in ['entry']:
             self.reply = value, self.entry.get()
         elif func in ['touch']:
@@ -1284,49 +1305,27 @@ def single_cut():
     def cancel_file(event):
         sc.quit()
 
-    sc = Tkinter.Toplevel()
-    sc.title(_('SINGLE CUT'))
-    lbl1 = Tkinter.Label(sc, text=_('x-Length:'))
-    lbl2 = Tkinter.Label(sc, text=_('y-Length:'))
-    lbl3 = Tkinter.Label('')
-    xLength = Tkinter.StringVar()
-    xlength = Tkinter.Spinbox(sc, textvariable=xLength)
-    yLength = Tkinter.StringVar()
-    ylength = Tkinter.Spinbox(sc, textvariable=yLength)
-    buttons = Tkinter.Frame(sc)
-    buttonCut = Tkinter.Button(buttons, text=_('Load'), width=8)
-    buttonCancel = Tkinter.Button(buttons, text=_('Cancel'), width=8)
-    lbl1.grid(column=0, row=0, sticky='e')
-    lbl2.grid(column=0, row=1, sticky='e')
-    lbl3.grid(column=0, row=3, sticky='e')
-    xlength.grid(column=1, row=0, sticky='w')
-    ylength.grid(column=1, row=1, sticky='w')
-    buttonCut.pack(side='left')
-    buttonCancel.pack(side='right')
-    buttons.grid(column=0, row=4, columnspan=2, sticky='ew')
-    buttons.grid_columnconfigure(0, weight=1, uniform='group1')
-    buttons.grid_columnconfigure(2, weight=1, uniform='group1')
-    sc.grid_rowconfigure(0, weight=1, uniform='group2')
-    sc.grid_rowconfigure(1, weight=1, uniform='group2')
-    sc.grid_rowconfigure(2, weight=1, uniform='group2')
-    sc.grid_rowconfigure(3, weight=1, uniform='group2')
-    sc.grid_rowconfigure(4, weight=1, uniform='group2')
-    xlength.config(width=10, from_=-9999, to=9999, increment=1, format='%0.0f', wrap=1)
-    xLength.set(getPrefs(PREF,'SINGLE_CUT', 'x-length', 0, float))
-    ylength.config(width=10, from_=-9999, to=9999, increment=1, format='%0.0f', wrap=1)
-    yLength.set(getPrefs(PREF,'SINGLE_CUT', 'y-length', 0, float))
-    buttonCut.bind('<Button-1>', cut_file)
-    buttonCancel.bind('<Button-1>', cancel_file)
-    Tkinter.mainloop()
-    sc.destroy()
-    if not result:
+    title = _('SINGLE CUT')
+    dlg = plasmacDialog('sc', title, None, 'numpad')
+    root_window.wait_window(dlg.dlg)
+    vkbData['required'] = False
+    valid, xLength, yLength = dlg.reply
+    if not valid:
+        return
+    try:
+        xLength = float(xLength)
+        yLength = float(yLength)
+    except:
+        title = _('ENTRY ERROR')
+        msg =  _('Lengths need to be floating point values')
+        show_dialog('error', title, msg)
         return
     singleCut['state'] = True
     singleCut['G91'] = True if 910 in s.gcodes else False
-    putPrefs(PREF,'SINGLE_CUT', 'X length', xLength.get(), float)
-    putPrefs(PREF,'SINGLE_CUT', 'Y length', yLength.get(), float)
-    xEnd = s.position[0] + float(xLength.get())
-    yEnd = s.position[1] + float(yLength.get())
+    putPrefs(PREF,'SINGLE_CUT', 'X length', xLength, float)
+    putPrefs(PREF,'SINGLE_CUT', 'Y length', yLength, float)
+    xEnd = s.position[0] + float(xLength)
+    yEnd = s.position[1] + float(yLength)
     scFile = os.path.join(tmpPath, 'single_cut.ngc')
     with open(scFile, 'w') as f:
         f.write('G90\n')
