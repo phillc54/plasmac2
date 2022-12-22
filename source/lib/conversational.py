@@ -112,6 +112,10 @@ class Conv(tk.Tk):
         self.entry_validation()
 
     def start(self, materialFileDict, matIndex, existingFile, g5xIndex, setViewZ):
+        sDiff = 40 + int(self.pVars.fontSize.get()) - 7
+        for i in range(len(self.convShapes)):
+            self.toolButton[i]['width'] = sDiff
+            self.toolButton[i]['height'] = sDiff
         self.materials = materialFileDict
         self.matIndex = matIndex
         self.existingFile = existingFile
@@ -619,18 +623,16 @@ class Conv(tk.Tk):
                     command=lambda i=i: self.shape_request(self.convShapes[i]), anchor='center', \
                     indicatoron=0, selectcolor='gray60', highlightthickness=0, bd=2, \
                     variable=self.convButton, value=self.convShapes[i], takefocus=0))
-            if self.convShapes[i] == 'closer':
-                self.toolButton[i]['text'] = _('Close')
-                self.toolButton[i].pack(side='right', padx=(0,2), pady=1, ipadx=8, fill='y')
+            self.images.append(tk.PhotoImage(file = os.path.join(imagePath, self.convShapes[i]) + '.png'))
+            self.toolButton[i]['image'] = self.images[i]
+            self.toolButton[i]['width'] = 40
+            self.toolButton[i]['height'] = 40
+            if self.convShapes[i] == 'line':
+                self.toolButton[i].pack(side='left', padx=(2,0), pady=1)
+            elif self.convShapes[i] == 'closer':
+                self.toolButton[i].pack(side='right', padx=(0,2), pady=1)
             else:
-                self.images.append(tk.PhotoImage(file = os.path.join(imagePath, self.convShapes[i]) + '.png'))
-                self.toolButton[i]['image'] = self.images[i]
-                self.toolButton[i]['width'] = 48
-                self.toolButton[i]['height'] = 48
-                if i == 0:
-                    self.toolButton[i].pack(side='left', padx=(2,0), pady=1)
-                else:
-                    self.toolButton[i].pack(side='left', padx=(4,0), pady=1)
+                self.toolButton[i].pack(side='left', padx=(4,0), pady=1)
         lLength = 10
         eLength = 10
         self.matLabel = tk.Label(self.convFrame, width=lLength, anchor='e', text=_('MATERIAL'))
