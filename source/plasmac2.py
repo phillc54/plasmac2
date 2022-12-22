@@ -78,7 +78,7 @@ class plasmacTempMaterial(tempP):
 class plasmacDialog:
     def __init__(self, func, title, msg, vkb, system=None):
         dlg = self.dlg = Tkinter.Toplevel(root_window, bg=colorBack)
-        dlg.attributes('-type', 'dock')
+        dlg.attributes('-type', 'dock','-type','popup_menu')
         rE('tk::PlaceWindow {} center'.format(dlg))
         dlg.wait_visibility()
         dlg.grab_set()
