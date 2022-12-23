@@ -52,7 +52,7 @@ gettext.install("linuxcnc", localedir=localeDir)
 class Conv(tk.Tk):
     def __init__(self, convFirstRun, root, toolFrame, convFrame, combobox, \
                  imagePath, tmpPath, pVars, unitsPerMm, comp, prefs, getprefs, \
-                 putprefs, fileOpener, wcs_rotation, conv_toggle, color_change, show_dialog):
+                 putprefs, fileOpener, wcs_rotation, conv_toggle, color_change, plasmacPopUp):
         self.r = root
         self.rC = self.r.tk.call
         self.toolFrame = toolFrame
@@ -66,7 +66,7 @@ class Conv(tk.Tk):
         self.wcs_rotation = wcs_rotation
         self.pVars = pVars
         self.conv_toggle = conv_toggle
-        self.show_dialog = show_dialog
+        self.plasmacPopUp = plasmacPopUp
         self.combobox = combobox
         self.fTmp = os.path.join(tmpPath, 'temp.ngc')
         self.fNgc = os.path.join(tmpPath, 'shape.ngc')
@@ -263,16 +263,17 @@ class Conv(tk.Tk):
             self.loEntry['state'] = 'normal'
             self.invalidLeads = 0
 
+    # dialog call from shapes
     def dialog_show_ok(self, title, text):
-        response = self.show_dialog('error', title, text)
-        return response
+        reply = self.plasmacPopUp('error', title, text).reply
+        return reply
 
     def new_pressed(self, buttonPressed):
         if buttonPressed and (self.saveC['state'] or self.sendC['state'] or self.previewActive):
             title = _('Unsaved Shape')
             msg0 = _('You have an unsaved, unsent, or active previewed shape')
             msg1 = _('If you continue it will be deleted')
-            if not self.show_dialog('yesno', title, '{}\n\n{}\n'.format(msg0, msg1)):
+            if not self.plasmacPopUp('yesno', title, '{}\n\n{}\n'.format(msg0, msg1)).reply:
                 return
         if self.oldConvButton == 'line':
             if self.lineCombo.get() == _('LINE POINT ~ POINT'):
@@ -305,7 +306,7 @@ class Conv(tk.Tk):
             for line in inFile:
                 if '(new conversational file)' in line:
                     msg0 = _('An empty file cannot be saved')
-                    self.show_dialog('error', title, msg0)
+                    self.plasmacPopUp('error', title, msg0)
                     return
 #        self.vkb_show() if we add a virtual keyboard ??????????????????????????
         fileTypes = [('G-Code Files', '*.ngc *.nc *.tap'),
@@ -361,12 +362,12 @@ class Conv(tk.Tk):
                 for line in inFile:
                     if '(new conversational file)' in line:
                         msg0 = _('An empty file cannot be arrayed, rotated, or scaled')
-                        self.show_dialog('error', title, msg0)
+                        self.plasmacPopUp('error', title, msg0)
                         return True
                     # see if we can do something about NURBS blocks down the track
                     elif 'g5.2' in line.lower() or 'g5.3' in line.lower():
                         msg0 = _('Cannot scale a GCode NURBS block')
-                        self.show_dialog('error', title, msg0)
+                        self.plasmacPopUp('error', title, msg0)
                         return True
                     elif 'M3' in line or 'm3' in line:
                         break
@@ -445,11 +446,11 @@ class Conv(tk.Tk):
             child.deselect()
         title = _('Active Preview')
         msg0 = _('Cannot continue with an active previewed shape')
-        response = self.show_dialog('warn', title, '{}\n'.format(msg0))
+        reply = self.plasmacPopUp('warn', title, '{}\n'.format(msg0)).reply
         if self.oldConvButton:
             self.toolButton[self.convShapes.index(self.oldConvButton)].select()
         self.module = self.oldModule
-        return response
+        return reply
 
     def restore_buttons(self):
         self.newC['state'] = self.buttonState['newC']
@@ -478,12 +479,12 @@ class Conv(tk.Tk):
                 name = os.path.basename(self.existingFile)
                 msg0 = _('The original file will be loaded')
                 msg1 = _('If you continue all changes will be deleted')
-                if not self.show_dialog('yesno', title, '{}:\n\n{}\n\n{}\n'.format(msg0, name, msg1)):
+                if not self.plasmacPopUp('yesno', title, '{}:\n\n{}\n\n{}\n'.format(msg0, name, msg1)).reply:
                     return(True)
             else:
                 msg0 = _('An empty file will be loaded')
                 msg1 = _('If you continue all changes will be deleted')
-                if not self.show_dialog('yesno', title, '{}\n\n{}\n'.format(msg0, msg1)):
+                if not self.plasmacPopUp('yesno', title, '{}\n\n{}\n'.format(msg0, msg1)).reply:
                     return(True)
             if self.existingFile:
                 COPY(self.existingFile, self.fNgcBkp)

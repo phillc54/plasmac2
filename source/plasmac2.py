@@ -75,117 +75,134 @@ class plasmacTempMaterial(tempP):
         self.read(self.fn)
 
 # class for popup dialogs
-class plasmacDialog:
-    def __init__(self, func, title, msg, vkb, system=None):
-        dlg = self.dlg = Tkinter.Toplevel(root_window, bg=colorBack)
-        dlg.attributes('-type', 'dock')
-        rE('tk::PlaceWindow {} center'.format(dlg))
-        dlg.wait_visibility()
-        dlg.grab_set()
-        dlg.transient(root_window)
-        dlg.protocol("WM_DELETE_WINDOW", lambda:self.dlg_complete(False, False))
-        dlg.title(title)
-        frm = Tkinter.Frame(dlg, bg=colorBack, bd=2, relief='ridge')
-        ttl = Tkinter.Label(frm, text=title, fg=colorBack, bg=colorFore)
+class plasmacPopUp(Tkinter.Toplevel):
+    def __init__(self, func, title, msg, vkb=None, system=None):
+        super().__init__(root_window)
+        self.attributes('-type', 'popup_menu')
+        self.overrideredirect(True)
+        if pVars.popLocation.get() == 'pointer':
+            rE('tk::PlaceWindow {} pointer'.format(self))
+        elif pVars.popLocation.get() == 'gui center':
+            rE('tk::PlaceWindow {} widget {}'.format(self, root_window))
+        else:
+            rE('tk::PlaceWindow {} center'.format(self))
+        self.wait_visibility()
+        self.grab_set()
+        self.title(title)
+        self.protocol("WM_DELETE_WINDOW", lambda:self.popup_complete(False, False))
+        self.frm = Tkinter.Frame(self, bg=colorBack, bd=2, relief='ridge')
+        ttl = Tkinter.Label(self.frm, text=title, fg=colorBack, bg=colorFore)
         ttl.pack(fill='x')
         if func == 'rfl':
-            self.leadIn = Tkinter.BooleanVar()
-            self.leadLength = Tkinter.StringVar()
-            self.leadAngle = Tkinter.StringVar()
-            f1 = Tkinter.Frame(frm, bg=colorBack)
-            lbl1 = Tkinter.Label(f1, text=_('Use Leadin:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
-            lbl1.pack(side='left')
-            leadinDo = Tkinter.Checkbutton(f1, fg=colorFore, bg=colorBack, variable=self.leadIn, indicatoron=False, width=2, bd=1)
-            leadinDo.configure(highlightthickness=0, activebackground=colorBack, selectcolor=colorActive, relief='raised', overrelief='raised')
-            leadinDo.pack(side='left')
-            f1.pack(padx=4, pady=4, anchor='w')
-            f2 = Tkinter.Frame(frm, bg=colorBack)
-            lbl2 = Tkinter.Label(f2, text=_('Leadin Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
-            lbl2.pack(side='left')
-            leadinLength = Tkinter.Spinbox(f2, fg=colorFore, bg=colorBack, textvariable=self.leadLength, width=10)
-            leadinLength.configure(font=(fontName, fontSize), highlightthickness=0)
-            leadinLength.pack(side='left')
-            f2.pack(padx=4, pady=4, anchor='w')
-            f3 = Tkinter.Frame(frm, bg=colorBack)
-            lbl3 = Tkinter.Label(f3, text=_('Leadin Angle:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
-            lbl3.pack(side='left')
-            leadinAngle = Tkinter.Spinbox(f3, fg=colorFore, bg=colorBack, textvariable=self.leadAngle, width=10)
-            leadinAngle.configure(font=(fontName, fontSize), highlightthickness=0)
-            leadinAngle.pack(side='left')
-            f3.pack(padx=4, pady=4, anchor='w')
-            self.leadIn.set(False)
-            if s.linear_units == 1:
-                leadinLength.config(width=10, from_=1, to=25, increment=1, format='%0.0f', wrap=1)
-                self.leadLength.set(5)
-            else:
-                leadinLength.config(width=10, from_=0.05, to=1, increment=0.05, format='%0.2f', wrap=1)
-                self.leadLength.set(0.2)
-            leadinAngle.config(width=10, from_=-359, to=359, increment=1, format='%0.0f', wrap=1)
-            self.leadAngle.set(0)
+            b1Text, b2Text = self.popup_run_from_line(func)
         elif func == 'sc':
-            self.xLength = Tkinter.StringVar()
-            self.yLength = Tkinter.StringVar()
-            f1 = Tkinter.Frame(frm, bg=colorBack)
-            lbl1 = Tkinter.Label(f1, text=_('X Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
-            lbl1.pack(side='left')
-            xLength = Tkinter.Entry(f1, fg=colorFore, bg=colorBack, textvariable=self.xLength, width=10)
-            xLength.configure(font=(fontName, fontSize), highlightthickness=0)
-            xLength.pack(side='left')
-            f1.pack(padx=4, pady=4, anchor='w')
-            f2 = Tkinter.Frame(frm, bg=colorBack)
-            lbl2 = Tkinter.Label(f2, text=_('Y Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
-            lbl2.pack(side='left')
-            yLength = Tkinter.Entry(f2, fg=colorFore, bg=colorBack, textvariable=self.yLength, width=10)
-            yLength.configure(font=(fontName, fontSize), highlightthickness=0)
-            yLength.pack(side='left')
-            f2.pack(padx=4, pady=4, anchor='w')
-            self.xLength.set(getPrefs(PREF,'SINGLE_CUT', 'X length', 0, float))
-            self.yLength.set(getPrefs(PREF,'SINGLE_CUT', 'Y length', 0, float))
+            b1Text, b2Text = self.popup_single_cut(func)
         else:
-            label = Tkinter.Label(frm, text=msg, fg=colorFore, bg=colorBack)
-            label.pack(padx=4, pady=4)
+            b1Text, b2Text = self.popup_entry(func, msg, system)
+        bbox = Tkinter.Frame(self.frm, bg=colorBack)
+        b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.popup_complete(True, func), width=8)
+        b1.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+        b1.pack(side='left')
+        if b2Text:
+            b2 = Tkinter.Button(bbox, text=b2Text, command=lambda:self.popup_complete(False, func), width=8)
+            b2.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+            b2.pack(side='left', padx=(8,0))
+        bbox.pack(padx=4, pady=4)
+        self.frm.pack()
+        # self.update_idletasks()
+        # height = self.winfo_height()
+        # width = self.winfo_width()
+        # xPos = int(root_window.winfo_x() + (root_window.winfo_width() / 2 - width / 2))
+        # yPos = int(root_window.winfo_y() + (root_window.winfo_height() / 2 - height / 2))
+        # self.geometry('{}x{}+{}+{}'.format(width, height, xPos, yPos))
+        if vkb:
+            vkbData['required'] = True
+            vkb_show(vkb)
+        root_window.wait_window(self)
+
+    def popup_run_from_line(self, func):
+        self.leadIn = Tkinter.BooleanVar()
+        self.leadLength = Tkinter.StringVar()
+        self.leadAngle = Tkinter.StringVar()
+        f1 = Tkinter.Frame(self.frm, bg=colorBack)
+        lbl1 = Tkinter.Label(f1, text=_('Use Leadin:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+        lbl1.pack(side='left')
+        leadinDo = Tkinter.Checkbutton(f1, fg=colorFore, bg=colorBack, variable=self.leadIn, indicatoron=False, width=2, bd=1)
+        leadinDo.configure(highlightthickness=0, activebackground=colorBack, selectcolor=colorActive, relief='raised', overrelief='raised')
+        leadinDo.pack(side='left')
+        f1.pack(padx=4, pady=4, anchor='w')
+        f2 = Tkinter.Frame(self.frm, bg=colorBack)
+        lbl2 = Tkinter.Label(f2, text=_('Leadin Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+        lbl2.pack(side='left')
+        leadinLength = Tkinter.Spinbox(f2, fg=colorFore, bg=colorBack, textvariable=self.leadLength, width=10)
+        leadinLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        leadinLength.pack(side='left')
+        f2.pack(padx=4, pady=4, anchor='w')
+        f3 = Tkinter.Frame(self.frm, bg=colorBack)
+        lbl3 = Tkinter.Label(f3, text=_('Leadin Angle:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+        lbl3.pack(side='left')
+        leadinAngle = Tkinter.Spinbox(f3, fg=colorFore, bg=colorBack, textvariable=self.leadAngle, width=10)
+        leadinAngle.configure(font=(fontName, fontSize), highlightthickness=0)
+        leadinAngle.pack(side='left')
+        f3.pack(padx=4, pady=4, anchor='w')
+        self.leadIn.set(False)
+        if s.linear_units == 1:
+            leadinLength.config(width=10, from_=1, to=25, increment=1, format='%0.0f', wrap=1)
+            self.leadLength.set(5)
+        else:
+            leadinLength.config(width=10, from_=0.05, to=1, increment=0.05, format='%0.2f', wrap=1)
+            self.leadLength.set(0.2)
+        leadinAngle.config(width=10, from_=-359, to=359, increment=1, format='%0.0f', wrap=1)
+        self.leadAngle.set(0)
+        return _('Load'), _('Cancel')
+
+    def popup_single_cut(self, func):
+        self.xLength = Tkinter.StringVar()
+        self.yLength = Tkinter.StringVar()
+        f1 = Tkinter.Frame(self.frm, bg=colorBack)
+        lbl1 = Tkinter.Label(f1, text=_('X Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+        lbl1.pack(side='left')
+        xLength = Tkinter.Entry(f1, fg=colorFore, bg=colorBack, textvariable=self.xLength, width=10)
+        xLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        xLength.pack(side='left')
+        f1.pack(padx=4, pady=4, anchor='w')
+        f2 = Tkinter.Frame(self.frm, bg=colorBack)
+        lbl2 = Tkinter.Label(f2, text=_('Y Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
+        lbl2.pack(side='left')
+        yLength = Tkinter.Entry(f2, fg=colorFore, bg=colorBack, textvariable=self.yLength, width=10)
+        yLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        yLength.pack(side='left')
+        f2.pack(padx=4, pady=4, anchor='w')
+        self.xLength.set(getPrefs(PREF,'SINGLE_CUT', 'X length', 0, float))
+        self.yLength.set(getPrefs(PREF,'SINGLE_CUT', 'Y length', 0, float))
+        return _('Load'), _('Cancel')
+
+    def popup_entry(self, func, msg, system):
+        label = Tkinter.Label(self.frm, text=msg, fg=colorFore, bg=colorBack)
+        label.pack(padx=4, pady=4)
         if func in ['entry', 'touch']:
-            self.entry = Tkinter.Entry(frm, justify='right', fg=colorFore, bg=colorBack)
+            self.entry = Tkinter.Entry(self.frm, justify='right', fg=colorFore, bg=colorBack)
             self.entry.configure(highlightthickness=0, selectforeground=colorBack, selectbackground=colorFore)
             self.entry.pack(padx=4, pady=4)
             self.entry.focus_set()
         if func == 'touch':
             self.entry.insert('end', '0.0')
-            opl = Tkinter.Label(frm, text=_('Coordinate System'), fg=colorFore, bg=colorBack)
+            opl = Tkinter.Label(self.frm, text=_('Coordinate System'), fg=colorFore, bg=colorBack)
             opl.pack(padx=4, pady=4)
             self.c = c = StringVar(t)
             c.set(system)
-            self.opt = Tkinter.OptionMenu(frm, c, *all_systems[:])
+            self.opt = Tkinter.OptionMenu(self.frm, c, *all_systems[:])
             self.opt.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
             self.opt.children['menu'].configure(fg=colorFore, bg=colorBack, activeforeground=colorBack, activebackground=colorFore)
             self.opt.pack(padx=4, pady=4)
-        bbox = Tkinter.Frame(frm, bg=colorBack)
-        if func in ['rfl', 'sc']:
-            b1Text = _('Load')
-            b2Text = _('Cancel')
         if func in ['info', 'error', 'warn']:
-            b1Text = _('OK')
-            b2Text = None
+            return _('OK'), None
         elif func in ['yesno']:
-            b1Text = _('Yes')
-            b2Text = _('No')
+            return _('Yes'), _('No')
         elif func in ['entry', 'touch']:
-            b1Text = _('OK')
-            b2Text = _('Cancel')
-        b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.dlg_complete(True, func), width=8)
-        b1.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
-        b1.pack(side='left')
-        if b2Text:
-            b2 = Tkinter.Button(bbox, text=b2Text, command=lambda:self.dlg_complete(False, func), width=8)
-            b2.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
-            b2.pack(side='left', padx=(8,0))
-        bbox.pack(padx=4, pady=4)
-        frm.pack()
-        if vkb:
-            vkbData['required'] = True
-            vkb_show(vkb)
+            return _('OK'), _('Cancel')
 
-    def dlg_complete(self, value, func):
+    def popup_complete(self, value, func):
         if func == 'rfl':
             self.reply = value, self.leadIn.get(), float(self.leadLength.get()), float(self.leadAngle.get())
         elif func == 'sc':
@@ -196,7 +213,7 @@ class plasmacDialog:
              self.reply = value, self.entry.get(), self.c.get()
         else:
             self.reply = value
-        self.dlg.destroy()
+        self.destroy()
 
 
 ##############################################################################
@@ -391,7 +408,7 @@ def close_window():
                     msgs += '{}\n\n'.format(t)
         text2 = _('Do you really want to close LinuxCNC ?')
         msgs  += text2
-        if not show_dialog('yesno', _('CONFIRM CLOSE'), msgs):
+        if not plasmacPopUp('yesno', _('CONFIRM CLOSE'), msgs).reply:
             return
     putPrefs(PREF,'GUI_OPTIONS', 'Window last', rC('winfo','geometry',root_window), str)
     if hal.component_exists('pmx485'):
@@ -548,7 +565,7 @@ def conv_toggle(state, convSent=False):
             CONV = conversational.Conv(convFirstRun, root_window, widgets.toolFrame, \
                    widgets.convFrame, bwidget.ComboBox, imagePath, tmpPath, pVars, \
                    unitsPerMm, comp, PREF, getPrefs, putPrefs, open_file_guts, \
-                   wcs_rotation, conv_toggle, color_change, show_dialog)
+                   wcs_rotation, conv_toggle, color_change, plasmacPopUp)
             convFirstRun = False
         set_conv_preview()
         if loaded_file:
@@ -967,7 +984,7 @@ def load_param_clicked():
             value = 0
             title = _('PARAMETER ERROR')
             msg0 = _('Invalid parameter for')
-            show_dialog('error', title, '{}: {}'.format(msg0, widget[8]))
+            plasmacPopUp('error', title, '{}: {}'.format(msg0, widget[8]))
             continue
         # convert to int here if required
         value = value if widget[2] > 0 else int(value)
@@ -1005,6 +1022,8 @@ def load_setup_clicked():
     if pVars.coneSize.get() != restoreSetup['coneSize']:
         pVars.coneSize.set(restoreSetup['coneSize'])
         cone_size_changed()
+    if pVars.popLocation.get() != restoreSetup['popLocation']:
+        pVars.popLocation.set(restoreSetup['popLocation'])
     if pVars.matDefault.get() != restoreSetup['matDefault']:
         pVars.matDefault.set(restoreSetup['matDefault'])
         display_selected_material(restoreSetup['matDefault'])
@@ -1048,6 +1067,8 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Font size', restoreSetup['fontSize'], str)
     restoreSetup['coneSize'] = pVars.coneSize.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', restoreSetup['coneSize'], float)
+    restoreSetup['popLocation'] = pVars.popLocation.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'Popup location', restoreSetup['popLocation'], str)
     restoreSetup['tableZoom'] = float(rC(fsetup + '.l.gui.zoom','get'))
     putPrefs(PREF,'GUI_OPTIONS', 'Table zoom', restoreSetup['tableZoom'], float)
     restoreSetup['matDefault'] = pVars.matDefault.get()
@@ -1088,20 +1109,21 @@ def update_plasmac2():
     except Exception as err:
         root_window.config(cursor='')
         msg0 = 'Cannot open a git repository at '
-        show_dialog('error', _('REPOSITORY ERROR'), msg0 + repoPath + '\n\n' + err.stderr)
+        plasmacPopUp('error', _('REPOSITORY ERROR'), msg0 + repoPath + '\n\n' + err.stderr)
         return
     try:
         current = repo.head.commit
         repo.remotes.origin.pull()
     except Exception as err:
         root_window.config(cursor='')
+        print("ERROR:", err)
         msg0 = 'An error occurred while updating'
-        show_dialog('error', _('UPDATE ERROR'), msg0 + ':\n\n' + err.stderr)
+        plasmacPopUp('error', _('UPDATE ERROR'), msg0 + ':\n\n' + err.stderr)
         return
     if current == repo.head.commit and not dev:
         root_window.config(cursor='')
         msg0 = 'plasmac2 was up to date'
-        show_dialog('info', _('plasmac2 UPDATE'), msg0)
+        plasmacPopUp('info', _('plasmac2 UPDATE'), msg0)
         return
     with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
         for line in inFile:
@@ -1120,7 +1142,7 @@ def update_plasmac2():
         msg0 = 'plasmac2 was updated from v{} to v{}'.format(oldVer, VER)
         msg1 = '\n\nA restart is recommended'
     root_window.config(cursor='')
-    show_dialog('info', _('plasmac2 UPDATE'), '{}{}'.format(msg0, msg1))
+    plasmacPopUp('info', _('plasmac2 UPDATE'), '{}{}'.format(msg0, msg1))
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
@@ -1203,7 +1225,7 @@ def backup_clicked():
     msg0 = _('A compressed backup of the machine configuration has been saved in your home directory')
     msg1 = _('The file name is')
     msg2 = _('This file may be attached to a post on the LinuxCNC forum to aid in problem solving')
-    show_dialog('info', title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2))
+    plasmacPopUp('info', title, '{}\n\n{}: {}\n\n{}\n'.format(msg0, msg1, outName, msg2))
 
 def torch_enable():
     hal.set_p('plasmac.torch-enable',str(not hal.get_value('plasmac.torch-enable')))
@@ -1223,12 +1245,6 @@ def update_preview(clear):
         root_window.update_idletasks()
     if clear:
        live_plotter.clear()
-
-def show_dialog(func, title, msg, vkb=None):
-    dlg = plasmacDialog(func, title, msg, vkb)
-    root_window.wait_window(dlg.dlg)
-    vkbData['required'] = False
-    return(dlg.reply)
 
 
 ##############################################################################
@@ -1304,10 +1320,8 @@ def single_cut():
         sc.quit()
 
     title = _('SINGLE CUT')
-    dlg = plasmacDialog('sc', title, None, 'numpad')
-    root_window.wait_window(dlg.dlg)
+    valid, xLength, yLength = plasmacPopUp('sc', title, None, 'numpad').reply
     vkbData['required'] = False
-    valid, xLength, yLength = dlg.reply
     if not valid:
         return
     try:
@@ -1316,7 +1330,7 @@ def single_cut():
     except:
         title = _('ENTRY ERROR')
         msg =  _('Lengths need to be floating point values')
-        show_dialog('error', title, msg)
+        plasmacPopUp('error', title, msg)
         return
     singleCut['state'] = True
     singleCut['G91'] = True if 910 in s.gcodes else False
@@ -1486,11 +1500,11 @@ def frame_error(torch, msgList, units, xMin, yMin, xMax, yMax):
         msgs += msg[n]
     if not torch:
         msgs += _('Do you want to try with the torch?')
-        response = show_dialog('yesno', title, msgs)
+        reply = plasmacPopUp('yesno', title, msgs).reply
     else:
         msgs += _('Framing cannot proceed')
-        response = show_dialog('error', title, msgs)
-    return response
+        reply = plasmacPopUp('error', title, msgs).reply
+    return reply
 
 def frame_job(feed, height):
     global framingState, activeFunction
@@ -1782,10 +1796,8 @@ def task_run_line():
         # get user input
         rfl = {}
         title = _('RUN FROM LINE')
-        dlg = plasmacDialog('rfl', title, None, 'numpad')
-        root_window.wait_window(dlg.dlg)
+        valid, rfl['do'], rfl['length'], rfl['angle'] = plasmacPopUp('rfl', title, None, 'numpad').reply
         vkbData['required'] = False
-        valid, rfl['do'], rfl['length'], rfl['angle'] = dlg.reply
         # rfl cancel clicked
         if not valid:
             pVars.rflActive = False
@@ -1994,15 +2006,13 @@ def install_kp_text(app):
 def prompt_touchoff(title, text, default, tool_only, system=None):    # from axis.py
     title = _('TOUCH OFF')
     text = text.replace(':', '') % _('workpiece')
-    dlg = plasmacDialog('touch', title, text, 'numpad', system)
-    root_window.wait_window(dlg.dlg)
+    valid, value, system = plasmacPopUp('touch', title, text, 'numpad', system).reply
     vkbData['required'] = False
-    valid, value, system = dlg.reply
     try:
         v = float(value)
     except:
         msg0 = _('Touch off entry {} is invalid'.format(value))
-        show_dialog('error', title, msg0)
+        plasmacPopUp('error', title, msg0)
         value = 0.0
     if valid:
         return(value, system)
@@ -2440,7 +2450,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Number')
     msgs = msg1
     while(1):
-        valid, num = show_dialog('entry', title, '{}:'.format(msgs), 'numpad')
+        valid, num = plasmacPopUp('entry', title, '{}:'.format(msgs), 'numpad').reply
         if not valid:
             return
         if not num:
@@ -2465,7 +2475,7 @@ def new_material_clicked():
     msg1 = _('Enter New Material Name')
     msgs = msg1
     while(1):
-        valid, nam = show_dialog('entry', title, '{}:'.format(msgs), 'keyboard')
+        valid, nam = plasmacPopUp('entry', title, '{}:'.format(msgs), 'keyboard').reply
         if not valid:
             return
         if not nam:
@@ -2483,10 +2493,10 @@ def delete_material_clicked():
     msg0 = _('Default material cannot be deleted')
     material = int(rC(fruns + '.material.materials','get').split(':')[0])
     if material == getPrefs(PREF,'GUI_OPTIONS', 'Default material', 0, int):
-        reply = show_dialog('warn', title, msg0)
+        reply = plasmacPopUp('warn', title, msg0).reply
         return
     msg0 = _('Do you wish to delete material')
-    reply = show_dialog('yesno', title, '{} #{}?'.format(msg0, material))
+    reply = plasmacPopUp('yesno', title, '{} #{}?'.format(msg0, material)).reply
     if not reply:
         return
     removePrefsSect(MATS,'MATERIAL_NUMBER_{}'.format(int(rC(fruns + '.material.materials','get').split(':')[0])))
@@ -3900,6 +3910,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('plasmacMode', IntVar),
              ('fontSize', StringVar),
              ('coneSize', DoubleVar),
+             ('popLocation', StringVar),
              ('kerfWidth', DoubleVar),
              ('cutAmps', IntVar),
              ('cutMode', IntVar),
@@ -4795,6 +4806,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',fsetup + '.l.gui.coneL','-text','Cone Size','-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
+    rC('label',fsetup + '.l.gui.popLocationL','-text','Popup Location','-width', 13,'-anchor','e')
+    rC('ComboBox',fsetup + '.l.gui.popLocation','-textvariable','popLocation','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(fsetup + '.l.gui.popLocation','configure','-values',['pointer','gui center','screen center'])
     rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
     rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
@@ -4814,12 +4828,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.l.gui.fsize','-column',1,'-row',3,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.coneL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',fsetup + '.l.gui.cone','-column',1,'-row',4,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.kbShortcutsL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.kbShortcuts','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.useVirtKBL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',fsetup + '.l.gui.useVirtKB','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.popLocationL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.popLocation','-column',1,'-row',5,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.zoomL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.zoom','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.kbShortcutsL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.kbShortcuts','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.useVirtKBL','-column',0,'-row',8,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',fsetup + '.l.gui.useVirtKB','-column',1,'-row',8,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.l.gui',0,'-weight',1)
 #    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
@@ -5060,6 +5076,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     pVars.coneSize.set(value)
     restoreSetup['coneSize'] = value
     cone_size_changed()
+    value = getPrefs(PREF,'GUI_OPTIONS', 'Popup location', 'pointer', str)
+    pVars.popLocation.set(value)
+    restoreSetup['popLocation'] = value
     value = getPrefs(PREF,'GUI_OPTIONS', 'Table zoom', 1, float)
     rC(fsetup + '.l.gui.zoom','set',value)
     restoreSetup['tableZoom'] = value
