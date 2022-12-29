@@ -87,34 +87,42 @@ class plasmacPopUp(Tkinter.Toplevel):
         else:
             rE('tk::PlaceWindow {} center'.format(self))
         self.wait_visibility()
-        self.grab_set()
+        if func != 'offsets':
+            self.grab_set()
         self.title(title)
         self.protocol("WM_DELETE_WINDOW", lambda:self.popup_complete(False, False))
         self.frm = Tkinter.Frame(self, bg=colorBack, bd=2, relief='ridge')
         ttl = Tkinter.Label(self.frm, text=title, fg=colorBack, bg=colorFore)
         ttl.pack(fill='x')
+        b1Text = b2Text = b3Text = b4Text = None
         if func == 'rfl':
             b1Text, b2Text = self.popup_run_from_line(func)
         elif func == 'sc':
             b1Text, b2Text = self.popup_single_cut(func)
+        elif func == 'offsets':
+            b1Text, b2Text, b3Text, b4Text = self.popup_entry(func, msg, system)
         else:
             b1Text, b2Text = self.popup_entry(func, msg, system)
         bbox = Tkinter.Frame(self.frm, bg=colorBack)
-        b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.popup_complete(True, func), width=8)
+        b1Value = True if func != 'offsets' else 'laser'
+        b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.popup_complete(b1Value, func), width=8)
         b1.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
         b1.pack(side='left')
+        b2Value = False if func != 'offsets' else 'scribe'
         if b2Text:
-            b2 = Tkinter.Button(bbox, text=b2Text, command=lambda:self.popup_complete(False, func), width=8)
+            b2 = Tkinter.Button(bbox, text=b2Text, command=lambda:self.popup_complete(b2Value, func), width=8)
             b2.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
             b2.pack(side='left', padx=(8,0))
+        if b3Text:
+            b3 = Tkinter.Button(bbox, text=b3Text, command=lambda:self.popup_complete('probe', func), width=8)
+            b3.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+            b3.pack(side='left', padx=(8,0))
+        if b4Text:
+            b4 = Tkinter.Button(bbox, text=b4Text, command=lambda:self.popup_complete('cancel', func), width=8)
+            b4.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
+            b4.pack(side='left', padx=(8,0))
         bbox.pack(padx=4, pady=4)
         self.frm.pack()
-        # self.update_idletasks()
-        # height = self.winfo_height()
-        # width = self.winfo_width()
-        # xPos = int(root_window.winfo_x() + (root_window.winfo_width() / 2 - width / 2))
-        # yPos = int(root_window.winfo_y() + (root_window.winfo_height() / 2 - height / 2))
-        # self.geometry('{}x{}+{}+{}'.format(width, height, xPos, yPos))
         if vkb:
             vkbData['required'] = True
             vkb_show(vkb)
@@ -199,6 +207,8 @@ class plasmacPopUp(Tkinter.Toplevel):
             return _('OK'), None
         elif func in ['yesno']:
             return _('Yes'), _('No')
+        elif func in ['offsets']:
+            return _('Laser'), _('Scribe'), _('Offset Probe'), _('Cancel')
         elif func in ['entry', 'touch']:
             return _('OK'), _('Cancel')
 
@@ -1195,7 +1205,10 @@ def set_peripheral_offsets():
         reload(set_offsets)
     toolFile = os.path.realpath(tooltable)
     setup_toggle(False)
-    set_offsets.offsets_show(s, c, PREF, putPrefs, laserOffsets, laser_button_enable, comp, toolFile, probeOffsets, set_probe_offset_pins)
+    while 1:
+        reply = offsets_show(toolFile)
+        if not reply:
+            break
 
 def jog_default_changed(value):
     set_jog_slider(int(value) / (vars.max_speed.get() * 60))
@@ -1612,6 +1625,150 @@ def bounds_check(boundsType, xOffset , yOffset):
         return msgList, gcUnits, xMin, yMin, xMax, yMax, frame_points
     else:
         return msgList, gcUnits, xMin, yMin, xMax, yMax
+
+
+##############################################################################
+# PERIPHERAL OFFSET FUNCTIONS                                                #
+##############################################################################
+offsets_text = [_('Usage is as follows') + ':\n']
+offsets_text.append(_('5. Jog until the peripheral is centered on the mark'))
+offsets_text.append(_('6. Click the Yes button to get the offsets'))
+offsets_text.append(_('7. Confirm whether or not to change the offsets'))
+
+def offsets_show(toolFile):
+    text = [_('Usage is as follows') + ':\n']
+    text.append(_('1. Touchoff the torch to X0 Y0'))
+    text.append(_('2. Mark the material with a torch pulse'))
+    text.append(_('3. Jog until the peripheral is close to the mark'))
+    text.append(_('4. Click the appropriate button to activate the peripheral'))
+    reply = plasmacPopUp('offsets', 'Set Peripheral Offsets', "\n".join(text)).reply
+    if reply == 'laser':
+        offsets_laser_clicked()
+    elif reply == 'scribe':
+        offsets_scribe_clicked(toolFile)
+    elif reply == 'probe':
+        offsets_probe_clicked()
+    else:
+        comp['laser-on'] = False
+        comp['offset-set-probe'] = False
+        comp['offset-set-scribe'] = False
+        return False
+    return True
+
+def offsets_laser_clicked():
+    reply = plasmacPopUp('yesno', 'Set Laser Offsets', "\n".join(offsets_text)).reply
+    if not reply:
+        return
+    newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
+                  'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
+    if offsets_prompt(_('Laser Offset Change'), laserOffsets, newOffsets):
+        laserOffsets['X'] = newOffsets['X']
+        laserOffsets['Y'] = newOffsets['Y']
+        putPrefs(PREF,'LASER_OFFSET', 'X axis', laserOffsets['X'], float)
+        putPrefs(PREF,'LASER_OFFSET', 'Y axis', laserOffsets['Y'], float)
+        laser_button_enable()
+        comp['laser-on'] = False
+        title = _('Laser Offsets')
+        msg = _('Laser offsets have been saved')
+        plasmacPopUp('info', title, msg)
+
+def offsets_scribe_clicked(toolFile):
+    try:
+        scribeOffsets = {'X': 0, 'Y': 0}
+        tool = []
+        with open(toolFile, 'r') as inFile:
+            for line in inFile:
+                if line.startswith('T1'):
+                    tool = line.split()
+                    inFile.close()
+                    break
+        if tool:
+            for item in tool:
+                if item.startswith('X'):
+                    scribeOffsets['X'] = float(item.replace('X','').replace('+',''))
+                elif item.startswith('Y'):
+                    scribeOffsets['Y'] = float(item.replace('Y','').replace('+',''))
+    except:
+        title = _('Tool File Error')
+        msg = _('Could not get current scribe offsets from tooltable')
+        plasmacPopUp('info', title, msg)
+        return
+    reply = plasmacPopUp('yesno', 'Set Scribe Offsets', "\n".join(offsets_text)).reply
+    if not reply:
+        return
+    newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
+                  'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
+    if offsets_prompt(_('Scribe Offset Change'), scribeOffsets, newOffsets):
+        scribeOffsets['X'] = newOffsets['X']
+        scribeOffsets['Y'] = newOffsets['Y']
+        offsets_write_scribe(toolFile, scribeOffsets)
+        c.load_tool_table()
+        comp['offset-set-scribe'] = False
+        title = _('Scribe Offsets')
+        msg = _('Scribe offsets have been saved')
+        plasmacPopUp('info', title, msg)
+
+def offsets_probe_clicked():
+    reply = plasmacPopUp('yesno', 'Set Probe Offsets', "\n".join(offsets_text)).reply
+    if not reply:
+        return
+    title = _('Offset Probe Delay')
+    prompt = _('Delay (Seconds)')
+    while 1:
+        valid, delay = plasmacPopUp('entry', title, prompt, True).reply
+        if not valid:
+            return
+        if not delay:
+            delay = 0
+        try:
+            delay = float(delay)
+            break
+        except:
+            msg = ('Delay entry is invalid')
+            plasmacPopUp('info', title, msg)
+    newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
+                  'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0, \
+                  'Delay':delay}
+    if offsets_prompt(_('Probe Offset Change'), probeOffsets, newOffsets, True):
+        probeOffsets['X'] = newOffsets['X']
+        probeOffsets['Y'] = newOffsets['Y']
+        probeOffsets['Delay'] = newOffsets['Delay']
+        putPrefs(PREF,'OFFSET_PROBING', 'X axis', probeOffsets['X'], float)
+        putPrefs(PREF,'OFFSET_PROBING', 'Y axis', probeOffsets['Y'], float)
+        putPrefs(PREF,'OFFSET_PROBING', 'Delay', probeOffsets['Delay'], float)
+        set_probe_offset_pins()
+        comp['offset-set-probe'] = False
+        title = _('Probe Offsets')
+        msg = _('Probe offsets have been saved')
+        plasmacPopUp('info', title, msg)
+
+def offsets_prompt(title, oldOffsets, newOffsets, probe=False):
+    prompt  = _('Change offsets from')
+    if probe:
+        prompt += ':\nX:{:0.3f}  Y:{:0.3f}  Delay:{:0.2f}\n\n'.format(oldOffsets['X'], oldOffsets['Y'], oldOffsets['Delay'])
+    else:
+        prompt += ':\nX:{:0.3f}  Y:{:0.3f}\n\n'.format(oldOffsets['X'], oldOffsets['Y'])
+    prompt += _('To')
+    if probe:
+        prompt += ':\nX:{:0.3f}  Y:{:0.3f}  Delay:{:0.2f}\n'.format(newOffsets['X'], newOffsets['Y'], newOffsets['Delay'])
+    else:
+        prompt += ':\nX:{:0.3f}  Y:{:0.3f}\n'.format(newOffsets['X'], newOffsets['Y'])
+    return plasmacPopUp('yesno', title, prompt, True).reply
+
+def offsets_write_scribe(toolFile, offsets):
+    written = False
+    COPY(toolFile, '{}~'.format(toolFile))
+    with open('{}~'.format(toolFile), 'r') as inFile:
+        with open(toolFile, 'w') as outFile:
+            for line in inFile:
+                if line.startswith('T1'):
+                    outFile.write('T1 P1 X{:0.3f} Y{:0.3f} ;scribe\n'.format(offsets['X'], offsets['Y']))
+                    written = True
+                else:
+                    outFile.write(line)
+            if not written:
+                outFile.write('T1 P1 X{:0.3f} Y{:0.3f} ;scribe\n'.format(offsets['X'], offsets['Y']))
+    os.remove('{}~'.format(toolFile))
 
 
 ##############################################################################
@@ -3848,7 +4005,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     from importlib import reload
     from plasmac import run_from_line as RFL
     import conversational
-    import set_offsets
     import git
     imagePath = os.path.join(libPath, 'images') # our own images
     imageAxis = os.path.join(BASE, 'share', 'axis', 'images') # images pinched from Axis
