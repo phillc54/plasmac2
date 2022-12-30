@@ -76,7 +76,7 @@ class plasmacTempMaterial(tempP):
 
 # class for popup dialogs
 class plasmacPopUp(Tkinter.Toplevel):
-    def __init__(self, func, title, msg, vkb=None, system=None):
+    def __init__(self, func, title, msg, vkb=None, optional=None):
         super().__init__(root_window)
         self.attributes('-type', 'popup_menu')
         self.overrideredirect(True)
@@ -100,9 +100,9 @@ class plasmacPopUp(Tkinter.Toplevel):
         elif func == 'sc':
             b1Text, b2Text = self.popup_single_cut(func)
         elif func == 'offsets':
-            b1Text, b2Text, b3Text, b4Text = self.popup_entry(func, msg, system)
+            b1Text, b2Text, b3Text, b4Text = self.popup_entry(func, msg, optional)
         else:
-            b1Text, b2Text = self.popup_entry(func, msg, system)
+            b1Text, b2Text = self.popup_entry(func, msg, optional)
         bbox = Tkinter.Frame(self.frm, bg=colorBack)
         b1Value = True if func != 'offsets' else 'laser'
         b1 = Tkinter.Button(bbox, text=b1Text, command=lambda:self.popup_complete(b1Value, func), width=8)
@@ -185,12 +185,16 @@ class plasmacPopUp(Tkinter.Toplevel):
         self.yLength.set(getPrefs(PREF,'SINGLE_CUT', 'Y length', 0, float))
         return _('Load'), _('Cancel')
 
-    def popup_entry(self, func, msg, system):
+    def popup_entry(self, func, msg, optional):
         label = Tkinter.Label(self.frm, text=msg, fg=colorFore, bg=colorBack)
+        if msg[:3] == '1. ':
+            label.configure(justify='left')
         label.pack(padx=4, pady=4)
         if func in ['entry', 'touch']:
             self.entry = Tkinter.Entry(self.frm, justify='right', fg=colorFore, bg=colorBack)
             self.entry.configure(highlightthickness=0, selectforeground=colorBack, selectbackground=colorFore)
+            if optional is not None:
+                self.entry.insert('end', optional)
             self.entry.pack(padx=4, pady=4)
             self.entry.focus_set()
         if func == 'touch':
@@ -198,7 +202,7 @@ class plasmacPopUp(Tkinter.Toplevel):
             opl = Tkinter.Label(self.frm, text=_('Coordinate System'), fg=colorFore, bg=colorBack)
             opl.pack(padx=4, pady=4)
             self.c = c = StringVar(t)
-            c.set(system)
+            c.set(optional)
             self.opt = Tkinter.OptionMenu(self.frm, c, *all_systems[:])
             self.opt.configure(fg=colorFore, bg=colorBack, activebackground=colorBack, highlightthickness=0)
             self.opt.children['menu'].configure(fg=colorFore, bg=colorBack, activeforeground=colorBack, activebackground=colorFore)
@@ -1200,16 +1204,6 @@ def set_toggle_pins(pin):
         else:
             rC(fbuttons + '.button' + pin['button'],'configure','-bg',colorBack)
 
-def set_peripheral_offsets():
-    if comp['development']:
-        reload(set_offsets)
-    toolFile = os.path.realpath(tooltable)
-    setup_toggle(False)
-    while 1:
-        reply = offsets_show(toolFile)
-        if not reply:
-            break
-
 def jog_default_changed(value):
     set_jog_slider(int(value) / (vars.max_speed.get() * 60))
 
@@ -1630,18 +1624,24 @@ def bounds_check(boundsType, xOffset , yOffset):
 ##############################################################################
 # PERIPHERAL OFFSET FUNCTIONS                                                #
 ##############################################################################
-offsets_text = [_('Usage is as follows') + ':\n']
-offsets_text.append(_('5. Jog until the peripheral is centered on the mark'))
-offsets_text.append(_('6. Click the Yes button to get the offsets'))
-offsets_text.append(_('7. Confirm whether or not to change the offsets'))
+offsets_text  = _('1. Jog until the peripheral is centered on the mark') + '.\n'
+offsets_text += _('2. Click the Yes button to get the offsets') + '.\n'
+
+def set_peripheral_offsets():
+    toolFile = os.path.realpath(tooltable)
+    setup_toggle(False)
+    while 1:
+        reply = offsets_show(toolFile)
+        if not reply:
+            break
 
 def offsets_show(toolFile):
-    text = [_('Usage is as follows') + ':\n']
-    text.append(_('1. Touchoff the torch to X0 Y0'))
-    text.append(_('2. Mark the material with a torch pulse'))
-    text.append(_('3. Jog until the peripheral is close to the mark'))
-    text.append(_('4. Click the appropriate button to activate the peripheral'))
-    reply = plasmacPopUp('offsets', 'Set Peripheral Offsets', "\n".join(text)).reply
+    text  = _('1. Place some scrap material under the torch') + '.\n'
+    text += _('2. Touchoff the torch to X0Y0') + '.\n'
+    text += _('3. Mark the material with a torch pulse') + '.\n'
+    text += _('4. Jog until the peripheral is close to the mark') + '.\n'
+    text += _('5. Click the appropriate button to activate the peripheral') + '.\n'
+    reply = plasmacPopUp('offsets', _('Set Peripheral Offsets'), text).reply
     if reply == 'laser':
         offsets_laser_clicked()
     elif reply == 'scribe':
@@ -1656,12 +1656,12 @@ def offsets_show(toolFile):
     return True
 
 def offsets_laser_clicked():
-    reply = plasmacPopUp('yesno', 'Set Laser Offsets', "\n".join(offsets_text)).reply
+    reply = plasmacPopUp('yesno', 'Set Laser Offsets', offsets_text).reply
     if not reply:
         return
     newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
                   'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
-    if offsets_prompt(_('Laser Offset Change'), laserOffsets, newOffsets):
+    if offsets_prompt(_('Change Laser Offsets'), laserOffsets, newOffsets):
         laserOffsets['X'] = newOffsets['X']
         laserOffsets['Y'] = newOffsets['Y']
         putPrefs(PREF,'LASER_OFFSET', 'X axis', laserOffsets['X'], float)
@@ -1693,12 +1693,12 @@ def offsets_scribe_clicked(toolFile):
         msg = _('Could not get current scribe offsets from tooltable')
         plasmacPopUp('info', title, msg)
         return
-    reply = plasmacPopUp('yesno', 'Set Scribe Offsets', "\n".join(offsets_text)).reply
+    reply = plasmacPopUp('yesno', 'Set Scribe Offsets', offsets_text).reply
     if not reply:
         return
     newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
                   'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
-    if offsets_prompt(_('Scribe Offset Change'), scribeOffsets, newOffsets):
+    if offsets_prompt(_('Change Scribe Offsets'), scribeOffsets, newOffsets):
         scribeOffsets['X'] = newOffsets['X']
         scribeOffsets['Y'] = newOffsets['Y']
         offsets_write_scribe(toolFile, scribeOffsets)
@@ -1709,13 +1709,13 @@ def offsets_scribe_clicked(toolFile):
         plasmacPopUp('info', title, msg)
 
 def offsets_probe_clicked():
-    reply = plasmacPopUp('yesno', 'Set Probe Offsets', "\n".join(offsets_text)).reply
+    reply = plasmacPopUp('yesno', 'Set Probe Offsets', offsets_text).reply
     if not reply:
         return
     title = _('Offset Probe Delay')
     prompt = _('Delay (Seconds)')
     while 1:
-        valid, delay = plasmacPopUp('entry', title, prompt, True).reply
+        valid, delay = plasmacPopUp('entry', title, prompt, True, probeOffsets['Delay']).reply
         if not valid:
             return
         if not delay:
@@ -1729,7 +1729,7 @@ def offsets_probe_clicked():
     newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
                   'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0, \
                   'Delay':delay}
-    if offsets_prompt(_('Probe Offset Change'), probeOffsets, newOffsets, True):
+    if offsets_prompt(_('Change Probe Offsets'), probeOffsets, newOffsets, True):
         probeOffsets['X'] = newOffsets['X']
         probeOffsets['Y'] = newOffsets['Y']
         probeOffsets['Delay'] = newOffsets['Delay']
@@ -1743,16 +1743,17 @@ def offsets_probe_clicked():
         plasmacPopUp('info', title, msg)
 
 def offsets_prompt(title, oldOffsets, newOffsets, probe=False):
-    prompt  = _('Change offsets from')
+    dly = _('Delay')
+    prompt  = _('From')
+    prompt += ':\nX:{:0.3f}  Y:{:0.3f}'.format(oldOffsets['X'], oldOffsets['Y'])
     if probe:
-        prompt += ':\nX:{:0.3f}  Y:{:0.3f}  Delay:{:0.2f}\n\n'.format(oldOffsets['X'], oldOffsets['Y'], oldOffsets['Delay'])
-    else:
-        prompt += ':\nX:{:0.3f}  Y:{:0.3f}\n\n'.format(oldOffsets['X'], oldOffsets['Y'])
+        prompt += '  {}:{:0.2f}'.format(dly, oldOffsets['Delay'])
+    prompt += '\n\n'
     prompt += _('To')
+    prompt += ':\nX:{:0.3f}  Y:{:0.3f}'.format(newOffsets['X'], newOffsets['Y'])
     if probe:
-        prompt += ':\nX:{:0.3f}  Y:{:0.3f}  Delay:{:0.2f}\n'.format(newOffsets['X'], newOffsets['Y'], newOffsets['Delay'])
-    else:
-        prompt += ':\nX:{:0.3f}  Y:{:0.3f}\n'.format(newOffsets['X'], newOffsets['Y'])
+        prompt += '  {}:{:0.2f}'.format(dly, newOffsets['Delay'])
+    prompt += '\n'
     return plasmacPopUp('yesno', title, prompt, True).reply
 
 def offsets_write_scribe(toolFile, offsets):
@@ -2603,11 +2604,15 @@ def reload_material_clicked():
 
 def new_material_clicked():
     global materialNumList
+    for n in range(1, 1000000):
+        if n not in materialNumList:
+            new = n
+            break
     title = _('ADD MATERIAL')
     msg1 = _('Enter New Material Number')
     msgs = msg1
     while(1):
-        valid, num = plasmacPopUp('entry', title, '{}:'.format(msgs), 'numpad').reply
+        valid, num = plasmacPopUp('entry', title, '{}:'.format(msgs), 'numpad', new).reply
         if not valid:
             return
         if not num:
@@ -5056,7 +5061,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('frame',fsetup + '.m')
     # utilities frame
     rC('labelframe',fsetup + '.m.utilities','-text','Utilities','-relief','groove')
-    rC('button',fsetup + '.m.utilities.offsets','-command','set_peripheral_offsets','-text','Set Offsets')
+    rC('button',fsetup + '.m.utilities.offsets','-command','set_peripheral_offsets','-text',_('Peripheral Offsets'),'-padx',0)
     # populate utilities frame
     rC('grid',fsetup + '.m.utilities.offsets','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
     rC('grid','columnconfigure',fsetup + '.m.utilities',0,'-weight',1)
