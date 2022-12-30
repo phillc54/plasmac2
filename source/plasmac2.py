@@ -365,15 +365,15 @@ def font_size_changed():
     rC('.pane.bottom.t.text','configure','-font',font)
     rC('.info.gcodef.gcodes','configure','-font',font)
     if s.paused:
-        rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery')
+        rC(ftabs,'itemconfigure','cutrecs','-text',_('Cut Recovery'))
     else:
         rC(ftabs,'delete','manual',0)
         rC(ftabs,'delete','mdi',0)
         rC(ftabs,'insert','end','manual')
         rC(ftabs,'insert','end','mdi')
         rC(ftabs,'raise','manual')
-        rC(ftabs,'itemconfigure','manual','-text','Manual')
-        rC(ftabs,'itemconfigure','mdi','-text','MDI')
+        rC(ftabs,'itemconfigure','manual','-text',_('Manual'))
+        rC(ftabs,'itemconfigure','mdi','-text',_('MDI'))
     rC(fright,'delete','preview',0)
     rC(fright,'delete','numbers',0)
     rC(fright,'delete','stats',0)
@@ -1336,7 +1336,7 @@ def single_cut():
         yLength = float(yLength)
     except:
         title = _('ENTRY ERROR')
-        msg =  _('Lengths need to be floating point values')
+        msg = _('Lengths need to be floating point values')
         plasmacPopUp('error', title, msg)
         return
     singleCut['state'] = True
@@ -2991,7 +2991,7 @@ def pmx485_enable_toggled():
             hal.set_p('pmx485.current_set', str(pVars.cutAmps.get()))
             hal.set_p('pmx485.mode_set', str(pVars.cutMode.get()))
             hal.set_p('pmx485.enable', '1')
-            rC(fruns + '.pmx.info','configure','-text','CONNECTING')
+            rC(fruns + '.pmx.info','configure','-text',_('CONNECTING'))
             pmx485['commsTimer'] = 3
     else:
         if hal.component_exists('pmx485'):
@@ -3028,10 +3028,10 @@ def pmx485_max_current_changed():
 def pmx485_max_pressure_changed():
     rC(fruns + '.material.gas-pressure','configure','-to',hal.get_value('pmx485.pressure_max'))
     if float(hal.get_value('pmx485.pressure_max')) > 15:
-        rC(fruns + '.material.gas-pressureL','configure','-text','Gas Pressure psi')
+        rC(fruns + '.material.gas-pressureL','configure','-text',_('Gas Pressure psi'))
         rC(fruns + '.material.gas-pressure','configure','-increment',1,'-format','%0.0f')
     else:
-        rC(fruns + '.material.gas-pressureL','configure','-text','Gas Pressure bar')
+        rC(fruns + '.material.gas-pressureL','configure','-text',_('Gas Pressure bar'))
         rC(fruns + '.material.gas-pressure','configure','-increment',0.1,'-format','%0.1f')
 
 def pmx485_status_changed(state):
@@ -3039,7 +3039,7 @@ def pmx485_status_changed(state):
     if state != pmx485['connected']:
         if state:
             pmx485['commsError'] = False
-            rC(fruns + '.pmx.info','configure','-text','CONNECTED')
+            rC(fruns + '.pmx.info','configure','-text',_('CONNECTED'))
             pmx485['connected'] = True
             # probably not required as we change the text directly in periodic
             #if pmx485['compArcTime']:
@@ -3050,7 +3050,7 @@ def pmx485_status_changed(state):
             pmx485['commsTimer'] = 0
             pmx485['retryTimer'] = 0
         else:
-            rC(fruns + '.pmx.info','configure','-text','COMMS ERROR')
+            rC(fruns + '.pmx.info','configure','-text',_('COMMS ERROR'))
             pmx485['commsError'] = True
             pmx485['connected'] = False
             pmx485['retryTimer'] = 3
@@ -3073,7 +3073,7 @@ def pmx485_fault_changed(fault):
         code = _('Fault Code')
         text = _('Powermax error')
         if faultRaw == '0000':
-            rC(fruns + '.pmx.info','configure','-text','CONNECTED')
+            rC(fruns + '.pmx.info','configure','-text',_('CONNECTED'))
         elif faultRaw in pmx485FaultName.keys():
             if faultRaw == '0210' and hal.get_value('pmx485.current_max') > 110:
                 faultMsg = pmx485FaultName[faultRaw][1]
@@ -3825,7 +3825,7 @@ def make_toolmat_frame():
 def make_run_panel():
     global rpList, rSpinBoxes
     rSpinBoxes = []
-    rC('labelframe',fruns + '.material','-text','Material','-relief','groove')
+    rC('labelframe',fruns + '.material','-text',_('Material'),'-relief','groove')
     rC('ComboBox',fruns + '.material.materials','-modifycmd','material_changed','-textvariable','matCurrent','-width',10,'-editable',0)
     rC('grid', fruns + '.material.materials','-column',0,'-row',0,'-columnspan',2,'-sticky','ew','-padx',2,'-pady',2)
     # spinboxes [parent, name, decimals, value, min, max, increment, label text]
@@ -3874,15 +3874,15 @@ def make_run_panel():
             rC('grid', rpName + 'L','-column',1,'-row',rpRow,'-sticky','W','-pady',(0,2))
         rpRow += 1
     # checkbox frame
-    rC('labelframe',fruns + '.check','-text','Cut','-relief','groove')
+    rC('labelframe',fruns + '.check','-text',_('Cut'),'-relief','groove')
     rC('checkbutton',fruns + '.check.av','-variable','autoVolts','-command','auto_volts_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fruns + '.check.avL','-text','Use Auto Volts')
+    rC('label',fruns + '.check.avL','-text',_('Use Auto Volts'))
     rC('checkbutton',fruns + '.check.ohmic','-variable','ohmicEnable','-command','ohmic_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fruns + '.check.ohmicL','-text','Ohmic Probe Enable')
+    rC('label',fruns + '.check.ohmicL','-text',_('Ohmic Probe Enable'))
     rC('checkbutton',fruns + '.check.mesh','-variable','meshEnable','-command','pmx485_mesh_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fruns + '.check.meshL','-text','Mesh Mode')
+    rC('label',fruns + '.check.meshL','-text',_('Mesh Mode'))
     rC('checkbutton',fruns + '.check.ignoreok','-variable','ignorArcOk','-command','ignore_arc_ok_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fruns + '.check.ignoreokL','-text','Ignore Arc OK')
+    rC('label',fruns + '.check.ignoreokL','-text',_('Ignore Arc OK'))
     rC('grid',fruns + '.check.av','-column',0,'-row',0,'-sticky','w','-padx',(2,0),'-pady',(0,2))
     rC('grid',fruns + '.check.avL','-column',1,'-row',0,'-sticky','w','-pady',(0,2))
     rC('grid',fruns + '.check.ohmic','-column',0,'-row',1,'-sticky','w','-padx',(2,0),'-pady',(0,2))
@@ -3892,9 +3892,9 @@ def make_run_panel():
     rC('grid',fruns + '.check.ignoreok','-column',0,'-row',3,'-sticky','w','-padx',(2,0),'-pady',(0,2))
     rC('grid',fruns + '.check.ignoreokL','-column',1,'-row',3,'-sticky','w','-pady',(0,2))
     # pmx frame
-    rC('labelframe',fruns + '.pmx','-text','Powermax','-relief','groove')
-    rC('checkbutton',fruns + '.pmx.enable','-text','Powermax Comms','-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fruns + '.pmx.info','-text','PMX Info goes here','-anchor','w')
+    rC('labelframe',fruns + '.pmx','-text',_('Powermax'),'-relief','groove')
+    rC('checkbutton',fruns + '.pmx.enable','-text',_('Powermax Comms'),'-variable','pmx485Enable','-command','pmx485_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
+    rC('label',fruns + '.pmx.info','-text',_('PMX Info goes here'),'-anchor','w')
     rC('pack',fruns + '.pmx.enable','-expand',1,'-fill','x')
     rC('pack',fruns + '.pmx.info','-expand',1,'-fill','x')
 
@@ -4640,14 +4640,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # new plasma frame
     # create the widgets
     rC('frame',fplasma,'-bd',0)
-    rC('label',fplasma + '.arcvl','-anchor','nw','-text','Arc Voltage:')
+    rC('label',fplasma + '.arcvl','-anchor','nw','-text',_('Arc Voltage:'))
     rC('label',fplasma + '.arc-voltage','-anchor','se','-width',4)
     rC('checkbutton',fplasma + '.thc','-variable','thcEnable','-command','thc_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.thcL','-anchor','nw','-text','THC Enable','-width',11)
+    rC('label',fplasma + '.thcL','-anchor','nw','-text',_('THC Enable'),'-width',11)
     rC('checkbutton',fplasma + '.vel','-variable','cornerEnable','-command','corner_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.velL','-anchor','nw','-text','Velocity Lock','-width',11)
+    rC('label',fplasma + '.velL','-anchor','nw','-text',_('Velocity Lock'),'-width',11)
     rC('checkbutton',fplasma + '.void','-variable','voidEnable','-command','void_enable_toggled','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fplasma + '.voidL','-anchor','nw','-text','Void Lock','-width',11)
+    rC('label',fplasma + '.voidL','-anchor','nw','-text',_('Void Lock'),'-width',11)
     # populate the frame
     rC('grid',fplasma + '.thc','-column',2,'-row',0,'-sticky','e','-pady',(0,2))
     rC('grid',fplasma + '.thcL','-column',3,'-row',0,'-sticky','e','-pady',(0,2))
@@ -4658,8 +4658,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fplasma,'-column',0,'-row',4,'-padx',2,'-pady',(0,0),'-sticky','ew')
     rC('grid','columnconfigure',fplasma,1,'-weight',1)
     # shorten some text for nicer layout.
-    rC('.pane.top.rapidoverride.l','configure','-text','Rapid Ovr:')
-    rC('.pane.top.feedoverride.l','configure','-text','Feed Ovr:')
+    rC('.pane.top.rapidoverride.l','configure','-text',_('Rapid Ovr:'))
+    rC('.pane.top.feedoverride.l','configure','-text',_('Feed Ovr:'))
 
     # hide bottom pane until modified
     rC('pack','forget','.pane.bottom.t.text')
@@ -4775,7 +4775,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 
     # new cut recovery tab
     # create the widgets
-    rC(ftabs,'insert','end','cutrecs','-text','Cut Recovery')
+    rC(ftabs,'insert','end','cutrecs','-text',_('Cut Recovery'))
     rC(fcutrecs,'configure','-borderwidth',2)
     rC(ftabs,'delete','cutrecs',0)
     rC('labelframe',fcrspeed,'-text',_('Speed:'),'-relief','flat')
@@ -4850,14 +4850,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('frame',fparam + '.c1')
     rC('frame',fparam + '.c2')
     rC('frame',fparam + '.c3')
-    rC('labelframe',fparam + '.c1.probe','-text','Probing','-relief','groove')
-    rC('labelframe',fparam + '.c1.motion','-text','Motion','-relief','groove')
-    rC('labelframe',fparam + '.c2.thc','-text','THC','-relief','groove')
-    rC('labelframe',fparam + '.c1.safety','-text','Safety','-relief','groove')
-    rC('labelframe',fparam + '.c3.arc','-text','Arc','-relief','groove')
-    rC('labelframe',fparam + '.c2.scribe','-text','Scribe','-relief','groove')
-    rC('labelframe',fparam + '.c3.spotting','-text','Spotting','-relief','groove')
-    rC('label',fparam + '.c2.thc.thc-autoL','-text','Auto','-width',15,'-anchor','e')
+    rC('labelframe',fparam + '.c1.probe','-text',_('Probing'),'-relief','groove')
+    rC('labelframe',fparam + '.c1.motion','-text',_('Motion'),'-relief','groove')
+    rC('labelframe',fparam + '.c2.thc','-text',_('THC'),'-relief','groove')
+    rC('labelframe',fparam + '.c1.safety','-text',_('Safety'),'-relief','groove')
+    rC('labelframe',fparam + '.c3.arc','-text',_('Arc'),'-relief','groove')
+    rC('labelframe',fparam + '.c2.scribe','-text',_('Scribe'),'-relief','groove')
+    rC('labelframe',fparam + '.c3.spotting','-text',_('Spotting'),'-relief','groove')
+    rC('label',fparam + '.c2.thc.thc-autoL','-text',_('Auto'),'-width',15,'-anchor','e')
     rC('checkbutton',fparam + '.c2.thc.thc-auto','-width',2,'-anchor','w','-indicatoron',0)
     rC(fparam + '.c2.thc.thc-auto','configure','-variable','thcAuto','-command','mode_changed')
     # spinboxes [parent, name, decimals, value, min, max, increment, label text, prefs option]
@@ -4925,7 +4925,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         rC(cpName,'configure','-increment',cpItem[6],'-format','%0.{}f'.format(cpItem[2]))
         rC(cpName,'configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,cpType,cpItem[2]))
         if cpItem[1] == 'setup-feed-rate':
-            rC('label',cpItem[0] + '.maxzL','-text','Max Z Speed','-width',15,'-anchor','e')
+            rC('label',cpItem[0] + '.maxzL','-text',_('Max Z Speed'),'-width',15,'-anchor','e')
             rC('label',cpItem[0] + '.maxz','-text',int(thcFeedRate),'-width',8,'-anchor','e')
             rC('grid',cpItem[0] + '.maxzL','-column',0,'-row',cpRow,'-sticky','e','-padx',(0,0),'-pady',(4,0))
             rC('grid',cpItem[0] + '.maxz','-column',1,'-row',cpRow,'-sticky','e','-padx',(0,8),'-pady',(4,0))
@@ -4952,31 +4952,31 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # left panel
     rC('frame',fsetup + '.l')
     # gui frame
-    rC('labelframe',fsetup + '.l.gui','-text','GUI','-relief','groove')
-    rC('label',fsetup + '.l.gui.closedialogL','-text','Close Dialog','-anchor','e')
+    rC('labelframe',fsetup + '.l.gui','-text',_('GUI'),'-relief','groove')
+    rC('label',fsetup + '.l.gui.closedialogL','-text',_('Close Dialog'),'-anchor','e')
     rC('checkbutton',fsetup + '.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fsetup + '.l.gui.wsizeL','-text','Window Size','-width', 13,'-anchor','e')
+    rC('label',fsetup + '.l.gui.wsizeL','-text',_('Window Size'),'-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
-    rC('label',fsetup + '.l.gui.orientL','-text','Window Orient','-width', 13,'-anchor','e')
+    rC('label',fsetup + '.l.gui.orientL','-text',_('Window Orient'),'-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.orient','-modifycmd','set_orientation','-textvariable','orient','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.orient','configure','-values',['landscape','portrait'])
-    rC('label',fsetup + '.l.gui.fsizeL','-text','Font Size','-anchor','e')
+    rC('label',fsetup + '.l.gui.fsizeL','-text',_('Font Size'),'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.fsize','-modifycmd','font_size_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.fsize','configure','-values',[7,8,9,10,11,12,13,14,15,16,17,18,19,20])
-    rC('label',fsetup + '.l.gui.coneL','-text','Cone Size','-anchor','e')
+    rC('label',fsetup + '.l.gui.coneL','-text',_('Cone Size'),'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-    rC('label',fsetup + '.l.gui.popLocationL','-text','Popup Location','-width', 13,'-anchor','e')
+    rC('label',fsetup + '.l.gui.popLocationL','-text',_('Popup Location'),'-width', 13,'-anchor','e')
     rC('ComboBox',fsetup + '.l.gui.popLocation','-textvariable','popLocation','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(fsetup + '.l.gui.popLocation','configure','-values',['pointer','gui center','screen center'])
-    rC('label',fsetup + '.l.gui.zoomL','-text','Table Zoom','-anchor','e')
+    rC('label',fsetup + '.l.gui.zoomL','-text',_('Table Zoom'),'-anchor','e')
     rC('spinbox',fsetup + '.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(fsetup + '.l.gui.zoom','configure','-validate','key','-vcmd','{} %W {} {} %P %s'.format(valspin,'flt',1))
     spinBoxes.append(fsetup + '.l.gui.zoom')
-    rC('label',fsetup + '.l.gui.kbShortcutsL','-text','Use KB Shortcuts','-anchor','e')
+    rC('label',fsetup + '.l.gui.kbShortcutsL','-text',_('Use KB Shortcuts'),'-anchor','e')
     rC('checkbutton',fsetup + '.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0)
-    rC('label',fsetup + '.l.gui.useVirtKBL','-text','Use Virtual KB','-anchor','e')
+    rC('label',fsetup + '.l.gui.useVirtKBL','-text',_('Use Virtual KB'),'-anchor','e')
     rC('checkbutton',fsetup + '.l.gui.useVirtKB','-variable','useVirtKB','-command','virtual_kb_changed','-width',2,'-anchor','w','-indicatoron',0)
     # populate gui frame
     rC('grid',fsetup + '.l.gui.closedialogL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,0))
@@ -5001,8 +5001,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 #    rC('grid','columnconfigure',fsetup + '.l.gui',1,'-weight',1)
 
     # jog frame
-    rC('labelframe',fsetup + '.l.jog','-text','Default Jog Speed','-relief','groove')
-    rC('label',fsetup + '.l.jog.speedL','-width', 14,'-text','Units Per Minute','-anchor','e')
+    rC('labelframe',fsetup + '.l.jog','-text',_('Default Jog Speed'),'-relief','groove')
+    rC('label',fsetup + '.l.jog.speedL','-width', 14,'-text',_('Units Per Minute'),'-anchor','e')
     rC('spinbox',fsetup + '.l.jog.speed','-width', 10,'-justify','right','-wrap','true')
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.jog.speed','configure','-from',minJogSpeed,'-to','{}'.format(vars.max_speed.get() * 60),'-increment',1)
@@ -5016,8 +5016,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 #    rC('grid','columnconfigure',fsetup + '.l.jog',1,'-weight',1)
 
     # plasmac frame
-    rC('labelframe',fsetup + '.l.plasmac','-text','Plasmac','-relief','groove')
-    rC('label',fsetup + '.l.plasmac.modeL','-width', 13,'-text','Mode','-anchor','e')
+    rC('labelframe',fsetup + '.l.plasmac','-text',_('Plasmac'),'-relief','groove')
+    rC('label',fsetup + '.l.plasmac.modeL','-width', 13,'-text',_('Mode'),'-anchor','e')
     rC('ComboBox',fsetup + '.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',11,'-justify','right','-editable',0)
     rC(fsetup + '.l.plasmac.mode','configure','-values',[0,1,2])
     # populate plasmac frame
@@ -5027,8 +5027,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 #    rC('grid','columnconfigure',fsetup + '.l.plasmac',1,'-weight',1)
 
     # material frame
-    rC('labelframe',fsetup + '.l.mats','-text','Material','-relief','groove')
-    rC('label',fsetup + '.l.mats.defaultL','-width', 13,'-text','Default','-anchor','e')
+    rC('labelframe',fsetup + '.l.mats','-text',_('Material'),'-relief','groove')
+    rC('label',fsetup + '.l.mats.defaultL','-width', 13,'-text',_('Default'),'-anchor','e')
     rC('ComboBox',fsetup + '.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',11,'-justify','right','-editable',0)
     # populate material frame
     rC('grid',fsetup + '.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
@@ -5037,8 +5037,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
 #    rC('grid','columnconfigure',fsetup + '.l.mats',1,'-weight',1)
 
     # cut recovery frame
-    rC('labelframe',fsetup + '.l.cr','-text','Cut Recovery','-relief','groove')
-    rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text','Speed %','-anchor','e')
+    rC('labelframe',fsetup + '.l.cr','-text',_('Cut Recovery'),'-relief','groove')
+    rC('label',fsetup + '.l.cr.speedL','-width', 13,'-text',_('Speed %'),'-anchor','e')
     rC('spinbox',fsetup + '.l.cr.speed','-width', 10,'-justify','right','-wrap','true')
     minJogSpeed = int(float(rC(ftop + '.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
     rC(fsetup + '.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
@@ -5060,26 +5060,26 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # middle panel for utilities
     rC('frame',fsetup + '.m')
     # utilities frame
-    rC('labelframe',fsetup + '.m.utilities','-text','Utilities','-relief','groove')
+    rC('labelframe',fsetup + '.m.utilities','-text',_('Utilities'),'-relief','groove')
     rC('button',fsetup + '.m.utilities.offsets','-command','set_peripheral_offsets','-text',_('Peripheral Offsets'),'-padx',0)
     # populate utilities frame
     rC('grid',fsetup + '.m.utilities.offsets','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
     rC('grid','columnconfigure',fsetup + '.m.utilities',0,'-weight',1)
     # color frame
-    rC('labelframe',fsetup + '.m.colors','-text','Colors','-relief','groove')
-    rC('label',fsetup + '.m.colors.foreL','-width', 13,'-text','Foreground','-anchor','e')
+    rC('labelframe',fsetup + '.m.colors','-text',_('Colors'),'-relief','groove')
+    rC('label',fsetup + '.m.colors.foreL','-width', 13,'-text',_('Foreground'),'-anchor','e')
     rC('button',fsetup + '.m.colors.fore','-command','color_set fore')
-    rC('label',fsetup + '.m.colors.backL','-width', 13,'-text','Background','-anchor','e')
+    rC('label',fsetup + '.m.colors.backL','-width', 13,'-text',_('Background'),'-anchor','e')
     rC('button',fsetup + '.m.colors.back','-command','color_set back')
-    rC('label',fsetup + '.m.colors.disableL','-width', 13,'-text','Disabled','-anchor','e')
+    rC('label',fsetup + '.m.colors.disableL','-width', 13,'-text',_('Disabled'),'-anchor','e')
     rC('button',fsetup + '.m.colors.disable','-command','color_set disable')
-    rC('label',fsetup + '.m.colors.activeL','-width', 13,'-text','Active','-anchor','e')
+    rC('label',fsetup + '.m.colors.activeL','-width', 13,'-text',_('Active'),'-anchor','e')
     rC('button',fsetup + '.m.colors.active','-command','color_set active')
-    rC('label',fsetup + '.m.colors.warnL','-width', 13,'-text','Warning','-anchor','e')
+    rC('label',fsetup + '.m.colors.warnL','-width', 13,'-text',_('Warning'),'-anchor','e')
     rC('button',fsetup + '.m.colors.warn','-command','color_set warn')
-    rC('label',fsetup + '.m.colors.voltL','-width', 13,'-text','Arc Voltage','-anchor','e')
+    rC('label',fsetup + '.m.colors.voltL','-width', 13,'-text',_('Arc Voltage'),'-anchor','e')
     rC('button',fsetup + '.m.colors.volt','-command','color_set volt')
-    rC('label',fsetup + '.m.colors.troughL','-width', 13,'-text','Slider Trough','-anchor','e')
+    rC('label',fsetup + '.m.colors.troughL','-width', 13,'-text',_('Slider Trough'),'-anchor','e')
     rC('button',fsetup + '.m.colors.trough','-command','color_set trough')
     # populate color frame
     rC('grid',fsetup + '.m.colors.foreL','-column',0,'-row',0,'-sticky','e','-padx',4,'-pady',(4,4))
@@ -5104,10 +5104,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # right panel for text entries
     rC('frame',fsetup + '.r')
     # frame for torch enable
-    rC('labelframe',fsetup + '.r.torch','-text','Torch Enable Text','-relief','groove')
+    rC('labelframe',fsetup + '.r.torch','-text',_('Torch Enable Text'),'-relief','groove')
     rC('label',fsetup + '.r.torch.blankL','-text','','-width',2,'-anchor','w')
-    rC('label',fsetup + '.r.torch.enabledL','-text','Enabled','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.torch.disabledL','-text','Disabled','-width',14,'-anchor','w')
+    rC('label',fsetup + '.r.torch.enabledL','-text',_('Enabled'),'-width',14,'-anchor','w')
+    rC('label',fsetup + '.r.torch.disabledL','-text',_('Disabled'),'-width',14,'-anchor','w')
     rC('entry',fsetup + '.r.torch.enabled','-bd',1,'-width',14)
     rC('entry',fsetup + '.r.torch.disabled','-bd',1,'-width',14)
     rC('grid',fsetup + '.r.torch.blankL','-column',0,'-row',0,'-sticky','nw','-padx',(4,0))
@@ -5116,7 +5116,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.r.torch.enabled','-column',1,'-row',1,'-sticky','nw','-padx',(4,0),'-pady',(0,4))
     rC('grid',fsetup + '.r.torch.disabled','-column',2,'-row',1,'-sticky','nw','-padx',4,'-pady',(0,4))
     # frame for user buttons
-    rC('labelframe',fsetup + '.r.ubuttons','-text','User Buttons','-relief','groove')
+    rC('labelframe',fsetup + '.r.ubuttons','-text',_('User Buttons'),'-relief','groove')
     # canvas for scrolling
     rC('canvas',fsetup + '.r.ubuttons.canvas')
     rC('frame',fsetup + '.r.ubuttons.canvas.frame')
@@ -5133,8 +5133,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid','rowconfigure',fsetup + '.r.ubuttons',0,'-weight',1)
     # user button widgets
     rC('label',fsetup + '.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text','Name','-width',14,'-anchor','w')
-    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text','Code','-width',60,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.nameL','-text',_('Name'),'-width',14,'-anchor','w')
+    rC('label',fsetup + '.r.ubuttons.canvas.frame.codeL','-text',_('Code'),'-width',60,'-anchor','w')
     for n in range(1, 21):
         rC('label',fsetup + '.r.ubuttons.canvas.frame.num' + str(n),'-text',str(n),'-anchor','e')
         rC('entry',fsetup + '.r.ubuttons.canvas.frame.name' + str(n),'-bd',1,'-width',14)
@@ -5148,7 +5148,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid','columnconfigure',fsetup + '.r.ubuttons.canvas.frame',2,'-weight',1)
 
     # frame for shutdown message
-    rC('labelframe',fsetup + '.r.shutdown','-text','Shutdown Message','-relief','groove')
+    rC('labelframe',fsetup + '.r.shutdown','-text',_('Shutdown Message'),'-relief','groove')
     rC('entry',fsetup + '.r.shutdown.msg','-textvariable','closeText','-bd',1,'-width',54)
     rC('grid',fsetup + '.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
     rC('grid','columnconfigure',fsetup + '.r.shutdown',0,'-weight',1)
@@ -5591,7 +5591,7 @@ def user_live_update():
         rC(ftabs,'delete','mdi',0)
         rC(ftabs,'insert','end','cutrecs')
         rC(ftabs,'raise','cutrecs')
-        rC(ftabs,'itemconfigure','cutrecs','-text','Cut Recovery','-background',colorBack,'-foreground',colorFore)
+        rC(ftabs,'itemconfigure','cutrecs','-text',_('Cut Recovery'),'-background',colorBack,'-foreground',colorFore)
     # hide cut recovery tab
     if not s.paused and 'cutrecs' in rC(ftabs,'pages') and \
        (not hal.get_value('plasmac.paused-motion') or \
@@ -5601,8 +5601,8 @@ def user_live_update():
         rC(ftabs,'insert','end','manual')
         rC(ftabs,'insert','end','mdi')
         rC(ftabs,'raise','manual')
-        rC(ftabs,'itemconfigure','manual','-text','Manual','-background',colorBack,'-foreground',colorFore)
-        rC(ftabs,'itemconfigure','mdi','-text','MDI','-background',colorBack,'-foreground',colorFore)
+        rC(ftabs,'itemconfigure','manual','-text',_('Manual'),'-background',colorBack,'-foreground',colorFore)
+        rC(ftabs,'itemconfigure','mdi','-text',_('MDI'),'-background',colorBack,'-foreground',colorFore)
     # if resumed and component has completed a cut recovery then cancel cut recovey
     if not s.paused and not hal.get_value('plasmac.cut-recovering') and hal.get_value('plasmac.cut-recovery'):
         cut_rec_cancel()

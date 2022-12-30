@@ -11,54 +11,78 @@ from shutil import *
 from tkinter import *
 from tkinter import filedialog
 import configparser
+import gettext
+
+for f in sys.path:
+    if '/lib/python' in f:
+        if '/usr' in f:
+            localeDir = 'usr/share/locale'
+        else:
+            localeDir = os.path.join('{}'.format(f.split('/lib')[0]),'share','locale')
+        break
+gettext.install("linuxcnc", localedir=localeDir)
+
+_ = gettext.gettext
 
 class Setup:
     def __init__(self, master):
         self.master = master
         master.title('plasmac2 Setup')
-        text = ['Setup utility for plasmac2\n']
-        text.append('Migration:\n'
-                    ' - will copy an existing QtPlasmaC config and make any\n'
-                    '   required modifications for plasmac2\n')
-        text.append('Simulation:\n'
-                    '- will make a new sim using supplied parameters\n'
-                    '- name is mandatory\n'
-                    '- other missing parameters will have the following applied\n'
-                    '  X = 1200mm or 48"\n'
-                    '  Y = 1200mm or 48"\n'
-                    '  Z = 100mm or 4"\n')
-        label = Label(master, text='\n'.join(text), justify='left')
+        text  = _('Setup utility for plasmac2')
+        label1 = Label(master, text=text)
+        text  = _('Migration')
+        text += ':\n- '
+        text += _('will copy an existing QtPlasmaC config')
+        text += '\n- '
+        text += _('will make any required modifications for plasmac2')
+        text += '\n\n'
+        text += _('Simulation')
+        text += ':\n- '
+        text += _('will create a new sim using supplied parameters')
+        text += '\n- '
+        text += _('name is mandatory')
+        text += '\n- '
+        text += _('missing axes parameters will have the below applied')
+        text += '\n'
+        text += '  X and Y = 1200mm or 48", Z = 100mm or 4"'
+        text += '\n'
+        label2 = Label(master, text=text, justify='left')
         buttons = Frame(master)
-        migrateB = Button(buttons, text='Migration', width=10, command=lambda: self.migrate(), padx=0)
-        simB = Button(buttons, text='Simulation', width=10, command=lambda: self.sim(), padx=0)
-        quitB = Button(buttons, text='Quit', width=10, command=lambda: self.shutdown(), padx=0)
+        migrateB = Button(buttons, text=_('Migration'), width=10, command=lambda: self.migrate(), padx=0)
+        simB = Button(buttons, text=_('Simulation'), width=10, command=lambda: self.sim(), padx=0)
+        quitB = Button(buttons, text=_('Quit'), width=10, command=lambda: self.shutdown(), padx=0)
         migrateB.grid(row=0, column=0)
         simB.grid(row=0, column=1)
         quitB.grid(row=0, column=2)
-        label.grid(row=0, column=0, sticky='ew', padx=8, pady=(8,0))
-        buttons.grid(row=1, column=0, sticky='ew', padx=8, pady=(16,8))
+        label1.grid(row=0, column=0, sticky='ew', padx=8, pady=(8,0))
+        label2.grid(row=1, column=0, sticky='ew', padx=8, pady=(8,0))
+        buttons.grid(row=2, column=0, sticky='ew', padx=8, pady=(16,8))
         buttons.columnconfigure((0,1,2), weight=1)
         self.lcnc = os.path.expanduser('~/linuxcnc')
         if 'root' in self.lcnc:
-            title = 'User Error'
-            msg = ['plasmac2 setup can not be run as a root user']
-            self.myMsg(title, '\n'.join(msg), 1)
+            title = _('User Error')
+            msg = _('plasmac2 setup can not be run as a root user')
+            self.myMsg(title, msg, 1)
             raise SystemExit
         if not os.path.isdir(self.lcnc):
-            title = 'Directory Error'
-            msg = ['The directory ~/linuxcnc does not exist']
-            msg.append('It needs to be created by LinuxCNC')
-            msg.append('to ensure that the structure is correct')
-            self.myMsg(title, '\n'.join(msg), 1)
+            title = _('Directory Error')
+            msg  = _('The directory ~/linuxcnc does not exist')
+            msg += '\n'
+            msg += _('It needs to be created by LinuxCNC')
+            msg += '\n'
+            msg += _('to ensure that the structure is correct')
+            self.myMsg(title, msg, 1)
             raise SystemExit
         self.configs = os.path.join(self.lcnc, 'configs')
         self.b2tf = os.path.dirname(os.path.realpath(sys.argv[0]))
         try:
             repo = git.Repo(os.path.join(self.b2tf, '../'))
         except:
-            title = 'Repository Error'
-            msg = ' is not a git repository'
-            self.myMsg(title, os.path.join(self.b2tf, '../') + msg, 1)
+            title = _('Repository Error')
+            msg  = os.path.join(self.b2tf, '../')
+            msg += ' '
+            msg += _('is not a git repository')
+            self.myMsg(title, msg, 1)
             raise SystemExit
         self.reply = [False, None]
         self.version = '2.232.000'
@@ -83,13 +107,14 @@ class Setup:
         newDir = oldDir + '_plasmac2'
         newIni = os.path.join(newDir, iniFile)
         if os.path.exists(newDir):
-            title = 'Directory Exists'
-            msg = [newDir]
-            msg.append('already exists')
-            msg.append('\n\n')
-            msg.append('Overwrite?')
+            title = _('Directory Exists')
+            msg  = newDir
+            msg += ' '
+            msg += _('already exists')
+            msg += '\n\n'
+            msg += _('Overwrite?')
             self.reply[0] = False
-            self.myMsg(title, ' '.join(msg), 2)
+            self.myMsg(title, msg, 2)
             if not self.reply[0]:
                 return
             if os.path.isfile(newDir) or os.path.islink(newDir):
@@ -209,10 +234,12 @@ class Setup:
                         if not os.path.dirname(halFile):
                             halFile = os.path.join(newDir, halFile)
                         # check for references to qtplasmac
-                        with open(halFile, 'r') as halRead:
-                            if 'qtplasmac' in halRead.read():
-                                qtplasmacHal.append(config[lNum].strip())
-                                config[lNum] = '#{}'.format(config[lNum])
+                        with open(halFile, 'r') as inFile:
+                            for line in inFile:
+                                if 'qtplasmac' in line and line.strip()[0] != '#':
+                                    qtplasmacHal.append(config[lNum].strip())
+                                    config[lNum] = '#{}'.format(config[lNum])
+                                    break
             # add sim panel if required
             if sim:
                 config.insert(0, '[APPLICATIONS]\n' \
@@ -235,26 +262,29 @@ class Setup:
             prefsFile = newIni.replace('ini', 'prefs')
             self.write_version(prefsFile)
             # all done...
-            title = 'Migration Complete'
-            msg = ['Ini file for plasmac2 config is:']
-            msg.append(os.path.join(newDir, iniFile))
+            title = _('Migration Complete')
+            msg  = _('The INI file for the plasmac2 config is')
+            msg += '\n\n'
+            msg += os.path.join(newDir, iniFile)
             if qtplasmacHal:
-                msg.append('\n\n')
-                msg.append('\nThe following hal files contain references to qtplasmac and were commented out in the ini file')
+                msg += '\n\n'
+                msg += _('The following hal files contain references to qtplasmac and were commented out in the ini file')
                 for file in qtplasmacHal:
-                    msg.append('\n\n{}'.format(file.split('=')[1].strip()))
-                msg.append('\n\nIf the files are required then you will need to edit them to suit this config then uncomment them')
+                    msg += '\n\n{}'.format(file.split('=')[1].strip())
+                msg += '\n\n'
+                msg += _('If the files are required then you will need to edit them to suit this config then uncomment them')
         except Exception as e:
-            title = 'Migration error'
-            msg = ['Migration was unsuccessful']
-            msg.append('\n\n')
-            msg.append('Error in line: {}\n'.format(sys.exc_info()[-1].tb_lineno))
-            msg.append(str(e))
-        self.myMsg(title, ' '.join(msg), 1)
+            title = _('Migration error')
+            msg  = _('Migration was unsuccessful')
+            msg += '\n\n'
+            msg += _('Error in line')
+            msg += ': {}\n'.format(sys.exc_info()[-1].tb_lineno)
+            msg += str(e)
+        self.myMsg(title, msg, 1)
 
     def sim(self):
-        title = 'Create A Sim'
-        msg = ['Name:']
+        title = _('Create A Sim')
+        msg = _('Name:')
         self.reply[0] = False
         self.myMsg(title, msg, 2, 'left', 'sim')
         # cancel clicked
@@ -262,9 +292,9 @@ class Setup:
             return
         simName = self.reply[1][0]
         if not simName:
-            title = 'Name Error'
-            msg = ['A name is required for the sim']
-            self.myMsg(title, '\n'.join(msg), 1)
+            title = _('Name Error')
+            msg = _('A name is required for the sim')
+            self.myMsg(title, msg, 1)
             return
         simUnits = self.reply[1][1]
         safe = 0.01 if simUnits == 'metric' else 0.001
@@ -281,19 +311,20 @@ class Setup:
         except:
             simZ = 100.01 if simUnits == 'metric' else 4.001
         if not simName:
-            title = 'Name Error'
-            msg = ['Name is required for sim']
-            self.myMsg(title, '\n'.join(msg), 1)
+            title = _('Name Error')
+            msg = _('Name is required for sim')
+            self.myMsg(title, msg, 1)
             return
         simDir = os.path.join(self.configs, simName)
         if os.path.exists(simDir):
-            title = 'Directory Exists'
-            msg = [simDir]
-            msg.append('already exists')
-            msg.append('\n\n')
-            msg.append('Overwrite?')
+            title = _('Directory Exists')
+            msg  = simDir
+            msg += ' '
+            msg += _('already exists')
+            msg += '\n\n'
+            msg += _('Overwrite?')
             self.reply[0] = False
-            self.myMsg(title, ' '.join(msg), 2)
+            self.myMsg(title, msg, 2)
             if not self.reply[0]:
                 return
         else:
@@ -349,10 +380,15 @@ class Setup:
         prefsFile = os.path.join(simDir, '{}.prefs'.format(simName))
         self.write_version(prefsFile)
         # all done...
-        title = 'Sim Creation Complete'
-        msg = ['Ini file for {} sim config is: {}'.format(simUnits, os.path.join(simDir, simName))]
-        msg.append('X={}   Y={}   Z={}'.format(simX, simY, simZ))
-        self.myMsg(title, '\n\n'.join(msg), 1)
+        title = _('Sim Creation Complete')
+        msg  = _('The INI file for the')
+        msg += ' {} '.format(simUnits)
+        msg += _('sim config is')
+        msg += '\n\n'
+        msg += '{}'.format(os.path.join(simDir, simName))
+        msg += '.ini\n\n'
+        msg += 'X={}   Y={}   Z={}'.format(simX - safe, simY - safe, simZ - safe)
+        self.myMsg(title, msg, 1)
 
     def write_version(self, prefs):
         self.prefs.read(prefs)
@@ -365,7 +401,7 @@ class Setup:
             copy(src, os.path.join(dir, '.'))
 
     def myMsg(self, title, text, buttons=1, justify='center', entry=False):
-        reply = self.msgBox(title, text, buttons, justify, entry)
+        reply = self.msgBox(title, text + '\n', buttons, justify, entry)
         root.wait_window(self.pop)
         return reply
 
