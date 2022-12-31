@@ -1101,6 +1101,8 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Active color', colorActive, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Warning color', colorWarn, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Voltage color', colorVolt, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'Arc OK color', colorArc, str)
+    putPrefs(PREF,'GUI_OPTIONS', 'LED color', colorLed, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Trough color', colorTrough, str)
     for key in togglePins:
         set_toggle_pins(togglePins[key]) 
@@ -2483,7 +2485,7 @@ def user_button_pressed(button, code):
             hal.set_p('plasmac.x-offset', '{:.0f}'.format((xPos - s.position[0]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.y-offset', '{:.0f}'.format((yPos - s.position[1]) / hal.get_value('plasmac.offset-scale')))
             hal.set_p('plasmac.consumable-change', '1')
-            rC(fbuttons + '.button' + button,'configure','-bg',colorOrange)
+            rC(fbuttons + '.button' + button,'configure','-bg',colorActive)
     elif code['code'] == 'framing':
         pass # actioned from button_release
     elif code['code'] == 'load':
@@ -2524,7 +2526,7 @@ def user_button_released(button, code):
             if cutType:
                 comp['cut-type'] = 1
                 text = code['text'][1].replace('\\', '\n')
-                color = colorOrange
+                color = colorActive
             else:
                 comp['cut-type'] = 0
                 text = code['text'][0].replace('\\', '\n')
@@ -3544,17 +3546,17 @@ def vkb_settings(layout, width, height):
 # COLOR CHANGE                                                               #
 ##############################################################################
 def read_colors():
-    global colorFore, colorBack, colorDisable, colorActive
-    global colorWarn, colorVolt, colorTrough, colorOrange, colorYellow
+    global colorFore, colorBack, colorDisable, colorActive, colorWarn
+    global colorVolt, colorArc, colorLed, colorTrough
     colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
-    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#d9d9d9', str)
-    colorDisable = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a3a3a3', str)
+    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#808080', str)
+    colorDisable = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a0a0a0', str)
     colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
     colorWarn = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
-    colorVolt = getPrefs(PREF,'GUI_OPTIONS','Voltage color', '#0000ff', str)
-    colorTrough = getPrefs(PREF,'GUI_OPTIONS','Trough color', '#000000', str)
-    colorOrange = '#FFAA00'
-    colorYellow = '#FFFF00'
+    colorVolt = getPrefs(PREF,'GUI_OPTIONS','Voltage color', '#ff8800', str)
+    colorArc = getPrefs(PREF,'GUI_OPTIONS','Arc OK color', '#ff8800', str)
+    colorLed = getPrefs(PREF,'GUI_OPTIONS','LED color', '#eeff00', str)
+    colorTrough = getPrefs(PREF,'GUI_OPTIONS','Trough color', '#505050', str)
 
 def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
     for b in criticalButtons:
@@ -3680,9 +3682,9 @@ def color_change():
     for led in ['thc-enabled','thc-active']:
         rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorActive)
     for led in ['ohmic','float','up','down']:
-        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorYellow)
-    rC(fleds + '.led-arc-ok','itemconfigure','all','-fill',colorActive)
-    rC(fleds + '.led-torch','itemconfigure','all','-fill',colorOrange)
+        rC(fleds + '.led-{}'.format(led),'itemconfigure','all','-fill',colorLed)
+    rC(fleds + '.led-arc-ok','itemconfigure','all','-fill',colorArc)
+    rC(fleds + '.led-torch','itemconfigure','all','-fill',colorLed)
     # arc voltage
     rC(fplasma + '.arc-voltage','configure','-fg',colorVolt)
     color_user_buttons()
@@ -3700,6 +3702,8 @@ def color_change():
     rC(fsetup + '.m.colors.active','configure','-bg',colorActive,'-activebackground',colorActive)
     rC(fsetup + '.m.colors.warn','configure','-bg',colorWarn,'-activebackground',colorWarn)
     rC(fsetup + '.m.colors.volt','configure','-bg',colorVolt,'-activebackground',colorVolt)
+    rC(fsetup + '.m.colors.arc','configure','-bg',colorArc,'-activebackground',colorArc)
+    rC(fsetup + '.m.colors.led','configure','-bg',colorLed,'-activebackground',colorLed)
     rC(fsetup + '.m.colors.trough','configure','-bg',colorTrough,'-activebackground',colorTrough)
     # notifications
     rC('option','add','*!notification2.Frame.Background',colorBack)
@@ -3715,7 +3719,7 @@ def color_change():
     t.tag_configure('sel', background='red', foreground='blue')
 
 def color_set(option):
-    global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt, colorTrough
+    global colorFore, colorBack, colorDisable, colorActive, colorWarn, colorVolt, colorArc, colorLed, colorTrough
     if option == 'fore':
         color = colorFore
     elif option == 'back':
@@ -3728,6 +3732,10 @@ def color_set(option):
        color = colorWarn
     elif option == 'volt':
        color = colorVolt
+    elif option == 'arc':
+        color = colorArc
+    elif option == 'led':
+        color = colorLed
     elif option == 'trough':
        color = colorTrough
     else:
@@ -3746,6 +3754,10 @@ def color_set(option):
             colorWarn = colors[1]
         elif option == 'volt':
             colorVolt = colors[1]
+        elif option == 'arc':
+            colorArc = colors[1]
+        elif option == 'led':
+            colorLed = colors[1]
         elif option == 'trough':
             colorTrough = colors[1]
         color_change()
@@ -5079,6 +5091,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('button',fsetup + '.m.colors.warn','-command','color_set warn')
     rC('label',fsetup + '.m.colors.voltL','-width', 13,'-text',_('Arc Voltage'),'-anchor','e')
     rC('button',fsetup + '.m.colors.volt','-command','color_set volt')
+    rC('label',fsetup + '.m.colors.arcL','-width', 13,'-text',_('Arc OK'),'-anchor','e')
+    rC('button',fsetup + '.m.colors.arc','-command','color_set arc')
+    rC('label',fsetup + '.m.colors.ledL','-width', 13,'-text',_('LED\'s'),'-anchor','e')
+    rC('button',fsetup + '.m.colors.led','-command','color_set led')
     rC('label',fsetup + '.m.colors.troughL','-width', 13,'-text',_('Slider Trough'),'-anchor','e')
     rC('button',fsetup + '.m.colors.trough','-command','color_set trough')
     # populate color frame
@@ -5094,8 +5110,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',fsetup + '.m.colors.warn','-column',1,'-row',4,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.voltL','-column',0,'-row',5,'-sticky','e','-padx',4,'-pady',(4,4))
     rC('grid',fsetup + '.m.colors.volt','-column',1,'-row',5,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',fsetup + '.m.colors.troughL','-column',0,'-row',6,'-sticky','e','-padx',4,'-pady',(4,4))
-    rC('grid',fsetup + '.m.colors.trough','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.arcL','-column',0,'-row',6,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.arc','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.ledL','-column',0,'-row',7,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.led','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.troughL','-column',0,'-row',8,'-sticky','e','-padx',4,'-pady',(4,4))
+    rC('grid',fsetup + '.m.colors.trough','-column',1,'-row',8,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',fsetup + '.m.colors',0,'-weight',1)
     # populate middle panel
     rC('grid',fsetup + '.m.utilities','-column',0,'-row',0,'-sticky','new')
