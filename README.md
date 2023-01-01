@@ -12,17 +12,16 @@ The portrait screenshot below is a window size of 662 x 918 which is the smalles
 The window may be resized to any larger size and the font size may be changed from 7 to 20 points.
 ## Installation
 ### Requirements for using plasmac2 are:
-  * A working version of LinuxCNC Master branch (V2.9)
+  * A working version of LinuxCNC V2.9 or later
   * A working QtPlasmaC configuration
   * git
   * python3-git
 
 
 ### To install LinuxCNC:
-There are various methods for [installing LinuxCNC](https://forum.linuxcnc.org/9-installing-linuxcnc) shown on the LinuxCNC forum.
+One method is to download the current [LinuxCNC ISO](https://www.linuxcnc.org/iso/linuxcnc-2.8.4-buster.iso) and then changed the sources to the LinuxCNC BuildBot as described [here](http://buildbot.linuxcnc.org/).
 
-An alternative method is to download the current [LinuxCNC ISO](https://www.linuxcnc.org/iso/linuxcnc-2.8.2-buster.iso) and then changed the sources to the LinuxCNC BuildBot as described [here](http://buildbot.linuxcnc.org/).
-
+There are various alternative methods for [installing LinuxCNC](https://forum.linuxcnc.org/9-installing-linuxcnc) shown on the LinuxCNC forum.
 
 ### To install QtPlasmaC:
 Configuring QtPlasmaC for an existing LinuxCNC installation is described [here](http://linuxcnc.org/docs/devel/html/plasma/qtplasmac.html#configuring).
@@ -45,7 +44,7 @@ sudo apt install python3-git
 ### To install plasmac2:
 From a terminal enter:
 ```console
-git clone https://github.com/phillc54/plasmac2 ~/linuxcnc/plasmac2
+git clone https://github.com/phillc54/plasmac2.git ~/linuxcnc/plasmac2
 ```
 
 
