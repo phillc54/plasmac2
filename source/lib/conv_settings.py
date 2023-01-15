@@ -33,19 +33,19 @@ def save_clicked(self):
     valid, self.leadIn = self.conv_is_float(self.liValue.get())
     if not valid:
         msg = _('Invalid LEAD IN entry detected')
-        error += '{}\n\n'.format(msg)
+        error += f'{msg}\n\n'
     valid, self.leadOut = self.conv_is_float(self.loValue.get())
     if not valid:
         msg = _('Invalid LEAD OUT entry detected')
-        error += '{}\n\n'.format(msg)
+        error += f'{msg}\n\n'
     valid, self.smallHoleDia = self.conv_is_float(self.shValue.get())
     if not valid:
         msg = _('Invalid DIAMETER entry detected')
-        error += '{}\n\n'.format(msg)
+        error += f'{msg}\n\n'
     valid, self.smallHoleSpeed = self.conv_is_int(self.hsValue.get())
     if not valid:
         msg = _('Invalid SPEED % entry detected')
-        error += '{}\n\n'.format(msg)
+        error += f'{msg}\n\n'
     if error:
         self.dialog_show_ok(_('Settings Error'), error)
         return
@@ -90,8 +90,8 @@ def show(self):
     self.pstValue.set(self.postAmble)
     self.liValue.set(self.leadIn)
     self.loValue.set(self.leadOut)
-    self.shValue.set('{}'.format(self.smallHoleDia))
-    self.hsValue.set('{}'.format(self.smallHoleSpeed))
+    self.shValue.set(f'{self.smallHoleDia}')
+    self.hsValue.set(f'{self.smallHoleSpeed}')
     if self.origin:
         self.spbValue.set('CENTER')
     else:

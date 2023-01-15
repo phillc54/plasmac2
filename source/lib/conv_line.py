@@ -29,7 +29,7 @@ for f in sys.path:
         if '/usr' in f:
             localeDir = 'usr/share/locale'
         else:
-            localeDir = os.path.join('{}'.format(f.split('/lib')[0]),'share','locale')
+            localeDir = os.path.join(f'{f.split("/lib")[0]}','share','locale')
         break
 gettext.install('linuxcnc', localedir=localeDir)
 
@@ -45,7 +45,7 @@ def preview(self):
             self.convLine['yLineEnd'] = error[2]
             self.convLine['gcodeLine'] = error[3]
         else:
-            error_set(self, '{}\n'.format(error[1]))
+            error_set(self, f'{error[1]}\n')
             return
     elif self.lineCombo.get() == _('LINE BY ANGLE'):
         error = LINE.do_line_by_angle(self, self.l1Value.get(), self.l2Value.get(), \
@@ -55,7 +55,7 @@ def preview(self):
             self.convLine['yLineEnd'] = error[2]
             self.convLine['gcodeLine'] = error[3]
         else:
-            error_set(self, '{}\n'.format(error[1]))
+            error_set(self, f'{error[1]}\n')
             return
     elif self.lineCombo.get() == _('ARC 3P'):
         error = LINE.do_arc_3_points(self, self.l1Value.get(), self.l2Value.get(), \
@@ -66,7 +66,7 @@ def preview(self):
             self.convLine['yLineEnd'] = error[2]
             self.convLine['gcodeLine'] = error[3]
         else:
-            error_set(self, '{}\n'.format(error[1]))
+            error_set(self, f'{error[1]}\n')
             return
     elif self.lineCombo.get() == _('ARC 2P +RADIUS'):
         arcType = '3' if 'CCW' in self.g23bValue.get() else '2'
@@ -77,7 +77,7 @@ def preview(self):
             self.convLine['yLineEnd'] = error[2]
             self.convLine['gcodeLine'] = error[3]
         else:
-            error_set(self, '{}\n'.format(error[1]))
+            error_set(self, f'{error[1]}\n')
             return
     elif self.lineCombo.get() == _('ARC ANGLE +RADIUS'):
         arcType = '3' if 'CCW' in self.g23bValue.get() else '2'
@@ -88,7 +88,7 @@ def preview(self):
             self.convLine['yLineEnd'] = error[2]
             self.convLine['gcodeLine'] = error[3]
         else:
-            error_set(self, '{}\n'.format(error[1]))
+            error_set(self, f'{error[1]}\n')
             return
     if self.convLine['addSegment'] == 1:
         LINE.next_segment(self.fTmp, self.fNgc)
@@ -152,9 +152,9 @@ def clear_widgets(self):
 def set_start_point(self):
     text = _('START')
     self.l1Label['text'] = _('X START')
-    self.l1Value.set('{:0.3f}'.format(self.convLine['xLineStart']))
+    self.l1Value.set(f'{self.convLine["xLineStart"]:0.3f}')
     self.l2Label['text'] = _('Y START')
-    self.l2Value.set('{:0.3f}'.format(self.convLine['yLineStart']))
+    self.l2Value.set(f'{self.convLine["yLineStart"]:0.3f}')
 
 def set_line_point_to_point(self):
     clear_widgets(self)

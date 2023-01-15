@@ -14,7 +14,7 @@ import time
 
 def unload(e):
     print('\nPreceding KeyboardInterrupt exception can be disregarded')
-    raise SystemExit('{}\nunloading plasmac sim panel\n'.format(e))
+    raise SystemExit('f{e}\nunloading plasmac sim panel\n')
 
 def time_out(signum, frame):
     unload('axis gui was closed')

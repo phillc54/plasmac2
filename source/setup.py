@@ -18,7 +18,7 @@ for f in sys.path:
         if '/usr' in f:
             localeDir = 'usr/share/locale'
         else:
-            localeDir = os.path.join('{}'.format(f.split('/lib')[0]),'share','locale')
+            localeDir = os.path.join(f'{f.split("/lib")[0]}','share','locale')
         break
 gettext.install("linuxcnc", localedir=localeDir)
 
@@ -173,7 +173,7 @@ class Setup:
             for lNum in section:
                 if section[lNum].startswith('USER_M_PATH') and 'u' not in done:
                     mPath = config[lNum].split('=')[1].strip()
-                    config[lNum] = 'USER_M_PATH = ./plasmac2:{}\n'.format(mPath)
+                    config[lNum] = f'USER_M_PATH = ./plasmac2:{mPath}\n'
                     done.append('u')
             for option in ['u']:
                 if option == 'u' and option not in done:
@@ -238,7 +238,7 @@ class Setup:
                             for line in inFile:
                                 if 'qtplasmac' in line and line.strip()[0] != '#':
                                     qtplasmacHal.append(config[lNum].strip())
-                                    config[lNum] = '#{}'.format(config[lNum])
+                                    config[lNum] = f'#{config[lNum]}'
                                     break
             # add sim panel if required
             if sim:
@@ -270,7 +270,7 @@ class Setup:
                 msg += '\n\n'
                 msg += _('The following hal files contain references to qtplasmac and were commented out in the ini file')
                 for file in qtplasmacHal:
-                    msg += '\n\n{}'.format(file.split('=')[1].strip())
+                    msg += f'\n\n{file.split("=")[1].strip()}'
                 msg += '\n\n'
                 msg += _('If the files are required then you will need to edit them to suit this config then uncomment them')
         except Exception as e:
@@ -278,7 +278,7 @@ class Setup:
             msg  = _('Migration was unsuccessful')
             msg += '\n\n'
             msg += _('Error in line')
-            msg += ': {}\n'.format(sys.exc_info()[-1].tb_lineno)
+            msg += f': {sys.exc_info()[-1].tb_lineno}\n'
             msg += str(e)
         self.myMsg(title, msg, 1)
 
@@ -332,40 +332,40 @@ class Setup:
         for file in ['custom.hal', 'sim_no_stepgen.tcl', 'sim_panel.py', 'sim_stepgen.tcl', \
                      'user_commands.py', 'user_hal.py', 'user_periodic.py']:
             copy(os.path.join(self.b2tf, 'sim', file), os.path.join(simDir, file))
-        for file in ['{}.ini'.format(simUnits), '{}_material.cfg'.format(simUnits), \
-                     '{}.prefs'.format(simUnits), '{}_tool.tbl'.format(simUnits)]:
+        for file in [f'{simUnits}.ini', f'{simUnits}_material.cfg', \
+                     f'{simUnits}.prefs', f'{simUnits}_tool.tbl']:
             copy(os.path.join(self.b2tf, 'sim', file), os.path.join(simDir, file.replace(simUnits, simName)))
-        with open(os.path.join(simDir, '{}.ini'.format(simName)), 'r') as inFile:
+        with open(os.path.join(simDir, f'{simName}.ini'), 'r') as inFile:
             ini = inFile.readlines()
         index = 0
-        with open(os.path.join(simDir, '{}.ini'.format(simName)), 'w') as outFile:
+        with open(os.path.join(simDir, f'{simName}.ini'), 'w') as outFile:
             for line in ini:
                 if line.startswith('PARAMETER_FILE'):
                     line = 'PARAMETER_FILE          = parameters.txt\n'
                 elif line.startswith('MDI_HISTORY_FILE'):
                     line = 'MDI_HISTORY_FILE        = mdi_history.txt\n'
                 elif line.startswith('MACHINE'):
-                    line = 'MACHINE                 = {}\n'.format(simName)
+                    line = f'MACHINE                 = {simName}\n'
                 elif line.startswith('TOOL_TABLE'):
-                    line = 'TOOL_TABLE              = {}_tool.tbl\n'.format(simName)
+                    line = f'TOOL_TABLE              = {simName}_tool.tbl\n'
                 elif line.startswith('POSITION_FILE'):
                     line = 'POSITION_FILE           = position.txt\n'
                 elif line.startswith('[AXIS_'):
                     index += 1
                 elif line.startswith('MAX_LIMIT'):
                     if index == 1:
-                        line = 'MAX_LIMIT               = {}\n'.format(simX)
+                        line = f'MAX_LIMIT               = {simX}\n'
                     elif index == 2:
-                        line = 'MAX_LIMIT               = {}\n'.format(simY)
+                        line = f'MAX_LIMIT               = {simY}\n'
                     elif index == 3:
-                        line = 'MAX_LIMIT               = {}\n'.format(simZ)
+                        line = f'MAX_LIMIT               = {simZ}\n'
                 elif line.startswith('HOME ') and index == 3:
                     if simUnits == 'metric':
-                        line = 'HOME                    = {}\n'.format(simZ - 5)
+                        line = f'HOME                    = {simZ - 5}\n'
                     else:
-                        line = 'HOME                    = {}\n'.format(simZ - 0.2)
+                        line = f'HOME                    = {simZ - 0.2}\n'
                 elif line.startswith('HOME_OFFSET') and index == 3:
-                    line = 'HOME_OFFSET             = {}\n'.format(simZ)
+                    line = f'HOME_OFFSET             = {simZ}\n'
                 outFile.write(line)
         # remove any existing plasmac2
         if os.path.islink(os.path.join(simDir, 'plasmac2')):
@@ -377,17 +377,17 @@ class Setup:
         # create a link to plasmac2
         os.symlink(os.path.join(self.b2tf), os.path.join(simDir, 'plasmac2'))
         # write the version number
-        prefsFile = os.path.join(simDir, '{}.prefs'.format(simName))
+        prefsFile = os.path.join(simDir, f'{simName}.prefs')
         self.write_version(prefsFile)
         # all done...
         title = _('Sim Creation Complete')
         msg  = _('The INI file for the')
-        msg += ' {} '.format(simUnits)
+        msg += f' {simUnits} '
         msg += _('sim config is')
         msg += '\n\n'
-        msg += '{}'.format(os.path.join(simDir, simName))
+        msg += f'{os.path.join(simDir, simName)}'
         msg += '.ini\n\n'
-        msg += 'X={}   Y={}   Z={}'.format(simX - safe, simY - safe, simZ - safe)
+        msg += f'X={simX - safe}   Y={simY - safe}   Z={simZ - safe}'
         self.myMsg(title, msg, 1)
 
     def write_version(self, prefs):
@@ -397,7 +397,7 @@ class Setup:
 
     def copy_custom_files(self, dir):
         for f in ['commands', 'hal', 'periodic']:
-            src = os.path.join(self.b2tf, 'sim', 'user_{}.py'.format(f))
+            src = os.path.join(self.b2tf, 'sim', f'user_{f}.py')
             copy(src, os.path.join(dir, '.'))
 
     def myMsg(self, title, text, buttons=1, justify='center', entry=False):

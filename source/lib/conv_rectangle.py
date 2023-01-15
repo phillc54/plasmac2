@@ -29,7 +29,7 @@ for f in sys.path:
         if '/usr' in f:
             localeDir = 'usr/share/locale'
         else:
-            localeDir = os.path.join('{}'.format(f.split('/lib')[0]),'share','locale')
+            localeDir = os.path.join(f'{f.split("/lib")[0]}','share','locale')
         break
 gettext.install('linuxcnc', localedir=localeDir)
 
@@ -77,7 +77,7 @@ def radius_button_pressed(self, value, sequence):
         text = _('iRADIUS')
     else:
         text = _('RADIUS')
-    value.set('{} {}'.format(text, sequence))
+    value.set(f'{text} {sequence}')
     auto_preview(self)
 
 def widgets(self):
