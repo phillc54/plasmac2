@@ -719,20 +719,22 @@ def gcode_properties(event=None, reply=None):
             program_filter = inifile.find('FILTER', ext[1:])
         name = os.path.basename(loaded_file)
         if program_filter:
-            props['name'] = _('generated from %s') % name
+            pre = _('generated from')
+            props['name'] =  f'{pre} {name}'
         else:
             props['name'] = name
         size = os.stat(loaded_file).st_size
         lines = int(widgets.text.index('end').split('.')[0])-2
-        props['size'] = _('%(size)s bytes\n%(lines)s gcode lines') % {'size': size, 'lines': lines}
+        pre = [_('bytes'), _('gcode lines')]
+        props['size'] = f'{size} {pre[0]}\n{lines} {pre[1]}'
         if vars.metric.get():
             conv = 1
             units = _('mm')
-            fmt = '%.3f'
+            fmt = 3
         else:
             conv = 1/25.4
             units = _('in')
-            fmt = '%.4f'
+            fmt = 4
         mf = vars.max_speed.get()
         g0 = sum(dist(l[1][:3], l[2][:3]) for l in o.canon.traverse)
         g1 = (sum(dist(l[1][:3], l[2][:3]) for l in o.canon.feed) +
@@ -741,20 +743,23 @@ def gcode_properties(event=None, reply=None):
               sum(dist(l[1][:3], l[2][:3])/min(mf, l[3])  for l in o.canon.arcfeed) +
               sum(dist(l[1][:3], l[2][:3])/mf  for l in o.canon.traverse) +
               o.canon.dwell_time)
-        props['g0'] = '%f %s'.replace('%f', fmt) % (from_internal_linear_unit(g0, conv), units)
-        props['g1'] = '%f %s'.replace('%f', fmt) % (from_internal_linear_unit(g1, conv), units)
+        props['g0'] = f'{from_internal_linear_unit(g0, conv):.{fmt}f} {units}'
+        props['g1'] = f'{from_internal_linear_unit(g1, conv):.{fmt}f} {units}'
         if gt > 120:
-            props['run'] = _('%.1f minutes') % (gt/60)
+            pre = _('minutes)')
+            props['run'] = f'{gt / 60} {pre}'
         else:
-            props['run'] = _('%d seconds') % (int(gt))
+            pre = _('seconds')
+            props['run'] = f'{int(gt)} {pre}'
         min_extents = from_internal_units(o.canon.min_extents, conv)
         max_extents = from_internal_units(o.canon.max_extents, conv)
         for (i, c) in enumerate('xyz'):
             a = min_extents[i]
             b = max_extents[i]
             if a != b:
-                props[c] = _('%(a)f to %(b)f = %(diff)f %(units)s').replace('%f', fmt) % {'a': a, 'b': b, 'diff': b-a, 'units': units}
+                props[c] = f'{a:.{fmt}f} to {b:.{fmt}f} = {b-a:.{fmt}f} {units}'
         gcodeProperties = props
+        props['toollist'] = o.canon.tool_list
     if reply:
         return props
     properties(root_window, _('G-Code Properties'), property_names, props)
@@ -1266,13 +1271,13 @@ def ja_button_setup(widget, button, text):
 
 def ja_button_activated():
     if vars.ja_rbutton.get() in 'xyzabcuvw':
-        widget = getattr(widgets, 'axis_%s' % vars.ja_rbutton.get())
+        widget = getattr(widgets, f'axis_{vars.ja_rbutton.get()}')
         widget.focus()
         rC(fjogf + '.zerohome.zero','configure','-text',vars.ja_rbutton.get().upper() + '0')
         if not homing_order_defined:
             widgets.homebutton.configure(text = _('Home') + ' ' + vars.ja_rbutton.get().upper() )
     else:
-        widget = getattr(widgets, 'joint_%s' % vars.ja_rbutton.get())
+        widget = getattr(widgets, f'joint_{vars.ja_rbutton.get()}')
         widget.focus()
     commands.axis_activated()
 
@@ -1281,13 +1286,13 @@ def joint_mode_switch(a, b, c):
     if vars.motion_mode.get() == linuxcnc.TRAJ_MODE_FREE and s.kinematics_type != linuxcnc.KINEMATICS_IDENTITY:
         rC('grid','forget',fmanual + '.axes')
         rC('grid',fmanual + '.joints','-column','0','-row','0','-padx','2','-sticky','w')
-        widget = getattr(widgets, 'joint_%d' % 0)
+        widget = getattr(widgets, 'joint_0')
         widget.focus()
         vars.ja_rbutton.set(0)
     elif lastMotionMode == linuxcnc.TRAJ_MODE_FREE or not lastMotionMode:
         rC('grid','forget',fmanual + '.joints')
         rC('grid',fmanual + '.axes','-column','0','-row','0','-padx','2','-sticky','w')
-        widget = getattr(widgets, 'axis_%s' % first_axis)
+        widget = getattr(widgets, f'axis_{first_axis}')
         widget.focus()
         vars.ja_rbutton.set(first_axis)
     lastMotionMode = vars.motion_mode.get()
@@ -1782,24 +1787,25 @@ def height_lower():
         return
     global torchHeight
     torchHeight -= 0.1
-    rC(foverride + '.height-override','configure','-text','%0.1fV' % (torchHeight))
-    hal.set_p('plasmac.height-override','%f' %(torchHeight))
+    height_set(f'{torchHeight:.1f}')
 
 def height_raise():
     if rC(foverride + '.raise','cget','-state') == 'disabled':
         return
     global torchHeight
     torchHeight += 0.1
-    rC(foverride + '.height-override','configure','-text','%0.1fV' % (torchHeight))
-    hal.set_p('plasmac.height-override','%f' %(torchHeight))
+    height_set(f'{torchHeight:.1f}')
 
 def height_reset():
     if rC(foverride + '.reset','cget','-state') == 'disabled':
         return
     global torchHeight
     torchHeight = 0
-    rC(foverride + '.height-override','configure','-text','%0.1fV' % (torchHeight))
-    hal.set_p('plasmac.height-override','%f' %(torchHeight))
+    height_set(f'{torchHeight:.1f}')
+
+def height_set(height):
+    rC(foverride + '.height-override','configure','-text',f'{height}V')
+    hal.set_p('plasmac.height-override', height)
 
 
 ##############################################################################
@@ -1814,7 +1820,7 @@ def cut_rec_slider_changed(percent):
 def cut_rec_motion(direction):
     if int(direction):
         speed = float(rC(fcrspeed + '.display.cut-rec-speed','get')) * 0.01
-        hal.set_p('plasmac.paused-motion-speed','%f' % (speed * int(direction)))
+        hal.set_p('plasmac.paused-motion-speed',f'{speed * int(direction):.2f}')
     else:
         hal.set_p('plasmac.paused-motion-speed','0')
 
@@ -2018,7 +2024,7 @@ def send_mdi_command(command):
             new_entry = 0
         if new_entry != 0:
             # if command is already at end of list, don't add it again
-            widgets.mdi_history.insert(history_size - 1, "%s" % command)
+            widgets.mdi_history.insert(history_size - 1, f'{command}')
             history_size += 1
         widgets.mdi_history.see(history_size - 1)
         if history_size > (mdi_history_max_entries + 1):
@@ -2378,7 +2384,7 @@ def user_button_setup():
                 if codes[cn][0] == '%':
                     if codes[cn][-3:] == '.py':
                         if '/' not in codes[cn]:
-                            codes[cn] = '%./' + codes[cn].replace('%','')
+                            codes[cn] = f'%./{codes[cn].replace("%","")}'
                         if os.path.exists(os.path.expanduser(codes[cn][1:])):
                             outCode['code'].append(['python3', os.path.expanduser(codes[cn][1:])])
                         else:
@@ -4634,7 +4640,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('labelframe',foverride,'-text',_('THC Height Override:'),'-relief','flat','-bd',0)
     rC('Button',foverride + '.lower','-text','-','-width',1,'-takefocus',0)
     rC('Button',foverride + '.raise','-text','+','-width',1,'-takefocus',0)
-    rC('label',foverride + '.height-override','-text','%0.1fV' % (torchHeight),'-width',20)
+    rC('label',foverride + '.height-override','-text',f'{torchHeight:.1f}V','-width',20)
     rC('Button',foverride + '.reset','-text',_('Reset'),'-width',1,'-takefocus','0','-width',3)
     # populate the frame
     rC('grid',foverride + '.lower','-column',0,'-row',0,)
