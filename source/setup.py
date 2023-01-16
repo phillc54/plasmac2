@@ -104,7 +104,7 @@ class Setup:
             return
         iniFile = os.path.basename(ini)
         oldDir = os.path.dirname(ini)
-        newDir = oldDir + '_plasmac2'
+        newDir = f'{oldDir}_plasmac2'
         newIni = os.path.join(newDir, iniFile)
         if os.path.exists(newDir):
             title = _('Directory Exists')
@@ -401,7 +401,7 @@ class Setup:
             copy(src, os.path.join(dir, '.'))
 
     def myMsg(self, title, text, buttons=1, justify='center', entry=False):
-        reply = self.msgBox(title, text + '\n', buttons, justify, entry)
+        reply = self.msgBox(title, f'{text}\n', buttons, justify, entry)
         root.wait_window(self.pop)
         return reply
 
