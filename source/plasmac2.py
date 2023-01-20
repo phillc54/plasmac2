@@ -360,7 +360,7 @@ def font_size_changed():
     font = f'{fontName} {fontSize}'
     arcFont = f'{fontName} {str(int(fontSize) * 3)}'
     ngcFont = str(int(fontSize) - 1)
-    rC('font','configure','TkDefaultFont','-family', fontName, '-size', fontSize)
+    rC('font','configure','TkDefaultFont','-family',fontName,'-size',fontSize)
     rC(f'{fplasma}.arc-voltage','configure','-font',arcFont)
     rC('.pane.bottom.t.text','configure','-font',font)
     rC('.info.gcodef.gcodes','configure','-font',font)
@@ -406,7 +406,7 @@ def font_size_changed():
     for w in toolButtons:
         rC(f'.toolbar.{w}','configure','-width',bSize,'-height',bSize)
     for w in matButtons:
-        rC(f'.toolmat.{w}','configure','-width',bSize,'-height',bSize)
+        rC(f'{toolmat}.{w}','configure','-width',bSize,'-height',bSize)
     get_coordinate_font(None)
     set_window_size()
 
@@ -1063,7 +1063,8 @@ def load_setup_clicked():
     pVars.closeDialog.set(restoreSetup['closeDialog'])
     pVars.closeText.set(restoreSetup['closeText'])
     rC(f'{fsetup}.l.gui.zoom','set',restoreSetup['tableZoom'])
-    user_button_load()
+    if not (isPaused or isRunning):
+        user_button_load()
     read_colors()
     color_change()
 
@@ -1099,7 +1100,8 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
     restoreSetup['useVirtKB'] = pVars.useVirtKB.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Use soft keyboard', restoreSetup['useVirtKB'], bool)
-    user_button_save()
+    if not (isPaused or isRunning):
+        user_button_save()
     putPrefs(PREF,'GUI_OPTIONS', 'Foreground color', colorFore, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Background color', colorBack, str)
     putPrefs(PREF,'GUI_OPTIONS', 'Disabled color', colorDisable, str)
@@ -2255,7 +2257,7 @@ def user_button_setup():
     invalidButtons = []
     criticalButtons = []
     row = 1
-    for n in range(1,21):
+    for n in range(1, maxUserButtons + 1):
         bLabel = None
         bName = getPrefs(PREF,'BUTTONS', f'{n} Name', '', str)
         bCode = getPrefs(PREF,'BUTTONS', f'{n} Code', '', str)
@@ -2574,7 +2576,7 @@ def user_button_load():
     rC(f'{fsetup}.r.torch.disabled','delete',0,'end')
     rC(f'{fsetup}.r.torch.enabled','insert','end',getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str))
     rC(f'{fsetup}.r.torch.disabled','insert','end',getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str))
-    for n in range(1, 21):
+    for n in range(1, maxUserButtons + 1):
         rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','delete',0,'end')
         rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','delete',0,'end')
         if getPrefs(PREF,'BUTTONS', f'{n} Name', '', str) or getPrefs(PREF,'BUTTONS', f'{n} Code', '', str):
@@ -2593,7 +2595,7 @@ def user_button_save():
     else:
         rC(f'{fbuttons}.torch-enable','configure','-height',1)
     color_torch()
-    for n in range(1, 21):
+    for n in range(1, maxUserButtons + 1):
         putPrefs(PREF,'BUTTONS', f'{n} Name', rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','get'), str)
         putPrefs(PREF,'BUTTONS', f'{n} Code', rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','get'), str)
         rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','delete',0,'end')
@@ -3571,7 +3573,7 @@ def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
     for b in criticalButtons:
         rC(f'{fbuttons}.button{b}','configure','-bg',colorWarn)
     # user button entries in setup frame
-    for n in range(1, 21):
+    for n in range(1, maxUserButtons + 1):
         if n in invalidButtons:
             rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','configure','-fg',colorWarn)
             rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','configure','-fg',colorWarn)
@@ -3801,14 +3803,13 @@ def set_orient_frames():
         rC('destroy',fbuttons)
         rC('destroy',fportrait)
         rC('destroy',f'{fruns}.material.materials')
+    fportrait = '.fportrait'
     if pVars.orient.get() == 'portrait':
-        fportrait = '.fportrait'
         fruns = '.fportrait.fruns'
         fbuttons = '.fportrait.fbuttons'
         toolmat = f'{fruns}.toolmat'
         rC('frame',fportrait,'-relief','raised','-borderwidth',2)
     else:
-        fportrait = '.fportrait'
         fruns = '.fruns'
         fbuttons = '.fbuttons'
         toolmat = '.toolmat'
@@ -3980,7 +3981,7 @@ def populate_user_buttons():
     else:
         col = 0
         row = 1
-    for n in range(1,21):
+    for n in range(1, maxUserButtons + 1):
         rC('grid','forget',f'{fbuttons}.button{n}')
         if buttonNames[n]['name'] or buttonCodes[n]['code']:
             rC('grid',f'{fbuttons}.button{n}','-column',col,'-row',row,'-sticky','new','-padx',(2,0),'-pady',(2,0))
@@ -4275,6 +4276,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
                     'view_x','view_y','view_y2','view_p','view_t','rotate','clear_plot']
     matButtons   = ['delete','new','reload','save']
+    maxUserButtons = 20
     # allow right-click to select start from line
     o.bind('<Button-3>', rClicker)
     # monkeypatched functions from axis.py
@@ -5164,7 +5166,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',f'{fsetup}.r.ubuttons.canvas.frame.numL','-text',' #','-width',2,'-anchor','e')
     rC('label',f'{fsetup}.r.ubuttons.canvas.frame.nameL','-text',_('Name'),'-width',14,'-anchor','w')
     rC('label',f'{fsetup}.r.ubuttons.canvas.frame.codeL','-text',_('Code'),'-width',60,'-anchor','w')
-    for n in range(1, 21):
+    for n in range(1, maxUserButtons + 1):
         rC('label',f'{fsetup}.r.ubuttons.canvas.frame.num{n}','-text',str(n),'-anchor','e')
         rC('entry',f'{fsetup}.r.ubuttons.canvas.frame.name{n}','-bd',1,'-width',14)
         rC('entry',f'{fsetup}.r.ubuttons.canvas.frame.code{n}','-bd',1)
@@ -5649,28 +5651,25 @@ def user_live_update():
         activeFunction = False
         live_plotter.clear()
     # set X0Y0, laser, and offset_setup buttons state
-    if isIdleHomed:
-        rC(f'{fjogf}.zerohome.zeroxy','configure','-state','normal')
-        rC(f'{fjogf}.zerohome.laser','configure','-state','normal')
-        rC(f'{fsetup}.m.utilities.offsets','configure','-state','normal')
-    else:
-        rC(f'{fjogf}.zerohome.zeroxy','configure','-state','disabled')
-        rC(f'{fjogf}.zerohome.laser','configure','-state','disabled')
-        rC(f'{fsetup}.m.utilities.offsets','configure','-state','disabled')
+    wState = 'normal' if isIdleHomed else 'disabled'
+    rC(f'{fjogf}.zerohome.zeroxy','configure','-state',wState)
+    rC(f'{fjogf}.zerohome.laser','configure','-state',wState)
+    rC(f'{fsetup}.m.utilities.offsets','configure','-state',wState)
     # set height override buttons state
-    if isIdle or isPaused or isRunning:
-        rC(f'{foverride}.raise','configure','-state','normal')
-        rC(f'{foverride}.lower','configure','-state','normal')
-        rC(f'{foverride}.reset','configure','-state','normal')
-    else:
-        rC(f'{foverride}.raise','configure','-state','disabled')
-        rC(f'{foverride}.lower','configure','-state','disabled')
-        rC(f'{foverride}.reset','configure','-state','disabled')
-    # set user buttons state
-    for n in range(1,21):
+    wState = 'normal' if isIdle or isPaused or isRunning else 'disabled'
+    rC(f'{foverride}.raise','configure','-state',wState)
+    rC(f'{foverride}.lower','configure','-state',wState)
+    rC(f'{foverride}.reset','configure','-state',wState)
+    # set material panel state
+    wState = 'normal' if not (isPaused or isRunning) else 'disabled'
+    rC(f'{fruns}.material.materials','configure','-state',wState)
+    rC(f'{fruns}.material.cut-feed-rate','configure','-state',wState)
+    for child in get_all_children(toolmat):
+        rC(child,'configure','-state',wState)
+    for n in range(1, maxUserButtons + 1):
         if buttonCodes[n]['code']:
             if buttonCodes[n]['code'] == 'ohmic-test':
-                if isIdle:
+                if (isIdle or isPaused) and hal.get_value('plasmac.ohmic-probe-enable'):
                     rC(f'{fbuttons}.button{n}','configure','-state','normal')
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
@@ -5695,7 +5694,7 @@ def user_live_update():
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
             elif buttonCodes[n]['code'] == 'torch-pulse':
-                if isIdleHomed and not activeFunction and hal.get_value('plasmac.torch-enable'):
+                if (isIdleHomed or isPaused) and not activeFunction and hal.get_value('plasmac.torch-enable'):
                     rC(f'{fbuttons}.button{n}','configure','-state','normal')
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
@@ -5729,8 +5728,8 @@ def user_live_update():
                     rC(f'{fbuttons}.button{n}','configure','-state','normal')
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
-            elif buttonCodes[n]['code'][0] == '%':
-                if isIdle or isPaused or isRunning:
+            elif 'shell' in buttonCodes[n]['code'][0]:
+                if hal.get_value('halui.machine.is-on'):
                     rC(f'{fbuttons}.button{n}','configure','-state','normal')
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
@@ -5739,6 +5738,10 @@ def user_live_update():
                     rC(f'{fbuttons}.button{n}','configure','-state','normal')
                 else:
                     rC(f'{fbuttons}.button{n}','configure','-state','disabled')
+        wState = 'normal' if not (isPaused or isRunning) else 'disabled'
+        rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','configure','-state',wState)
+        rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','configure','-state',wState)
+
     # material handling
     if materialChangePin != comp['material-change']:
         materialChangePin = comp['material-change']
