@@ -1010,9 +1010,9 @@ def validate_spinbox(widget, spinType, resolution, value, original):
     # must be a good number...
     if widget == f'{fsetup}.l.gui.zoom':
         commands.set_view_t(None, v)
-    elif widget == f'{fsetup}.l.jog.speed':
+    elif widget == f'{fsetup}.l.gui.jogspeed':
         jog_default_changed(value)
-    elif widget == f'{fsetup}.l.cr.speed':
+    elif widget == f'{fsetup}.l.gui.crspeed':
         cut_rec_default_changed(value)
     else:
         param_changed(widget,value)
@@ -1050,7 +1050,7 @@ def save_param_clicked():
 
 def load_setup_clicked():
     fontChanged = False
-    rC(f'{fsetup}.l.jog.speed','set',restoreSetup['jogSpeed'])
+    rC(f'{fsetup}.l.gui.jogspeed','set',restoreSetup['jogSpeed'])
     jog_default_changed(restoreSetup['jogSpeed'])
     if pVars.plasmacMode.get() != restoreSetup['plasmacMode']:
         pVars.plasmacMode.set(restoreSetup['plasmacMode'])
@@ -1090,10 +1090,10 @@ def load_setup_clicked():
         if pVars.kbShortcuts.get() != restoreSetup['kbShortcuts']:
             pVars.kbShortcuts.set(restoreSetup['kbShortcuts'])
             keyboard_bindings(restoreSetup['kbShortcuts'])
-    if int(rC(f'{fsetup}.l.cr.speed','get')) == restoreSetup['crPercent']:
+    if int(rC(f'{fsetup}.l.gui.crspeed','get')) == restoreSetup['crPercent']:
         rC(f'{fcrspeed}.display.cut-rec-speed','set',restoreSetup['crPercent'])
     else:
-        rC(f'{fsetup}.l.cr.speed','set',restoreSetup['crPercent'])
+        rC(f'{fsetup}.l.gui.crspeed','set',restoreSetup['crPercent'])
     pVars.closeDialog.set(restoreSetup['closeDialog'])
     pVars.closeText.set(restoreSetup['closeText'])
     rC(f'{fsetup}.l.gui.zoom','set',restoreSetup['tableZoom'])
@@ -1103,9 +1103,9 @@ def load_setup_clicked():
     color_change()
 
 def save_setup_clicked():
-    if int(rC(f'{fsetup}.l.jog.speed','get')) < minJogSpeed:
-        rC(f'{fsetup}.l.jog.speed','set',minJogSpeed)
-    restoreSetup['jogSpeed'] = rC(f'{fsetup}.l.jog.speed','get')
+    if int(rC(f'{fsetup}.l.gui.jogspeed','get')) < minJogSpeed:
+        rC(f'{fsetup}.l.gui.jogspeed','set',minJogSpeed)
+    restoreSetup['jogSpeed'] = rC(f'{fsetup}.l.gui.jogspeed','get')
     putPrefs(PREF,'GUI_OPTIONS', 'Jog speed', restoreSetup['jogSpeed'], int)
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Mode', restoreSetup['plasmacMode'], int)
@@ -1131,7 +1131,7 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Table zoom', restoreSetup['tableZoom'], float)
     restoreSetup['matDefault'] = pVars.matDefault.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Default material', restoreSetup['matDefault'], int)
-    restoreSetup['crPercent'] = rC(f'{fsetup}.l.cr.speed','get')
+    restoreSetup['crPercent'] = rC(f'{fsetup}.l.gui.crspeed','get')
     putPrefs(PREF,'GUI_OPTIONS', 'Cut recovery speed %', restoreSetup['crPercent'], int)
     rC(f'{fcrspeed}.display.cut-rec-speed','set',restoreSetup['crPercent'])
     restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
@@ -2921,7 +2921,7 @@ def load_materials(mat=None):
             notifications.add('error', f'{title}:\n{msg0}\n')
             return
     insert_materials()
-    rC(f'{fsetup}.l.mats.default','configure','-values',materialNumList)
+    rC(f'{fsetup}.l.gui.matdefault','configure','-values',materialNumList)
     value = getPrefs(PREF,'GUI_OPTIONS', 'Default material', materialNumList[0], int)
     pVars.matDefault.set(value)
     restoreSetup['matDefault'] = value
@@ -5040,13 +5040,29 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',f'{fsetup}.l.gui.coneL','-text',_('Cone Size'),'-anchor','e')
     rC('ComboBox',f'{fsetup}.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-    rC('label',f'{fsetup}.l.gui.popLocationL','-text',_('Popup Location'),'-width', 13,'-anchor','e')
+    rC('label',f'{fsetup}.l.gui.popLocationL','-text',_('Popup Location'),'-width', 14,'-anchor','e')
     rC('ComboBox',f'{fsetup}.l.gui.popLocation','-textvariable','popLocation','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.popLocation','configure','-values',['pointer','gui center','screen center'])
     rC('label',f'{fsetup}.l.gui.zoomL','-text',_('Table Zoom'),'-anchor','e')
     rC('spinbox',f'{fsetup}.l.gui.zoom','-width', 10,'-justify','right','-wrap','true','-from',0.1,'-to',10.0,'-increment',0.1,'-format','%0.1f')
     rC(f'{fsetup}.l.gui.zoom','configure','-validate','key','-vcmd',f'{valspin} %W flt 1 %P %s')
     spinBoxes.append(f'{fsetup}.l.gui.zoom')
+    rC('label',f'{fsetup}.l.gui.jogspeedL','-width', 14,'-text',_('Jog Speed'),'-anchor','e')
+    rC('spinbox',f'{fsetup}.l.gui.jogspeed','-width', 10,'-justify','right','-wrap','true')
+    minJogSpeed = int(float(rC(f'{ftop}.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
+    rC(f'{fsetup}.l.gui.jogspeed','configure','-from',minJogSpeed,'-to',f'{vars.max_speed.get() * 60}','-increment',1)
+    rC(f'{fsetup}.l.gui.jogspeed','configure','-format','%0.0f')
+    rC(f'{fsetup}.l.gui.jogspeed','configure','-validate','key','-vcmd',f'{valspin} %W int 0 %P %s')
+    spinBoxes.append(f'{fsetup}.l.gui.jogspeed')
+    rC('label',f'{fsetup}.l.gui.crspeedL','-width', 14,'-text',_('Cut Rec Speed %'),'-anchor','e')
+    rC('spinbox',f'{fsetup}.l.gui.crspeed','-width', 10,'-justify','right','-wrap','true')
+    minJogSpeed = int(float(rC(f'{ftop}.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
+    rC(f'{fsetup}.l.gui.crspeed','configure','-from',1,'-to',100,'-increment',1)
+    rC(f'{fsetup}.l.gui.crspeed','configure','-format','%0.0f')
+    rC(f'{fsetup}.l.gui.crspeed','configure','-validate','key','-vcmd',f'{valspin} %W int 0 %P %s')
+    spinBoxes.append(f'{fsetup}.l.gui.crspeed')
+    rC('label',f'{fsetup}.l.gui.matdefaultL','-text',_('Default Material'),'-width', 14,'-anchor','e')
+    rC('ComboBox',f'{fsetup}.l.gui.matdefault','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC('label',f'{fsetup}.l.gui.kbShortcutsL','-text',_('Use KB Shortcuts'),'-anchor','e')
     rC('checkbutton',f'{fsetup}.l.gui.kbShortcuts','-variable','kbShortcuts','-command','kb_shortcuts_changed','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',f'{fsetup}.l.gui.useVirtKBL','-text',_('Use Virtual KB'),'-anchor','e')
@@ -5069,70 +5085,30 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',f'{fsetup}.l.gui.popLocationL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',f'{fsetup}.l.gui.popLocation','-column',1,'-row',7,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid',f'{fsetup}.l.gui.zoomL','-column',0,'-row',8,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.zoom','-column',1,'-row',8,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.kbShortcutsL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.kbShortcuts','-column',1,'-row',9,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.useVirtKBL','-column',0,'-row',10,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.useVirtKB','-column',1,'-row',10,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.zoom','-column',1,'-row',8,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.jogspeedL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.jogspeed','-column',1,'-row',9,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.crspeedL','-column',0,'-row',10,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.crspeed','-column',1,'-row',10,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.matdefaultL','-column',0,'-row',11,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.matdefault','-column',1,'-row',11,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.kbShortcutsL','-column',0,'-row',12,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.kbShortcuts','-column',1,'-row',12,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.useVirtKBL','-column',0,'-row',13,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.useVirtKB','-column',1,'-row',13,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',f'{fsetup}.l.gui',0,'-weight',1)
-#    rC('grid','columnconfigure',f'{fsetup}.l.gui',1,'-weight',1)
-
-    # jog frame
-    rC('labelframe',f'{fsetup}.l.jog','-text',_('Default Jog Speed'),'-relief','groove')
-    rC('label',f'{fsetup}.l.jog.speedL','-width', 14,'-text',_('Units Per Minute'),'-anchor','e')
-    rC('spinbox',f'{fsetup}.l.jog.speed','-width', 10,'-justify','right','-wrap','true')
-    minJogSpeed = int(float(rC(f'{ftop}.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
-    rC(f'{fsetup}.l.jog.speed','configure','-from',minJogSpeed,'-to',f'{vars.max_speed.get() * 60}','-increment',1)
-    rC(f'{fsetup}.l.jog.speed','configure','-format','%0.0f')
-    rC(f'{fsetup}.l.jog.speed','configure','-validate','key','-vcmd',f'{valspin} %W int 0 %P %s')
-    spinBoxes.append(f'{fsetup}.l.jog.speed')
-    # populate jog frame
-    rC('grid',f'{fsetup}.l.jog.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.jog.speed','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid','columnconfigure',f'{fsetup}.l.jog',0,'-weight',1)
-#    rC('grid','columnconfigure',f'{fsetup}.l.jog',1,'-weight',1)
-
     # plasmac frame
     rC('labelframe',f'{fsetup}.l.plasmac','-text',_('Plasmac'),'-relief','groove')
     rC('label',f'{fsetup}.l.plasmac.modeL','-width', 13,'-text',_('Mode'),'-anchor','e')
-    rC('ComboBox',f'{fsetup}.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',11,'-justify','right','-editable',0)
+    rC('ComboBox',f'{fsetup}.l.plasmac.mode','-modifycmd','mode_changed','-textvariable','plasmacMode','-bd',1,'-width',12,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.plasmac.mode','configure','-values',[0,1,2])
     # populate plasmac frame
     rC('grid',f'{fsetup}.l.plasmac.modeL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',f'{fsetup}.l.plasmac.mode','-column',1,'-row',0,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',f'{fsetup}.l.plasmac',0,'-weight',1)
-#    rC('grid','columnconfigure',f'{fsetup}.l.plasmac',1,'-weight',1)
-
-    # material frame
-    rC('labelframe',f'{fsetup}.l.mats','-text',_('Material'),'-relief','groove')
-    rC('label',f'{fsetup}.l.mats.defaultL','-width', 13,'-text',_('Default'),'-anchor','e')
-    rC('ComboBox',f'{fsetup}.l.mats.default','-modifycmd','change_default_material','-textvariable','matDefault','-bd',1,'-width',11,'-justify','right','-editable',0)
-    # populate material frame
-    rC('grid',f'{fsetup}.l.mats.defaultL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.mats.default','-column',1,'-row',0,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
-    rC('grid','columnconfigure',f'{fsetup}.l.mats',0,'-weight',1)
-#    rC('grid','columnconfigure',f'{fsetup}.l.mats',1,'-weight',1)
-
-    # cut recovery frame
-    rC('labelframe',f'{fsetup}.l.cr','-text',_('Cut Recovery'),'-relief','groove')
-    rC('label',f'{fsetup}.l.cr.speedL','-width', 13,'-text',_('Speed %'),'-anchor','e')
-    rC('spinbox',f'{fsetup}.l.cr.speed','-width', 10,'-justify','right','-wrap','true')
-    minJogSpeed = int(float(rC(f'{ftop}.jogspeed.s','cget','-from')) * vars.max_speed.get() * 60)
-    rC(f'{fsetup}.l.cr.speed','configure','-from',1,'-to',100,'-increment',1)
-    rC(f'{fsetup}.l.cr.speed','configure','-format','%0.0f')
-    rC(f'{fsetup}.l.cr.speed','configure','-validate','key','-vcmd',f'{valspin} %W int 0 %P %s')
-    spinBoxes.append(f'{fsetup}.l.cr.speed')
-    # populate cut recovery frame
-    rC('grid',f'{fsetup}.l.cr.speedL','-column',0,'-row',0,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.cr.speed','-column',1,'-row',0,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid','columnconfigure',f'{fsetup}.l.cr',0,'-weight',1)
-#    rC('grid','columnconfigure',f'{fsetup}.l.cr',1,'-weight',1)
     #populate left panel
     rC('grid',f'{fsetup}.l.gui','-column',0,'-row',0,'-sticky','new')
-    rC('grid',f'{fsetup}.l.jog','-column',0,'-row',1,'-sticky','new')
     rC('grid',f'{fsetup}.l.plasmac','-column',0,'-row',2,'-sticky','new')
-    rC('grid',f'{fsetup}.l.mats','-column',0,'-row',3,'-sticky','new')
-    rC('grid',f'{fsetup}.l.cr','-column',0,'-row',4,'-sticky','new')
 
     # middle panel for utilities
     rC('frame',f'{fsetup}.m')
@@ -5231,13 +5207,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',f'{fsetup}.r.ubuttons.canvas.frame.nameL','-column',1,'-row',0,'-sticky','nw','-padx',(4,0))
     rC('grid',f'{fsetup}.r.ubuttons.canvas.frame.codeL','-column',2,'-row',0,'-sticky','nw','-padx',(4,4))
     rC('grid','columnconfigure',f'{fsetup}.r.ubuttons.canvas.frame',2,'-weight',1)
-
     # frame for shutdown message
     rC('labelframe',f'{fsetup}.r.shutdown','-text',_('Shutdown Message'),'-relief','groove')
     rC('entry',f'{fsetup}.r.shutdown.msg','-textvariable','closeText','-bd',1,'-width',54)
     rC('grid',f'{fsetup}.r.shutdown.msg','-column',0,'-row',0,'-sticky','new','-padx',4,'-pady',(0,4))
     rC('grid','columnconfigure',f'{fsetup}.r.shutdown',0,'-weight',1)
-
     # populate right panel
     rC('grid',f'{fsetup}.r.torch','-column',0,'-row',0,'-sticky','new')
     rC('grid',f'{fsetup}.r.ubuttons','-column',0,'-row',1,'-sticky','nsew')
@@ -5308,7 +5282,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     pVars.ohmicEnable.set(value)
     hal.set_p('plasmac.ohmic-probe-enable', str(value))
     value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
-    rC(f'{fsetup}.l.jog.speed','set',value)
+    rC(f'{fsetup}.l.gui.jogspeed','set',value)
     restoreSetup['jogSpeed'] = value
     set_jog_slider(value / vars.max_speed.get() / 60)
     value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str)
@@ -5330,7 +5304,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     restoreSetup['tableZoom'] = value
     value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
     restoreSetup['crPercent'] = value
-    rC(f'{fsetup}.l.cr.speed','set',value)
+    rC(f'{fsetup}.l.gui.crspeed','set',value)
     # check for valid onboard virtual keyboard
     vkb_validate()
     if vkbData['valid']:
