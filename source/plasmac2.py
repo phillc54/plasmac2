@@ -143,14 +143,14 @@ class plasmacPopUp(Tkinter.Toplevel):
         lbl2 = Tkinter.Label(f2, text=_('Leadin Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
         lbl2.pack(side='left')
         leadinLength = Tkinter.Spinbox(f2, fg=colorFore, bg=colorBack, textvariable=self.leadLength, width=10)
-        leadinLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        leadinLength.configure(highlightthickness=0)
         leadinLength.pack(side='left')
         f2.pack(padx=4, pady=4, anchor='w')
         f3 = Tkinter.Frame(self.frm, bg=colorBack)
         lbl3 = Tkinter.Label(f3, text=_('Leadin Angle:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
         lbl3.pack(side='left')
         leadinAngle = Tkinter.Spinbox(f3, fg=colorFore, bg=colorBack, textvariable=self.leadAngle, width=10)
-        leadinAngle.configure(font=(fontName, fontSize), highlightthickness=0)
+        leadinAngle.configure(highlightthickness=0)
         leadinAngle.pack(side='left')
         f3.pack(padx=4, pady=4, anchor='w')
         self.leadIn.set(False)
@@ -171,14 +171,14 @@ class plasmacPopUp(Tkinter.Toplevel):
         lbl1 = Tkinter.Label(f1, text=_('X Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
         lbl1.pack(side='left')
         xLength = Tkinter.Entry(f1, fg=colorFore, bg=colorBack, textvariable=self.xLength, width=10)
-        xLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        xLength.configure(highlightthickness=0)
         xLength.pack(side='left')
         f1.pack(padx=4, pady=4, anchor='w')
         f2 = Tkinter.Frame(self.frm, bg=colorBack)
         lbl2 = Tkinter.Label(f2, text=_('Y Length:'), fg=colorFore, bg=colorBack, width=12, anchor='e')
         lbl2.pack(side='left')
         yLength = Tkinter.Entry(f2, fg=colorFore, bg=colorBack, textvariable=self.yLength, width=10)
-        yLength.configure(font=(fontName, fontSize), highlightthickness=0)
+        yLength.configure(highlightthickness=0)
         yLength.pack(side='left')
         f2.pack(padx=4, pady=4, anchor='w')
         self.xLength.set(getPrefs(PREF,'SINGLE_CUT', 'X length', 0, float))
@@ -353,17 +353,19 @@ def mode_changed():
 def cone_size_changed():
     o.set_cone_basesize(float(rC(f'{fsetup}.l.gui.cone','get')))
 
-def font_size_changed():
-    global fontName, fontSize, startFontSize
-    fontName = 'sans'
-    fontSize = pVars.fontSize.get()
-    font = f'{fontName} {fontSize}'
-    arcFont = f'{fontName} {str(int(fontSize) * 3)}'
-    ngcFont = str(int(fontSize) - 1)
-    rC('font','configure','TkDefaultFont','-family',fontName,'-size',fontSize)
-    rC(f'{fplasma}.arc-voltage','configure','-font',arcFont)
-    rC('.pane.bottom.t.text','configure','-font',font)
-    rC('.info.gcodef.gcodes','configure','-font',font)
+def font_changed(value=0):
+    if value:
+        code_font_list_box()
+        if 'mono' not in pVars.codeFont.get().lower():
+            pVars.codeFont.set(pVars.guiFont.get())
+    global lastFontSize
+    rC('font','configure','TkDefaultFont','-family',pVars.guiFont.get(),'-size',pVars.fontSize.get())
+    rC('font','configure','fontGui','-family',pVars.guiFont.get(),'-size',pVars.fontSize.get())
+    rC('font','configure','fontArc','-family',pVars.guiFont.get(),'-size',int(pVars.fontSize.get())*3)
+    rC('font','configure','fontCode','-family',pVars.codeFont.get(),'-size',pVars.fontSize.get())
+    rC('.info.gcodef.gcodes','configure','-font','fontGui')
+    rC(f'{fplasma}.arc-voltage','configure','-font','fontArc')
+    rC('.pane.bottom.t.text','configure','-font','fontCode')
     if s.paused:
         rC(ftabs,'itemconfigure','cutrecs','-text',_('Cut Recovery'))
     else:
@@ -392,23 +394,46 @@ def font_size_changed():
     rC(f'{fright}.fnumbers','configure','-bd',2)
     rC(f'{fright}.fstats','configure','-bd',2)
     for box in spinBoxes:
-        rC(box,'configure','-font',f'{fontName} {fontSize}')
+        rC(box,'configure','-font','fontGui')
     for box in rSpinBoxes:
-        rC(box,'configure','-font',f'{fontName} {fontSize}')
-    ledFrame = int(fontSize) * 2
+        rC(box,'configure','-font','fontGui')
+    ledFrame = int(pVars.fontSize.get()) * 2
     ledSize = ledFrame - 2
-    ledScale = int(fontSize) / int(startFontSize)
-    startFontSize = fontSize
+    ledScale = int(pVars.fontSize.get()) / int(lastFontSize)
+    lastFontSize = pVars.fontSize.get()
     for led in wLeds:
         rC(led,'configure','-width',ledFrame,'-height',ledFrame)
         rC(led,'scale',1,1,1,ledScale,ledScale)
-    bSize = int(int(fontSize) / 10 * 24) if int(fontSize) > 10 else 24
+    bSize = int(int(pVars.fontSize.get()) / 10 * 24) if int(pVars.fontSize.get()) > 10 else 24
     for w in toolButtons:
         rC(f'.toolbar.{w}','configure','-width',bSize,'-height',bSize)
     for w in matButtons:
         rC(f'{toolmat}.{w}','configure','-width',bSize,'-height',bSize)
     get_coordinate_font(None)
     set_window_size()
+    # set combobox list widths
+    longest = (max(rC(f'{fsetup}.l.gui.fgui','cget','-values'), key=len))
+    l = Label(bd=0, padx=0, pady=0, highlightthickness=0, font='fontGui', text=longest)
+    ll = int(rC('winfo','reqwidth',l)) + 20
+    rC(f'{fsetup}.l.gui.fgui','configure','-listboxwidth',ll)
+    longest = (max(rC(f'{fsetup}.l.gui.fcode','cget','-values'), key=len))
+    l = Label(bd=0, padx=0, pady=0, highlightthickness=0, font='fontCode', text=longest)
+    ll = int(rC('winfo','reqwidth',l)) + 20
+    rC(f'{fsetup}.l.gui.fcode','configure','-listboxwidth',ll)
+    if rC(f'{fruns}.material.materials','cget','-values'):
+        material_list_width()
+
+def code_font_list_box():
+    fontsCodes = fontsCode[:]
+    fontsCodes.append(pVars.guiFont.get())
+    rC(f'{fsetup}.l.gui.fcode','configure','-values',sorted(fontsCodes))
+
+def material_list_width():
+    if rC(f'{fruns}.material.materials','cget','-values'):
+        longest = (max(rC(f'{fruns}.material.materials','cget','-values'), key=len))
+        l = Label(bd=0, padx=0, pady=0, highlightthickness=0, font='fontGui', text=longest)
+        ll = int(rC('winfo','reqwidth',l)) + 20
+        rC(f'{fruns}.material.materials','configure','-listboxwidth',ll)
 
 def close_window():
     rC('focus',f'{fbuttons}.torch-enable')
@@ -449,9 +474,9 @@ def set_window_size():
                      '19': [1366, 1438,1240, 188], '20': [1442, 1514,1310, 196],
                     }
             offset = 1 if pmPort else 0
-            height = wSize[fontSize][offset]
-            width  = wSize[fontSize][2]
-            bPane  = wSize[fontSize][3]
+            height = wSize[pVars.fontSize.get()][offset]
+            width  = wSize[pVars.fontSize.get()][2]
+            bPane  = wSize[pVars.fontSize.get()][3]
 
         else:
             # window height, bottom pane height
@@ -463,9 +488,9 @@ def set_window_size():
                      '17': [811, 172], '18': [858, 180],
                      '19': [882, 188], '20': [932, 196],
                     }
-            height = wSize[fontSize][0]
+            height = wSize[pVars.fontSize.get()][0]
             width = int(height * 1.75)
-            bPane = wSize[fontSize][1]
+            bPane = wSize[pVars.fontSize.get()][1]
         last = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
         rE(f'.pane paneconfigure $pane_top -minsize {bPane}')
         rE(f'.pane paneconfigure $pane_bottom -minsize {bPane}')
@@ -1024,6 +1049,7 @@ def save_param_clicked():
     putPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', value, bool)
 
 def load_setup_clicked():
+    fontChanged = False
     rC(f'{fsetup}.l.jog.speed','set',restoreSetup['jogSpeed'])
     jog_default_changed(restoreSetup['jogSpeed'])
     if pVars.plasmacMode.get() != restoreSetup['plasmacMode']:
@@ -1037,7 +1063,15 @@ def load_setup_clicked():
         set_orientation()
     if pVars.fontSize.get() != restoreSetup['fontSize']:
         pVars.fontSize.set(restoreSetup['fontSize'])
-        font_size_changed()
+        fontChanged = True
+    if pVars.guiFont.get() != restoreSetup['guiFont']:
+        pVars.guiFont.set(restoreSetup['guiFont'])
+        fontChanged = True
+    if pVars.codeFont.get() != restoreSetup['codeFont']:
+        pVars.codeFont.set(restoreSetup['codeFont'])
+        fontChanged = True
+    if fontChanged:
+        font_changed()
     if pVars.coneSize.get() != restoreSetup['coneSize']:
         pVars.coneSize.set(restoreSetup['coneSize'])
         cone_size_changed()
@@ -1085,6 +1119,10 @@ def save_setup_clicked():
     putPrefs(PREF,'GUI_OPTIONS', 'Orientation', restoreSetup['orient'], str)
     restoreSetup['fontSize'] = pVars.fontSize.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Font size', restoreSetup['fontSize'], str)
+    restoreSetup['guiFont'] = pVars.guiFont.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'GUI font', restoreSetup['guiFont'], str)
+    restoreSetup['codeFont'] = pVars.codeFont.get()
+    putPrefs(PREF,'GUI_OPTIONS', 'Gcode font', restoreSetup['codeFont'], str)
     restoreSetup['coneSize'] = pVars.coneSize.get()
     putPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', restoreSetup['coneSize'], float)
     restoreSetup['popLocation'] = pVars.popLocation.get()
@@ -2052,7 +2090,7 @@ def get_coordinate_font(large):
     global coordinate_linespace
     global coordinate_charwidth
     global fontbase
-    coordinate_font = f'monospace {fontSize}'
+    coordinate_font = f'monospace {pVars.fontSize.get()}'
     if coordinate_font not in font_cache:
         font_cache[coordinate_font] = \
             glnav.use_pango_font(coordinate_font, 0, 128)
@@ -2760,7 +2798,7 @@ def insert_materials():
     mats = []
     materialNumList = []
     for matnum in sorted(materialFileDict):
-        mats.append(f'{matnum:07d}: {materialFileDict[matnum]["name"]}')
+        mats.append(f'{matnum}: {materialFileDict[matnum]["name"]}')
         materialNumList.append(matnum)
     rC(f'{fruns}.material.materials','configure','-values',mats)
 
@@ -2899,6 +2937,7 @@ def load_materials(mat=None):
     index = f'@{materialNumList.index(pVars.matDefault.get())}'
     rC(f'{fruns}.material.materials','setvalue',index)
     display_selected_material(pVars.matDefault.get())
+    material_list_width()
     getMaterialBusy = False
 
 def change_default_material():
@@ -3785,7 +3824,7 @@ def set_orientation():
     user_button_setup()
     populate_settings_frame()
     for box in rSpinBoxes:
-        rC(box,'configure','-font',f'{fontName} {fontSize}')
+        rC(box,'configure','-font','fontGui')
     color_change()
     set_window_size()
     load_materials()
@@ -4062,9 +4101,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
                     VER = line.split('v')[1].split('<')[0]
                     break
         putPrefs(PREF,'GUI_OPTIONS', 'Version', VER, str)
-    # set the default font
-    fontName = 'sans'
-    fontSize = startFontSize = '10'
     # tk widget variables
     pVars = nf.Variables(root_window,
              ('plasmatool', StringVar),
@@ -4091,6 +4127,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('jogSpeed', DoubleVar),
              ('plasmacMode', IntVar),
              ('fontSize', StringVar),
+             ('guiFont', StringVar),
+             ('codeFont', StringVar),
              ('coneSize', DoubleVar),
              ('popLocation', StringVar),
              ('kerfWidth', DoubleVar),
@@ -4144,6 +4182,10 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     restoreSetup['orient'] = pVars.orient.get()
     pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
     restoreSetup['fontSize'] = pVars.fontSize.get()
+    pVars.guiFont.set(getPrefs(PREF,'GUI_OPTIONS','GUI font', 'Sans', str))
+    restoreSetup['guiFont'] = pVars.guiFont.get()
+    pVars.codeFont.set(getPrefs(PREF,'GUI_OPTIONS','Gcode font', 'Sans', str))
+    restoreSetup['codeFont'] = pVars.codeFont.get()
     # make some widget names to save typing
     ftop = '.pane.top'
     ftabs = f'{ftop}.tabs'
@@ -4168,7 +4210,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     fcrleadin = f'{fcutrecs}.leadins'
     fparam = '.param'
     fsetup = '.setup'
-#    spinBoxes = []
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
     torchEnable = {}
@@ -4177,20 +4218,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
     set_orient_frames()
     recreate_widget_list()
-    # # recreate widget list to move active gcodes and add new widgets
-    # widget_list_new = []
-    # for l in widget_list:
-    #     if '.gcodes' in l[2]:
-    #         l = ('code_text', Text, '.info.gcodef.gcodes')
-    #     widget_list_new.append(l)
-    # widget_list_new.append(('buttonFrame', Frame, fbuttons))
-    # widget_list_new.append(('convFrame', Frame, '.fconv'))
-    # widget_list_new.append(('toolFrame', Frame, '.toolconv'))
-    # widget_list_new.append(('materials', bwidget.ComboBox, f'{fruns}.material.materials'))
-    # widget_list_new.append(('kerfWidth', Spinbox, f'{fruns}.material.kerf-width'))
-    # widget_list_new.append(('view_t', Button, '.toolbar.view_t'))
-    # widgets = nf.Widgets(root_window, *widget_list_new)
-
     wLeds = {f'{fleds}.led-arc-ok': [_('Arc OK'), 8], \
              f'{fleds}.led-torch': [_('Torch On'), 8], \
              f'{fleds}.led-breakaway': [_('Break'), 8], \
@@ -4331,7 +4358,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.set_orientation = set_orientation
     TclCommands.button_action = button_action
     TclCommands.mode_changed = mode_changed
-    TclCommands.font_size_changed = font_size_changed
+    TclCommands.font_changed = font_changed
     TclCommands.cone_size_changed = cone_size_changed
     TclCommands.height_raise = height_raise
     TclCommands.height_lower = height_lower
@@ -4360,7 +4387,24 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.key_released = key_released
     TclCommands.color_set = color_set
     commands = TclCommands(root_window)
-
+    # set up the fonts
+    lastFontSize = pVars.fontSize.get()
+    fontsCode = []
+    fontsGui = []
+    for font in rC('font','families'):
+        if 'caps' in font.lower() or 'slanted' in font.lower() or 'light' in font.lower() or 'dingbat' in font.lower() or 'symbols' in font.lower():
+            pass
+        else:
+            if 'mono' in font.lower() or 'courier' in font.lower():
+                if font not in fontsCode:
+                    fontsCode.append(font)
+                    
+            else:
+                if font not in fontsGui:
+                    fontsGui.append(font)
+    rC('font','create','fontGui','-family',pVars.guiFont.get(),'-size',pVars.fontSize.get())
+    rC('font','create','fontArc','-family',pVars.guiFont.get(),'-size',int(pVars.fontSize.get())*3)
+    rC('font','create','fontCode','-family',pVars.codeFont.get(),'-size',pVars.fontSize.get())
 
 ##############################################################################
 # GUI ALTERATIONS AND ADDITIONS                                              #
@@ -4985,8 +5029,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('ComboBox',f'{fsetup}.l.gui.orient','-modifycmd','set_orientation','-textvariable','orient','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.orient','configure','-values',['landscape','portrait'])
     rC('label',f'{fsetup}.l.gui.fsizeL','-text',_('Font Size'),'-anchor','e')
-    rC('ComboBox',f'{fsetup}.l.gui.fsize','-modifycmd','font_size_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC('ComboBox',f'{fsetup}.l.gui.fsize','-modifycmd','font_changed','-textvariable','fontSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.fsize','configure','-values',[7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+    rC('label',f'{fsetup}.l.gui.fguiL','-text',_('GUI Font'),'-anchor','e')
+    rC('ComboBox',f'{fsetup}.l.gui.fgui','-modifycmd','font_changed 1','-textvariable','guiFont','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC(f'{fsetup}.l.gui.fgui','configure','-values',sorted(fontsGui))
+    rC('label',f'{fsetup}.l.gui.fcodeL','-text',_('Gcode Font'),'-anchor','e')
+    rC('ComboBox',f'{fsetup}.l.gui.fcode','-modifycmd','font_changed','-textvariable','codeFont','-bd',1,'-width',10,'-justify','right','-editable',0)
+    code_font_list_box()
     rC('label',f'{fsetup}.l.gui.coneL','-text',_('Cone Size'),'-anchor','e')
     rC('ComboBox',f'{fsetup}.l.gui.cone','-modifycmd','cone_size_changed','-textvariable','coneSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.cone','configure','-values',[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
@@ -5010,16 +5060,20 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('grid',f'{fsetup}.l.gui.orient','-column',1,'-row',2,'-sticky','ew','-padx',(0,4),'-pady',(4,0))
     rC('grid',f'{fsetup}.l.gui.fsizeL','-column',0,'-row',3,'-sticky','e','-padx',(4,0),'-pady',(4,4))
     rC('grid',f'{fsetup}.l.gui.fsize','-column',1,'-row',3,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.coneL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.cone','-column',1,'-row',4,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.popLocationL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.popLocation','-column',1,'-row',5,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.zoomL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.zoom','-column',1,'-row',6,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.kbShortcutsL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.kbShortcuts','-column',1,'-row',7,'-sticky','e','-padx',(0,4),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.useVirtKBL','-column',0,'-row',8,'-sticky','e','-padx',(4,0),'-pady',(4,4))
-    rC('grid',f'{fsetup}.l.gui.useVirtKB','-column',1,'-row',8,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.fguiL','-column',0,'-row',4,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.fgui','-column',1,'-row',4,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.fcodeL','-column',0,'-row',5,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.fcode','-column',1,'-row',5,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.coneL','-column',0,'-row',6,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.cone','-column',1,'-row',6,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.popLocationL','-column',0,'-row',7,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.popLocation','-column',1,'-row',7,'-sticky','ew','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.zoomL','-column',0,'-row',8,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.zoom','-column',1,'-row',8,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.kbShortcutsL','-column',0,'-row',9,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.kbShortcuts','-column',1,'-row',9,'-sticky','e','-padx',(0,4),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.useVirtKBL','-column',0,'-row',10,'-sticky','e','-padx',(4,0),'-pady',(4,4))
+    rC('grid',f'{fsetup}.l.gui.useVirtKB','-column',1,'-row',10,'-sticky','e','-padx',(0,4),'-pady',(4,4))
     rC('grid','columnconfigure',f'{fsetup}.l.gui',0,'-weight',1)
 #    rC('grid','columnconfigure',f'{fsetup}.l.gui',1,'-weight',1)
 
@@ -5331,7 +5385,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     halPinList = hal.get_info_pins()
     load_param_clicked()
     mode_changed()
-    font_size_changed()
+    font_changed()
     ucFile = os.path.join(configPath, 'user_commands.py')
     if os.path.isfile(ucFile):
         exec(compile(open(ucFile, "rb").read(), ucFile, 'exec'))
@@ -5923,7 +5977,7 @@ def user_live_update():
                 rC('grid','forget',f'{fsetup}.r.ubuttons.xscroll')
         if int(rC('winfo','height',f'{fsetup}.r.ubuttons.canvas.frame')) > \
            int(rC('winfo','height',f'{fsetup}.r.ubuttons')) - \
-           (int(fontSize) * 2 + 16 * rC('winfo','ismapped',f'{fsetup}.r.ubuttons.xscroll')):
+           (int(pVars.fontSize.get()) * 2 + 16 * rC('winfo','ismapped',f'{fsetup}.r.ubuttons.xscroll')):
             if not rC('winfo','ismapped',f'{fsetup}.r.ubuttons.yscroll'):
                 rC('grid',f'{fsetup}.r.ubuttons.yscroll','-column',0,'-row',0,'-sticky','nsw','-padx',(4,0))
         else:
