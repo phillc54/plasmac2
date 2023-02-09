@@ -4079,7 +4079,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     from importlib import reload
     from plasmac import run_from_line as RFL
     import conversational
-    import git
+    try:
+        import git
+        p2Updater = True
+    except:
+        p2Updater = False
     imagePath = os.path.join(libPath, 'images') # our own images
     imageAxis = os.path.join(BASE, 'share', 'axis', 'images') # images pinched from Axis
     if not os.path.isdir('/tmp/plasmac'):
@@ -4810,16 +4814,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('.menu','add','cascade','-menu','.menu.help')
     rC('setup_menu_accel','.menu','end',_('_Help'))
     rC('.menu.help','delete',0,1)
-    rC('.menu.help','add','command','-command','update_plasmac2')
-    rC('setup_menu_accel','.menu.help','end',_('_Update'))
-    rC('.menu.help','add','separator')
+    if p2Updater:
+        rC('.menu.help','add','command','-command','update_plasmac2')
+        rC('setup_menu_accel','.menu.help','end',_('_Update'))
+        rC('.menu.help','add','separator')
     rC('.menu.help','add','command','-command','wm transient .about .;wm deiconify .about;show_all .about.message;focus .about.ok')
     rC('setup_menu_accel','.menu.help','end',_('About AXIS'))
-    rC('.menu.help','add','separator')
-    rC('.menu.help','add','command','-command','wm transient .keys .;wm deiconify .keys; focus .keys.ok')
-    rC('setup_menu_accel','.menu.help','end',_('Keyboard Shortcuts'))
-    rC('.menu.help','add','command','-command','wm transient .keyp .;wm deiconify .keyp; focus .keyp.ok')
-    rC('setup_menu_accel','.menu.help','end',_('Keypad Shortcuts'))
 
     # rework the status bar
     rC('grid','forget',f'{ftop}.gcodel')
@@ -5372,6 +5372,12 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     ucFile = os.path.join(configPath, 'user_commands.py')
     if os.path.isfile(ucFile):
         exec(compile(open(ucFile, "rb").read(), ucFile, 'exec'))
+    if not p2Updater:
+        title = _('UPDATER ERROR')
+        msg0 = _('Cannot find python3-git module')
+        msg1 = _('Updates will be unavilable')
+        msg2= _('Install with sudo apt install python3-git')
+        notifications.add('error', f'{title}:\n{msg0}\n{msg1}\n{msg2}\n')
 else:
     firstRun = 'invalid'
     title = _('LOAD ERROR')
