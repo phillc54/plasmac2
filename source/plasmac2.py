@@ -1689,25 +1689,28 @@ def offsets_show(toolFile):
     text.append(_('1. Place some scrap material under the torch'))
     text.append(_('2. Touchoff the torch to X0Y0'))
     text.append(_('3. Mark the material with a torch pulse'))
-    text.append(_('4. Jog until the peripheral is close to the mark'))
-    text.append(_('5. Click the appropriate button to activate the peripheral'))
+    text.append(_('4. Click the appropriate button to activate the peripheral'))
     reply = plasmacPopUp('offsets', _('Set Peripheral Offsets'), ' \n'.join(text)).reply
     if reply == 'laser':
+        comp['laser-on'] = True
         offsets_laser_clicked()
     elif reply == 'scribe':
+        comp['offset-set-scribe'] = True
         offsets_scribe_clicked(toolFile)
     elif reply == 'probe':
+        comp['offset-set-probe'] = True
         offsets_probe_clicked()
     else:
         comp['laser-on'] = False
-        comp['offset-set-probe'] = False
         comp['offset-set-scribe'] = False
+        comp['offset-set-probe'] = False
         return False
     return True
 
 def offsets_laser_clicked():
     reply = plasmacPopUp('yesno', 'Set Laser Offsets', ' \n'.join(offsets_text)).reply
     if not reply:
+        comp['laser-on'] = False
         return
     newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
                   'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
@@ -1721,6 +1724,7 @@ def offsets_laser_clicked():
         title = _('Laser Offsets')
         msg = _('Laser offsets have been saved')
         plasmacPopUp('info', title, msg)
+    comp['laser-on'] = False
 
 def offsets_scribe_clicked(toolFile):
     try:
@@ -1745,6 +1749,7 @@ def offsets_scribe_clicked(toolFile):
         return
     reply = plasmacPopUp('yesno', 'Set Scribe Offsets', ' \n'.join(offsets_text)).reply
     if not reply:
+        comp['offset-set-scribe'] = False
         return
     newOffsets = {'X':round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 4) + 0, \
                   'Y':round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 4) + 0}
@@ -1757,16 +1762,19 @@ def offsets_scribe_clicked(toolFile):
         title = _('Scribe Offsets')
         msg = _('Scribe offsets have been saved')
         plasmacPopUp('info', title, msg)
+    comp['offset-set-scribe'] = False
 
 def offsets_probe_clicked():
     reply = plasmacPopUp('yesno', 'Set Probe Offsets', ' \n'.join(offsets_text)).reply
     if not reply:
+        comp['offset-set-probe'] = False
         return
     title = _('Offset Probe Delay')
     prompt = _('Delay (Seconds)')
     while 1:
         valid, delay = plasmacPopUp('entry', title, prompt, True, probeOffsets['Delay']).reply
         if not valid:
+            comp['offset-set-probe'] = False
             return
         if not delay:
             delay = 0
@@ -1791,6 +1799,7 @@ def offsets_probe_clicked():
         title = _('Probe Offsets')
         msg = _('Probe offsets have been saved')
         plasmacPopUp('info', title, msg)
+    comp['offset-set-probe'] = False
 
 def offsets_prompt(title, oldOffsets, newOffsets, probe=False):
     dly = _('Delay')
