@@ -3423,7 +3423,8 @@ def kb_shortcuts_changed():
 
 def virtual_kb_changed():
     if pVars.useVirtKB.get():
-        if not vkbData['valid']:
+        if not WHICH('onboard'):
+            rC(f'{fsetup}.l.gui.useVirtKB','deselect')
             title = _('VIRTUAL KEYBOARD ERROR')
             msg0 = _('a valid "onboard" virtual keyboard is not installed')
             notifications.add('error', f'{title}:\n{msg0}\n')
@@ -3556,7 +3557,7 @@ def keyboard_bindings(state):
 def vkb_validate():
     global vkbData
     vkbData = {'valid':False, 'visible':False, 'required':False, 'layout':None, 'width':0, 'height':0}
-    if os.path.isfile('/usr/bin/onboard'):
+    if WHICH('onboard'):
         try:
             cmd = 'gsettings get org.onboard layout'
             vkbData['layout'] = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()[0].decode().strip()
@@ -5322,7 +5323,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         value = False
     pVars.useVirtKB.set(value)
     restoreSetup['useVirtKB'] = value
-    virtual_kb_changed()
+    if vkbData['valid']:
+        virtual_kb_changed()
     # disable keyboard shortcuts if virtual keyboard enabled
     if value:
         value = False
