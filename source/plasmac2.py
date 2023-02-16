@@ -4955,7 +4955,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
               [f'{fparam}.c3.arc','height-per-volt',3,0.1,0.025,0.5,0.01,'Height Per Volt','Height Per Volt'], \
               [f'{fparam}.c2.scribe','scribe-arm-delay',1,0,0,9,0.1,'Arm Delay','Scribe Arming Delay'], \
               [f'{fparam}.c2.scribe','scribe-on-delay',1,0,0,9,0.1,'On delay','Scribe On Delay'], \
-              [f'{fparam}.c3.spotting','spotting-threshold',0,0,0,199,1,'Threshold (V)','Spotting Threshold'], \
+              [f'{fparam}.c3.spotting','spotting-threshold',0,1,0,199,1,'Threshold (V)','Spotting Threshold'], \
               [f'{fparam}.c3.spotting','spotting-time',0,0,0,9999,1,'On Time (mS)','Spotting Time'], \
              ]
     cpRow = 0
