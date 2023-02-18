@@ -1181,18 +1181,14 @@ def update_plasmac2():
         msg0 = 'An error occurred while updating'
         plasmacPopUp('error', _('UPDATE ERROR'), f'{msg0}:\n\n{err}')
         return
+    VER = get_version()
+    putPrefs(PREF,'GUI_OPTIONS','Version', VER, str)
+    update_title()
     if current == repo.head.commit and not dev:
         root_window.config(cursor='')
         msg0 = 'plasmac2 was up to date'
         plasmacPopUp('info', _('plasmac2 UPDATE'), msg0)
         return
-    with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
-        for line in inFile:
-            if 'v2.' in line:
-                VER = line.split('v')[1].split('<')[0]
-                break
-    putPrefs(PREF,'GUI_OPTIONS','Version', VER, str)
-    update_title()
     if dev:
         if oldVer == VER:
             msg0 = 'development config was up to date'
@@ -1204,6 +1200,14 @@ def update_plasmac2():
         msg1 = '\n\nA restart is recommended'
     root_window.config(cursor='')
     plasmacPopUp('info', _('plasmac2 UPDATE'), f'{msg0}{msg1}')
+
+def get_version():
+    with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
+        for line in inFile:
+            if 'v2.' in line:
+                v = line.split('v')[1].split('<')[0]
+                break
+    return v
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
@@ -4109,11 +4113,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # set the version
     VER = getPrefs(PREF,'GUI_OPTIONS', 'Version', '0', str)
     if VER == '0':
-        with open(os.path.join(repoPath, 'source/versions.html'), 'r') as inFile:
-            for line in inFile:
-                if 'v2.' in line:
-                    VER = line.split('v')[1].split('<')[0]
-                    break
+        VER = get_version()
         putPrefs(PREF,'GUI_OPTIONS', 'Version', VER, str)
     # tk widget variables
     pVars = nf.Variables(root_window,
