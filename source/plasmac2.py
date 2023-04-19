@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
 
+import sys
+
 ##############################################################################
 # NEW CLASSES                                                                #
 ##############################################################################
@@ -181,8 +183,8 @@ class plasmacPopUp(Tkinter.Toplevel):
         yLength.configure(highlightthickness=0)
         yLength.pack(side='left')
         f2.pack(padx=4, pady=4, anchor='w')
-        self.xLength.set(getPrefs(PREF,'SINGLE_CUT', 'X length', 0, float))
-        self.yLength.set(getPrefs(PREF,'SINGLE_CUT', 'Y length', 0, float))
+        self.xLength.set(getPrefs(PREF, 'SINGLE_CUT', 'X length', 0, float))
+        self.yLength.set(getPrefs(PREF, 'SINGLE_CUT', 'Y length', 0, float))
         return _('Load'), _('Cancel')
 
     def popup_entry(self, func, msg, optional):
@@ -441,7 +443,7 @@ def close_window():
     if pVars.closeDialog.get():
         msgs = ''
         if pVars.closeText.get():
-            customText = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str).split('\\')
+            customText = getPrefs(PREF, 'GUI_OPTIONS', 'Exit warning text', '', str).split('\\')
             if customText:
                 for t in customText:
                     msgs += f'{t}\n\n'
@@ -449,13 +451,14 @@ def close_window():
         msgs  += text2
         if not plasmacPopUp('yesno', _('CONFIRM CLOSE'), msgs).reply:
             return
-    putPrefs(PREF,'GUI_OPTIONS', 'Window last', rC('winfo','geometry',root_window), str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Window last', rC('winfo','geometry',root_window).split('+', 1)[0], str)
     if hal.component_exists('pmx485'):
         hal.set_p('pmx485.enable', '0')
     root_window.destroy()
 
-def set_window_size():
+def set_window_size(winSize=False):
     global wSize, bPane
+    winSize = rC('winfo','geometry',root_window).split('+', 1)[0] if winSize == 'combo' else winSize
     size = pVars.winSize.get()
     if size not in ['default', 'last', 'fullscreen', 'maximized']:
         title = _('WINDOW ERROR')
@@ -477,7 +480,6 @@ def set_window_size():
             height = wSize[pVars.fontSize.get()][offset]
             width  = wSize[pVars.fontSize.get()][2]
             bPane  = wSize[pVars.fontSize.get()][3]
-
         else:
             # window height, bottom pane height
             wSize = { '7': [456,  92],  '8': [482, 102],
@@ -491,7 +493,6 @@ def set_window_size():
             height = wSize[pVars.fontSize.get()][0]
             width = int(height * 1.75)
             bPane = wSize[pVars.fontSize.get()][1]
-        last = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', 'none', str)
         rE(f'.pane paneconfigure $pane_top -minsize {bPane}')
         rE(f'.pane paneconfigure $pane_bottom -minsize {bPane}')
         rE(f'.pane paneconfigure $pane_bottom -height {bPane}')
@@ -501,12 +502,13 @@ def set_window_size():
             root_window.attributes('-fullscreen', True, '-zoomed', False)
         else:
             root_window.attributes('-fullscreen', False, '-zoomed', False)
+            last = winSize if winSize else restoreSetup['winLast']
             if size == 'last' and last != 'none':
-                root_window.geometry(last)
-            else:
-                xPos = int((root_window.winfo_screenwidth() - width) / 2)
-                yPos = int((root_window.winfo_screenheight() - height) / 2)
-                root_window.geometry(f'{width}x{height}+{xPos}+{yPos}')
+                width = int(last.split('x')[0])
+                height = int(last.split('x')[1])
+            xPos = int((root_window.maxsize()[0] - width) / 2)
+            yPos = int((root_window.maxsize()[1] - height) / 2)
+            root_window.geometry(f'{width}x{height}+{xPos}+{yPos}')
         rC(f'{fsetup}.r.ubuttons.canvas','xview','moveto',0.0)
         rC(f'{fsetup}.r.ubuttons.canvas','yview','moveto',0.0)
         root_window.update_idletasks()
@@ -732,63 +734,6 @@ def open_file_name(f):
         o.set_centerpoint(x, y, z)
     live_plotter.clear()
 
-
-def gcode_properties(event=None, reply=None):
-    props = {}
-    if not loaded_file:
-        props['name'] = _('No file loaded')
-    else:
-        ext = os.path.splitext(loaded_file)[1]
-        program_filter = None
-        if ext:
-            program_filter = inifile.find('FILTER', ext[1:])
-        name = os.path.basename(loaded_file)
-        if program_filter:
-            pre = _('generated from')
-            props['name'] =  f'{pre} {name}'
-        else:
-            props['name'] = name
-        size = os.stat(loaded_file).st_size
-        lines = int(widgets.text.index('end').split('.')[0])-2
-        pre = [_('bytes'), _('gcode lines')]
-        props['size'] = f'{size} {pre[0]}\n{lines} {pre[1]}'
-        if vars.metric.get():
-            conv = 1
-            units = _('mm')
-            fmt = 3
-        else:
-            conv = 1/25.4
-            units = _('in')
-            fmt = 4
-        mf = vars.max_speed.get()
-        g0 = sum(dist(l[1][:3], l[2][:3]) for l in o.canon.traverse)
-        g1 = (sum(dist(l[1][:3], l[2][:3]) for l in o.canon.feed) +
-              sum(dist(l[1][:3], l[2][:3]) for l in o.canon.arcfeed))
-        gt = (sum(dist(l[1][:3], l[2][:3])/min(mf, l[3]) for l in o.canon.feed) +
-              sum(dist(l[1][:3], l[2][:3])/min(mf, l[3])  for l in o.canon.arcfeed) +
-              sum(dist(l[1][:3], l[2][:3])/mf  for l in o.canon.traverse) +
-              o.canon.dwell_time)
-        props['g0'] = f'{from_internal_linear_unit(g0, conv):.{fmt}f} {units}'
-        props['g1'] = f'{from_internal_linear_unit(g1, conv):.{fmt}f} {units}'
-        if gt > 120:
-            pre = _('minutes)')
-            props['run'] = f'{gt / 60} {pre}'
-        else:
-            pre = _('seconds')
-            props['run'] = f'{int(gt)} {pre}'
-        min_extents = from_internal_units(o.canon.min_extents, conv)
-        max_extents = from_internal_units(o.canon.max_extents, conv)
-        for (i, c) in enumerate('xyz'):
-            a = min_extents[i]
-            b = max_extents[i]
-            if a != b:
-                props[c] = f'{a:.{fmt}f} to {b:.{fmt}f} = {b-a:.{fmt}f} {units}'
-        gcodeProperties = props
-        props['toollist'] = o.canon.tool_list
-    if reply:
-        return props
-    properties(root_window, _('G-Code Properties'), property_names, props)
-
 def get_view():
     x,y,z,p = 0,1,2,3
     if str(widgets.view_x['relief']) == 'sunken':
@@ -866,28 +811,28 @@ def save_total_stats():
     if hal.get_value('plasmac.torch-enable'):
         val = float(pVars.lengthT.get()[:len(pVars.lengthT.get()) - 1]) * statDivisor
         pVars.lengthS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Cut length', val, float)
+        putPrefs(PREF, 'STATISTICS', 'Cut length', val, float)
         val = pVars.pierceT.get()
         pVars.pierceS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Pierce count', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Pierce count', val, int)
         val = hms_to_secs(pVars.rapidT.get())
         pVars.rapidS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Rapid time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Rapid time', val, int)
         val = hms_to_secs(pVars.probeT.get())
         pVars.probeS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Probe time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Probe time', val, int)
         val = hms_to_secs(pVars.torchT.get())
         pVars.torchS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Torch on time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Torch on time', val, int)
         val = hms_to_secs(pVars.cutT.get())
         pVars.cutS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Cut time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Cut time', val, int)
         val = hms_to_secs(pVars.pausedT.get())
         pVars.pausedS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Paused time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Paused time', val, int)
         val = hms_to_secs(pVars.runT.get())
         pVars.runS.set(val)
-        putPrefs(PREF,'STATISTICS', 'Program run time', val, int)
+        putPrefs(PREF, 'STATISTICS', 'Program run time', val, int)
 
 def clear_job_stats():
     pVars.lengthJ.set(f'0.00{statSuffix}')
@@ -904,42 +849,42 @@ def reset_all_stats(stat):
         pVars.lengthS.set(0)
         pVars.lengthJ.set(f'0.00{statSuffix}')
         pVars.lengthT.set(f'0.00{statSuffix}')
-        putPrefs(PREF,'STATISTICS', 'Cut length', 0, float)
+        putPrefs(PREF, 'STATISTICS', 'Cut length', 0, float)
     elif stat == 'pierce':
         pVars.pierceS.set(0)
         pVars.pierceJ.set('0')
         pVars.pierceT.set('0')
-        putPrefs(PREF,'STATISTICS', 'Pierce count', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Pierce count', 0, int)
     elif stat == 'rapid':
         pVars.rapidS.set(0)
         pVars.rapidJ.set('00:00:00')
         pVars.rapidT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Rapid time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Rapid time', 0, int)
     elif stat == 'probe':
         pVars.probeS.set(0)
         pVars.probeJ.set('00:00:00')
         pVars.probeT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Probe time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Probe time', 0, int)
     elif stat == 'torch':
         pVars.torchS.set(0)
         pVars.torchJ.set('00:00:00')
         pVars.torchT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Torch on time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Torch on time', 0, int)
     elif stat == 'cut':
         pVars.cutS.set(0)
         pVars.cutJ.set('00:00:00')
         pVars.cutT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Cut time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Cut time', 0, int)
     elif stat == 'paused':
         pVars.pausedS.set(0)
         pVars.pausedJ.set('00:00:00')
         pVars.pausedT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Paused time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Paused time', 0, int)
     elif stat == 'run':
         pVars.runS.set(0)
         pVars.runJ.set('00:00:00')
         pVars.runT.set('00:00:00')
-        putPrefs(PREF,'STATISTICS', 'Program run time', 0, int)
+        putPrefs(PREF, 'STATISTICS', 'Program run time', 0, int)
 
 
 ##############################################################################
@@ -1023,7 +968,7 @@ def load_param_clicked():
     for widget in cpList:
         try:
             # we bring in all parameters as floats so we can read QtPlasmaC parameters
-            value = getPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), widget[3], float)
+            value = getPrefs(PREF, 'PLASMA_PARAMETERS', str(widget[8]), widget[3], float)
         except:
             value = 0
             title = _('PARAMETER ERROR')
@@ -1034,7 +979,7 @@ def load_param_clicked():
         value = value if widget[2] > 0 else int(value)
         rC(f'{widget[0]}.{widget[1]}','set',value)
         widgetValues[f'{widget[0]}.{widget[1]}'] = value
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'THC auto', False, bool)
     pVars.thcAuto.set(value)
     mode_changed()
 
@@ -1042,11 +987,11 @@ def save_param_clicked():
     for widget in cpList:
         value = rC(f'{widget[0]}.{widget[1]}','get')
         if widget[2] > 0:
-            putPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), value, float)
+            putPrefs(PREF, 'PLASMA_PARAMETERS', str(widget[8]), value, float)
         else:
-            putPrefs(PREF,'PLASMA_PARAMETERS', str(widget[8]), value, int)
+            putPrefs(PREF, 'PLASMA_PARAMETERS', str(widget[8]), value, int)
     value = pVars.thcAuto.get()
-    putPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', value, bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS', 'THC auto', value, bool)
 
 def load_setup_clicked():
     fontChanged = False
@@ -1055,9 +1000,10 @@ def load_setup_clicked():
     if pVars.plasmacMode.get() != restoreSetup['plasmacMode']:
         pVars.plasmacMode.set(restoreSetup['plasmacMode'])
         mode_changed()
-    if pVars.winSize.get() != restoreSetup['winSize']:
+    if pVars.winSize.get() != restoreSetup['winSize'] or \
+       rC('winfo','geometry',root_window).split('+', 1)[0] != restoreSetup['winLast']:
         pVars.winSize.set(restoreSetup['winSize'])
-        set_window_size()
+        set_window_size(restoreSetup['winLast'])
     if pVars.orient.get() != restoreSetup['orient']:
         pVars.orient.set(restoreSetup['orient'])
         set_orientation()
@@ -1106,51 +1052,53 @@ def save_setup_clicked():
     if int(rC(f'{fsetup}.l.gui.jogspeed','get')) < minJogSpeed:
         rC(f'{fsetup}.l.gui.jogspeed','set',minJogSpeed)
     restoreSetup['jogSpeed'] = rC(f'{fsetup}.l.gui.jogspeed','get')
-    putPrefs(PREF,'GUI_OPTIONS', 'Jog speed', restoreSetup['jogSpeed'], int)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Jog speed', restoreSetup['jogSpeed'], int)
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Mode', restoreSetup['plasmacMode'], int)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Mode', restoreSetup['plasmacMode'], int)
     restoreSetup['closeText'] = pVars.closeText.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', restoreSetup['closeText'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Exit warning text', restoreSetup['closeText'], str)
     restoreSetup['closeDialog'] = pVars.closeDialog.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Exit warning', restoreSetup['closeDialog'], bool)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Exit warning', restoreSetup['closeDialog'], bool)
     restoreSetup['winSize'] = pVars.winSize.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Window size', restoreSetup['winSize'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Window size', restoreSetup['winSize'], str)
+    restoreSetup['winLast'] = rC('winfo','geometry',root_window).split('+', 1)[0]
+    putPrefs(PREF, 'GUI_OPTIONS', 'Window last', restoreSetup['winLast'], str)
     restoreSetup['orient'] = pVars.orient.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Orientation', restoreSetup['orient'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Orientation', restoreSetup['orient'], str)
     restoreSetup['fontSize'] = pVars.fontSize.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Font size', restoreSetup['fontSize'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Font size', restoreSetup['fontSize'], str)
     restoreSetup['guiFont'] = pVars.guiFont.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'GUI font', restoreSetup['guiFont'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'GUI font', restoreSetup['guiFont'], str)
     restoreSetup['codeFont'] = pVars.codeFont.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Gcode font', restoreSetup['codeFont'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Gcode font', restoreSetup['codeFont'], str)
     restoreSetup['coneSize'] = pVars.coneSize.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', restoreSetup['coneSize'], float)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Preview cone size', restoreSetup['coneSize'], float)
     restoreSetup['popLocation'] = pVars.popLocation.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Popup location', restoreSetup['popLocation'], str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Popup location', restoreSetup['popLocation'], str)
     restoreSetup['tableZoom'] = float(rC(f'{fsetup}.l.gui.zoom','get'))
-    putPrefs(PREF,'GUI_OPTIONS', 'Table zoom', restoreSetup['tableZoom'], float)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Table zoom', restoreSetup['tableZoom'], float)
     restoreSetup['matDefault'] = pVars.matDefault.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Default material', restoreSetup['matDefault'], int)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Default material', restoreSetup['matDefault'], int)
     restoreSetup['crPercent'] = rC(f'{fsetup}.l.gui.crspeed','get')
-    putPrefs(PREF,'GUI_OPTIONS', 'Cut recovery speed %', restoreSetup['crPercent'], int)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Cut recovery speed %', restoreSetup['crPercent'], int)
     rC(f'{fcrspeed}.display.cut-rec-speed','set',restoreSetup['crPercent'])
     restoreSetup['kbShortcuts'] = pVars.kbShortcuts.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Use keyboard shortcuts', restoreSetup['kbShortcuts'], bool)
     restoreSetup['useVirtKB'] = pVars.useVirtKB.get()
-    putPrefs(PREF,'GUI_OPTIONS', 'Use soft keyboard', restoreSetup['useVirtKB'], bool)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Use soft keyboard', restoreSetup['useVirtKB'], bool)
     if not (isPaused or isRunning):
         user_button_save()
-    putPrefs(PREF,'GUI_OPTIONS', 'Foreground color', colorFore, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Background color', colorBack, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Disabled color', colorDisable, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Active color', colorActive, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Warning color', colorWarn, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Voltage color', colorVolt, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Arc OK color', colorArc, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'LED color', colorLed, str)
-    putPrefs(PREF,'GUI_OPTIONS', 'Trough color', colorTrough, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Foreground color', colorFore, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Background color', colorBack, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Disabled color', colorDisable, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Active color', colorActive, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Warning color', colorWarn, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Voltage color', colorVolt, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Arc OK color', colorArc, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'LED color', colorLed, str)
+    putPrefs(PREF, 'GUI_OPTIONS', 'Trough color', colorTrough, str)
     for key in togglePins:
-        set_toggle_pins(togglePins[key]) 
+        set_toggle_pins(togglePins[key])
 
 
 ##############################################################################
@@ -1182,7 +1130,7 @@ def update_plasmac2():
         plasmacPopUp('error', _('UPDATE ERROR'), f'{msg0}:\n\n{err}')
         return
     VER = get_version()
-    putPrefs(PREF,'GUI_OPTIONS','Version', VER, str)
+    putPrefs(PREF, 'GUI_OPTIONS','Version', VER, str)
     update_title()
     if current == repo.head.commit and not dev:
         root_window.config(cursor='')
@@ -1211,23 +1159,23 @@ def get_version():
 
 def thc_enable_toggled():
     hal.set_p('plasmac.thc-enable', str(pVars.thcEnable.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS','THC enable', pVars.thcEnable.get(), bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS','THC enable', pVars.thcEnable.get(), bool)
 
 def corner_enable_toggled():
     hal.set_p('plasmac.cornerlock-enable', str(pVars.cornerEnable.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS','Corner lock enable', pVars.cornerEnable.get(), bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS','Corner lock enable', pVars.cornerEnable.get(), bool)
 
 def void_enable_toggled():
     hal.set_p('plasmac.voidlock-enable', str(pVars.voidEnable.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS','Void lock enable', pVars.voidEnable.get(), bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS','Void lock enable', pVars.voidEnable.get(), bool)
 
 def auto_volts_toggled():
     hal.set_p('plasmac.use-auto-volts', str(pVars.autoVolts.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS', 'Use auto volts', pVars.autoVolts.get(), bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS', 'Use auto volts', pVars.autoVolts.get(), bool)
 
 def ohmic_enable_toggled():
     hal.set_p('plasmac.ohmic-probe-enable', str(pVars.ohmicEnable.get()))
-    putPrefs(PREF,'ENABLE_OPTIONS', 'Ohmic probe enable', pVars.ohmicEnable.get(), bool)
+    putPrefs(PREF, 'ENABLE_OPTIONS', 'Ohmic probe enable', pVars.ohmicEnable.get(), bool)
 
 def ignore_arc_ok_toggled():
     hal.set_p('plasmac.ignore-arc-ok-1', str(pVars.ignorArcOk.get()))
@@ -1393,8 +1341,8 @@ def single_cut():
         return
     singleCut['state'] = True
     singleCut['G91'] = True if 910 in s.gcodes else False
-    putPrefs(PREF,'SINGLE_CUT', 'X length', xLength, float)
-    putPrefs(PREF,'SINGLE_CUT', 'Y length', yLength, float)
+    putPrefs(PREF, 'SINGLE_CUT', 'X length', xLength, float)
+    putPrefs(PREF, 'SINGLE_CUT', 'Y length', yLength, float)
     xEnd = s.position[0] + float(xLength)
     yEnd = s.position[1] + float(yLength)
     scFile = os.path.join(tmpPath, 'single_cut.ngc')
@@ -1476,13 +1424,13 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
     global relPos, startAlignPos
     msgList = []
     if buttonState == 'markedge':
-#FIXME: NO CAMERA YET
+#FIXME: NO CAMERA - IS A CAMERA WORTHWHILE ON A PLASMA TABLE?
 #        zAngle = self.w.camview.rotation = 0
         ensure_mode(linuxcnc.MODE_MDI)
         c.mdi('G10 L2 P0 R0')
         c.wait_complete()
         live_plotter.clear()
-#FIXME: NO CAMERA YET
+#FIXME: NO CAMERA - IS A CAMERA WORTHWHILE ON A PLASMA TABLE?
 #        self.w.cam_goto.setEnabled(False)
         pVars.laserText.set(_('Origin'))
         buttonState = 'setorigin'
@@ -1520,7 +1468,7 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
 #FIXME: I CANNOT REMEMBER WHY WE DO THIS, I CANNOT SEE A REASON (1)
 #        if not o.canon:
 #            msgList, units, xMin, yMin, xMax, yMax = bounds_check('align', 0, 0)
-#FIXME: NO CAMERA YET
+#FIXME: NO CAMERA - IS A CAMERA WORTHWHILE ON A PLASMA TABLE?
 #        self.w.camview.rotation = zAngle
         ensure_mode(linuxcnc.MODE_MDI)
         c.mdi(f'G10 L20 P0 X{offsetX} Y{offsetY}')
@@ -1535,7 +1483,7 @@ def sheet_align(mode, buttonState, offsetX, offsetY):
             ensure_mode(linuxcnc.MODE_MDI)
             c.mdi('G0 X0 Y0')
             c.wait_complete()
-#FIXME: NO CAMERA YET
+#FIXME: NO CAMERA - IS A CAMERA WORTHWHILE ON A PLASMA TABLE?
 #        self.w.cam_goto.setEnabled(True)
         live_plotter.clear()
     return buttonState
@@ -1584,7 +1532,15 @@ def frame_job(feed, height):
             if not feed:
                 feed = widgetValues[f'{fruns}.material.cut-feed-rate']
             ensure_mode(linuxcnc.MODE_MDI)
-            c.mdi(f'G64 P{hal.get_value("halui.machine.units-per-mm"):0.3f}')
+            previousMode = None
+            # metric machine imperial units
+            if s.linear_units == 1 and s.program_units == 1:
+                previousMode = 'G20'
+                c.mdi('G21')
+            # imperial machine metric units
+            elif s.linear_units != 1 and s.program_units == 2:
+                    previousMode = 'G21'
+                    c.mdi('G20')
             c.wait_complete()
             if not height:
                 height = machineBounds['Z+'] - (hal.get_value('plasmac.max-offset') * unitsPerMm)
@@ -1595,6 +1551,8 @@ def frame_job(feed, height):
             c.mdi(f'G53 G1 X{frame_points[4][0]:0.2f} Y{frame_points[4][1]:0.2f}')
             c.mdi(f'G53 G1 X{frame_points[1][0]:0.2f} Y{frame_points[1][1]:0.2f}')
             c.mdi('G0 X0 Y0')
+            if previousMode:
+                c.mdi(previousMode)
             framingState = True
 
 def rotate_frame(coordinates):
@@ -1621,7 +1579,7 @@ def rotate_frame(coordinates):
 ##############################################################################
 def bounds_check(boundsType, xOffset , yOffset):
     global machineBounds
-    # glcanon reports in imperial (dinosaur) units, we need to:
+    # glcanon reports in dinosaur units (imperial), so we need to:
     #   test the bounds in machine units
     #   report the error in currently displayed units
     framing = True if 'framing' in boundsType else False
@@ -1646,12 +1604,10 @@ def bounds_check(boundsType, xOffset , yOffset):
         gcUnits = 'mm' if s.linear_units == 1 else 'in'
         xMin = xMax = xOffset
         yMin = yMax = yOffset
-#FIXME: CAN WE USE VARS.METRIC.GET() INSTEAD OF GCUNITS ABOVE
-    #print(f'vars.metric:{vars.metric.get()}   gcUnits:{gcUnits}')
     if s.linear_units == 1 and gcUnits == 'in':
-        reportMultipler = 0.03937
+        reportMultiplier = 0.03937
     elif s.linear_units != 1 and gcUnits == 'mm':
-        reportMultipler = 25.4
+        reportMultiplier = 25.4
     else:
         reportMultiplier = 1
     msgList = []
@@ -1666,7 +1622,7 @@ def bounds_check(boundsType, xOffset , yOffset):
         msgList.append(['Y','MIN',f'{amount:0.2f}'])
     if yMax > machineBounds['Y+']:
         amount = (yMax - machineBounds['Y+']) * reportMultiplier
-        msgList.append(['Y','MAX','{amount:0.2f}'])
+        msgList.append(['Y','MAX',f'{amount:0.2f}'])
     if framing:
         return msgList, gcUnits, xMin, yMin, xMax, yMax, frame_points
     else:
@@ -1721,8 +1677,8 @@ def offsets_laser_clicked():
     if offsets_prompt(_('Change Laser Offsets'), laserOffsets, newOffsets):
         laserOffsets['X'] = newOffsets['X']
         laserOffsets['Y'] = newOffsets['Y']
-        putPrefs(PREF,'LASER_OFFSET', 'X axis', laserOffsets['X'], float)
-        putPrefs(PREF,'LASER_OFFSET', 'Y axis', laserOffsets['Y'], float)
+        putPrefs(PREF, 'LASER_OFFSET', 'X axis', laserOffsets['X'], float)
+        putPrefs(PREF, 'LASER_OFFSET', 'Y axis', laserOffsets['Y'], float)
         laser_button_enable()
         comp['laser-on'] = False
         title = _('Laser Offsets')
@@ -1795,9 +1751,9 @@ def offsets_probe_clicked():
         probeOffsets['X'] = newOffsets['X']
         probeOffsets['Y'] = newOffsets['Y']
         probeOffsets['Delay'] = newOffsets['Delay']
-        putPrefs(PREF,'OFFSET_PROBING', 'X axis', probeOffsets['X'], float)
-        putPrefs(PREF,'OFFSET_PROBING', 'Y axis', probeOffsets['Y'], float)
-        putPrefs(PREF,'OFFSET_PROBING', 'Delay', probeOffsets['Delay'], float)
+        putPrefs(PREF, 'OFFSET_PROBING', 'X axis', probeOffsets['X'], float)
+        putPrefs(PREF, 'OFFSET_PROBING', 'Y axis', probeOffsets['Y'], float)
+        putPrefs(PREF, 'OFFSET_PROBING', 'Delay', probeOffsets['Delay'], float)
         set_probe_offset_pins()
         comp['offset-set-probe'] = False
         title = _('Probe Offsets')
@@ -1921,8 +1877,8 @@ def update_title(*args):
         name = 'AXIS'
     else:
         file = name = os.path.basename(vars.taskfile.get())
-    base = f'{vars.machine.get()} on plasmac2_v{VER} + AXIS {linuxcnc.version}'
-    rC('wm','title','.',f'{base} - ({file})')
+    base = f'{vars.machine.get()}    plasmac2 v{VER} + AXIS {linuxcnc.version}'
+    rC('wm','title','.',f'{base}    ({file})')
     rC('wm','iconname','.', name)
 
 # inhibit slider update if manual cut is active and use a linear response for jog slider
@@ -1978,7 +1934,7 @@ def task_run(*event):
             title = _('RUN ERROR')
             msg0 = _('Cannot run program while critical button is not active')
             btn = rC(f'{fbuttons}.button{togglePins[key]["button"]}','cget','-text')
-            notifications.add('error', '{title}:\n{msg0}: {btn}\n')
+            notifications.add('error', f'{title}:\n{msg0}: {btn}\n')
             return
     if run_warn(): return
     global program_start_line, program_start_line_last
@@ -2310,8 +2266,8 @@ def user_button_setup():
     row = 1
     for n in range(1, maxUserButtons + 1):
         bLabel = None
-        bName = getPrefs(PREF,'BUTTONS', f'{n} Name', '', str)
-        bCode = getPrefs(PREF,'BUTTONS', f'{n} Code', '', str)
+        bName = getPrefs(PREF, 'BUTTONS', f'{n} Name', '', str)
+        bCode = getPrefs(PREF, 'BUTTONS', f'{n} Code', '', str)
         outCode = {'code':None}
         parmError = False
         if bCode.strip() == 'ohmic-test' and not 'ohmic-test' in [(v['code']) for k, v in buttonCodes.items()]:
@@ -2327,8 +2283,8 @@ def user_button_setup():
         elif bCode.strip() == 'manual-cut' and not 'manual-cut' in buttonCodes:
             outCode['code'] = 'manual-cut'
         elif bCode.startswith('probe-test') and not 'probe-test' in [(v['code']) for k, v in buttonCodes.items()]:
-            if bCode.split()[0].strip() == 'probe-test' and len(bCode.split()) < 3:
-                codes = bCode.strip().split()
+            codes = bCode.lower().strip().replace(' ','').replace('probe-test','probe-test ').split()
+            if len(codes) < 3:
                 outCode = {'code':'probe-test', 'time':10}
                 probeButton = str(n)
                 probeText = bName.replace('\\', '\n')
@@ -2339,8 +2295,8 @@ def user_button_setup():
                     except:
                         outCode['code'] = None
         elif bCode.startswith('torch-pulse') and not 'torch-pulse' in [(v['code']) for k, v in buttonCodes.items()]:
-            if bCode.split()[0].strip() == 'torch-pulse' and len(bCode.split()) < 3:
-                codes = bCode.strip().split()
+            codes = bCode.lower().strip().replace(' ','').replace('torch-pulse','torch-pulse ').split()
+            if len(codes) < 3:
                 outCode = {'code':'torch-pulse', 'time':1.0}
                 torchButton = str(n)
                 torchText = bName.replace('\\', '\n')
@@ -2350,9 +2306,8 @@ def user_button_setup():
                         outCode['time'] = value
                     except:
                         outCode['code'] = None
-        elif bCode.startswith('change-consumables ') and not 'change-consumables' in [(v['code']) for k, v in buttonCodes.items()]:
-            codes = re.sub(r'([xyf]|[XYF])\s+', r'\1', bCode) # remove any spaces after x, y, and f
-            codes = codes.lower().strip().split()
+        elif bCode.startswith('change-consumables') and not 'change-consumables' in [(v['code']) for k, v in buttonCodes.items()]:
+            codes = bCode.lower().strip().replace(' ','').replace('x',' x').replace('y',' y').replace('f',' f').split()
             if len(codes) > 1 and len(codes) < 5:
                 outCode = {'code':'change-consumables', 'X':None, 'Y':None, 'F':None}
                 for l in 'xyf':
@@ -2376,8 +2331,8 @@ def user_button_setup():
             if outCode['code']:
                 cChangeButton = str(n)
         elif bCode.startswith('framing') and not 'framing' in [(v['code']) for k, v in buttonCodes.items()]:
-            codes = re.sub(r'([f]|[F])\s+', r'\1', bCode) # remove any spaces after f
-            codes = codes.lower().strip().split()
+            codes = bCode.lower().strip().replace(' ','').replace('fra','ra').replace('f',' f') \
+                         .replace('us',' us').replace('ra','fra').split()
             if codes[0] == 'framing' and len(codes) < 4:
                 outCode = {'code':'framing', 'F':False, 'Z':False}
                 for c in range(1, len(codes)):
@@ -2391,14 +2346,14 @@ def user_button_setup():
                         outCode['Z'] = True
                     else:
                         outCode['code'] = None
-        elif bCode.startswith('load '):
-            if len(bCode.split()) > 1 and len(bCode.split()) < 3:
-                codes = bCode.strip().split()
+        elif bCode.startswith('load'):
+            codes = bCode.strip().replace(' ','').replace('load','load ').split()
+            if len(codes) > 1 and len(codes) < 3:
                 if os.path.isfile(os.path.join(open_directory, codes[1])):
                     outCode = {'code':'load', 'file':os.path.join(open_directory, codes[1])}
         elif bCode.startswith('latest-file') and not 'latest-file' in [(v['code']) for k, v in buttonCodes.items()]:
-            if len(bCode.split()) < 3:
-                codes = bCode.strip().split()
+            codes = bCode.strip().replace(' ','').replace('latest-file','latest-file ').split()
+            if len(codes) < 3:
                 outCode = {'code':'latest-file', 'dir':None}
                 if len(codes) == 1:
                     outCode['dir'] = open_directory
@@ -2502,7 +2457,8 @@ def user_button_pressed(button, code):
         return
     if code['code'] == 'ohmic-test':
         hal.set_p('plasmac.ohmic-test','1')
-#FIXME: TEMPORARY PRINT FOR REPORTING WINDOW SIZES
+    # print window sizes in development mode
+    if comp['development']:
         print(f'Width = {rC("winfo","width",root_window)}   Height={rC("winfo","height",root_window)}')
     elif code['code'] == 'cut-type':
         pass # actioned from button_release
@@ -2555,7 +2511,10 @@ def user_button_pressed(button, code):
     elif code['code'] == 'latest-file':
         pass # actioned from button_release
     elif code['code'] == 'pulse-halpin' and hal.get_value('halui.program.is-idle'):
-        hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
+        if code['pin'].startswith('axisui.ext.out_'):
+            comp[code['pin'].replace('axisui.','')] = not hal.get_value(code['pin'])
+        else:
+            hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
         if not pulsePins[button]['timer']:
             pulsePins[button]['text'] = rC(f'{fbuttons}.button{button}','cget','-text')
             pulsePins[button]['timer'] = code['time']
@@ -2564,7 +2523,10 @@ def user_button_pressed(button, code):
             pulsePins[button]['timer'] = 0
             rC(f'{fbuttons}.button{button}','configure','-text',pulsePins[button]['text'])
     elif code['code'] == 'toggle-halpin' and hal.get_value('halui.program.is-idle'):
-        hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
+        if code['pin'].startswith('axisui.ext.out_'):
+            comp[code['pin'].replace('axisui.','')] = not hal.get_value(code['pin'])
+        else:
+            hal.set_p(code['pin'], str(not hal.get_value(code['pin'])))
     else:
         for n in range(len(code['code'])):
             if code['code'][n][0] == 'python3':
@@ -2625,30 +2587,30 @@ def user_button_released(button, code):
 def user_button_load():
     rC(f'{fsetup}.r.torch.enabled','delete',0,'end')
     rC(f'{fsetup}.r.torch.disabled','delete',0,'end')
-    rC(f'{fsetup}.r.torch.enabled','insert','end',getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str))
-    rC(f'{fsetup}.r.torch.disabled','insert','end',getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str))
+    rC(f'{fsetup}.r.torch.enabled','insert','end',getPrefs(PREF, 'BUTTONS', 'Torch enabled', 'Torch Enabled', str))
+    rC(f'{fsetup}.r.torch.disabled','insert','end',getPrefs(PREF, 'BUTTONS','Torch disabled', 'Torch Disabled', str))
     for n in range(1, maxUserButtons + 1):
         rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','delete',0,'end')
         rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','delete',0,'end')
-        if getPrefs(PREF,'BUTTONS', f'{n} Name', '', str) or getPrefs(PREF,'BUTTONS', f'{n} Code', '', str):
-            rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','insert','end',getPrefs(PREF,'BUTTONS', f'{n} Name', '', str))
-            rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','insert','end',getPrefs(PREF,'BUTTONS', f'{n} Code', '', str))
+        if getPrefs(PREF, 'BUTTONS', f'{n} Name', '', str) or getPrefs(PREF, 'BUTTONS', f'{n} Code', '', str):
+            rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','insert','end',getPrefs(PREF, 'BUTTONS', f'{n} Name', '', str))
+            rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','insert','end',getPrefs(PREF, 'BUTTONS', f'{n} Code', '', str))
     color_user_buttons()
 
 def user_button_save():
     global torchEnable
-    putPrefs(PREF,'BUTTONS', 'Torch enabled', rC(f'{fsetup}.r.torch.enabled','get'), str)
-    putPrefs(PREF,'BUTTONS', 'Torch disabled', rC(f'{fsetup}.r.torch.disabled','get'), str)
-    torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
-    torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
+    putPrefs(PREF, 'BUTTONS', 'Torch enabled', rC(f'{fsetup}.r.torch.enabled','get'), str)
+    putPrefs(PREF, 'BUTTONS', 'Torch disabled', rC(f'{fsetup}.r.torch.disabled','get'), str)
+    torchEnable['enabled'] = getPrefs(PREF, 'BUTTONS', 'Torch enabled', 'Torch Enabled', str)
+    torchEnable['disabled'] = getPrefs(PREF, 'BUTTONS','Torch disabled', 'Torch Disabled', str)
     if '\\' in torchEnable['enabled'] or '\\' in torchEnable['disabled']:
         rC(f'{fbuttons}.torch-enable','configure','-height',2)
     else:
         rC(f'{fbuttons}.torch-enable','configure','-height',1)
     color_torch()
     for n in range(1, maxUserButtons + 1):
-        putPrefs(PREF,'BUTTONS', f'{n} Name', rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','get'), str)
-        putPrefs(PREF,'BUTTONS', f'{n} Code', rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','get'), str)
+        putPrefs(PREF, 'BUTTONS', f'{n} Name', rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','get'), str)
+        putPrefs(PREF, 'BUTTONS', f'{n} Code', rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','get'), str)
         rC(f'{fsetup}.r.ubuttons.canvas.frame.name{n}','delete',0,'end')
         rC(f'{fsetup}.r.ubuttons.canvas.frame.code{n}','delete',0,'end')
     user_button_setup()
@@ -2718,7 +2680,7 @@ def delete_material_clicked():
     title = _('DELETE MATERIAL')
     msg0 = _('Default material cannot be deleted')
     material = int(rC(f'{fruns}.material.materials','get').split(':')[0])
-    if material == getPrefs(PREF,'GUI_OPTIONS', 'Default material', 0, int):
+    if material == getPrefs(PREF, 'GUI_OPTIONS', 'Default material', 0, int):
         reply = plasmacPopUp('warn', title, msg0).reply
         return
     msg0 = _('Do you wish to delete material')
@@ -2935,7 +2897,7 @@ def load_materials(mat=None):
             return
     insert_materials()
     rC(f'{fsetup}.l.gui.matdefault','configure','-values',materialNumList)
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Default material', materialNumList[0], int)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Default material', materialNumList[0], int)
     pVars.matDefault.set(value)
     restoreSetup['matDefault'] = value
     if pVars.matDefault.get() not in materialNumList:
@@ -2946,7 +2908,7 @@ def load_materials(mat=None):
         msg2 = _('Changing default material to')
         notifications.add('info', f'{title}:\n{msg0} #{pVars.matDefault.get()} {msg1}\n{msg2} #{mat}\n')
         pVars.matDefault.set(mat)
-        putPrefs(PREF,'GUI_OPTIONS', 'Default material', pVars.matDefault.get(), int)
+        putPrefs(PREF, 'GUI_OPTIONS', 'Default material', pVars.matDefault.get(), int)
     index = f'@{materialNumList.index(pVars.matDefault.get())}'
     rC(f'{fruns}.material.materials','setvalue',index)
     display_selected_material(pVars.matDefault.get())
@@ -3120,15 +3082,6 @@ def pmx485_status_changed(state):
             pmx485['connected'] = False
             pmx485['retryTimer'] = 3
 
-#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT IN PERIODIC (user_live_update)
-#def pmx485_arc_time_changed(time):
-#    print(f'pmx485_arc_time_changed {time}')
-#    if pmx485['connected']:
-#        pass
-#        self.w.pmx_stats_frame.show()
-#        self.w.pmx_arc_time_label.setText(_translate('HandlerClass', 'ARC ON TIME'))
-#        self.display_time('pmx_arc_time_t', time)
-
 def pmx485_fault_changed(fault):
     global pmx485
     if pmx485['connected']:
@@ -3243,15 +3196,17 @@ pmx485FaultName = {
 ##############################################################################
 # EXTERNAL HAL PINS                                                          #
 ##############################################################################
-
 # called during setup
 def ext_hal_create():
     global extHalPins
     extHalPins = {}
-    for pin in ['abort', 'power', 'run', 'pause', 'run-pause', 'touchoff', 'probe-test',
-                'torch-pulse', 'frame-job']:
+    for pin in ['abort', 'power', 'run', 'pause', 'run-pause', 'touchoff',
+                'probe','pulse', 'frame-job']:
         comp.newpin(f'ext.{pin}', hal.HAL_BIT, hal.HAL_IN)
         extHalPins[pin] = {'state': False, 'last': False}
+    # external pins for user button toggle and pulse
+    for pin in range(3):
+        comp.newpin(f'ext.out_{pin}', hal.HAL_BIT, hal.HAL_OUT)
 
 # called every cycle by user_live_update
 def ext_hal_watch():
@@ -3282,17 +3237,17 @@ def ext_hal_watch():
                         commands.task_resume()
                 elif pin == 'touchoff':
                     touch_off_xy('1', '0', '0')
-                elif pin == 'probe-test' and probeButton:
+                elif pin == 'probe' and probeButton:
                     user_button_pressed(probeButton, buttonCodes[int(probeButton)])
-                elif pin == 'torch-pulse' and torchButton:
+                elif pin == 'pulse' and torchButton:
                     user_button_pressed(torchButton, buttonCodes[int(torchButton)])
             # released commands
             else:
                 if pin == 'touchoff':
                     touch_off_xy('0', '0', '0')
-                elif pin == 'probe-test' and probeButton:
+                elif pin == 'probe' and probeButton:
                     user_button_released(probeButton, buttonCodes[int(probeButton)])
-                elif pin == 'torch-pulse' and torchButton:
+                elif pin == 'pulse' and torchButton:
                     user_button_released(torchButton, buttonCodes[int(torchButton)])
                 elif pin == 'frame-job':
                     num = get_button_num('framing')
@@ -3310,7 +3265,7 @@ def get_button_num(name):
 ##############################################################################
 # HELP TEXT                                                                  #
 ##############################################################################
-def set_help_text():
+def help_text():
     global kb_text_1, kb_text_2, kp_text_1
     kb_text_1 = [
         ('ESC', _('Abort')),
@@ -3455,7 +3410,7 @@ def make_lambda(func, value, state=None):
 
 def keyboard_bindings(state):
     if firstRun:
-        set_help_text()
+        help_text()
     # delete kb shortcuts from help menu
     rC('.menu.help','delete',3,5)
     # remove current bindings
@@ -3528,7 +3483,7 @@ def keyboard_bindings(state):
         root_window.bind('s', commands.task_resume)
         root_window.bind('<Control-r>', commands.reload_file)
         root_window.bind('<Control-s>', commands.save_gcode)
-        # clearing 
+        # clearing
         root_window.bind('<Control-k>', commands.clear_live_plot)
         root_window.bind('<Control-space>', lambda event: notifications.clear())
         # whacky keypad stuff
@@ -3612,15 +3567,15 @@ def vkb_settings(layout, width, height):
 def read_colors():
     global colorFore, colorBack, colorDisable, colorActive, colorWarn
     global colorVolt, colorArc, colorLed, colorTrough
-    colorFore = getPrefs(PREF,'GUI_OPTIONS','Foreground color', '#000000', str)
-    colorBack = getPrefs(PREF,'GUI_OPTIONS','Background color', '#808080', str)
-    colorDisable = getPrefs(PREF,'GUI_OPTIONS','Disabled color', '#a0a0a0', str)
-    colorActive = getPrefs(PREF,'GUI_OPTIONS','Active color', '#00cc00', str)
-    colorWarn = getPrefs(PREF,'GUI_OPTIONS','Warning color', '#dd0000', str)
-    colorVolt = getPrefs(PREF,'GUI_OPTIONS','Voltage color', '#ff8800', str)
-    colorArc = getPrefs(PREF,'GUI_OPTIONS','Arc OK color', '#ff8800', str)
-    colorLed = getPrefs(PREF,'GUI_OPTIONS','LED color', '#eeff00', str)
-    colorTrough = getPrefs(PREF,'GUI_OPTIONS','Trough color', '#505050', str)
+    colorFore = getPrefs(PREF, 'GUI_OPTIONS','Foreground color', '#000000', str)
+    colorBack = getPrefs(PREF, 'GUI_OPTIONS','Background color', '#808080', str)
+    colorDisable = getPrefs(PREF, 'GUI_OPTIONS','Disabled color', '#a0a0a0', str)
+    colorActive = getPrefs(PREF, 'GUI_OPTIONS','Active color', '#00cc00', str)
+    colorWarn = getPrefs(PREF, 'GUI_OPTIONS','Warning color', '#dd0000', str)
+    colorVolt = getPrefs(PREF, 'GUI_OPTIONS','Voltage color', '#ff8800', str)
+    colorArc = getPrefs(PREF, 'GUI_OPTIONS','Arc OK color', '#ff8800', str)
+    colorLed = getPrefs(PREF, 'GUI_OPTIONS','LED color', '#eeff00', str)
+    colorTrough = getPrefs(PREF, 'GUI_OPTIONS','Trough color', '#505050', str)
 
 def color_user_buttons(fgc='#000000',bgc='#d9d9d9'):
     for b in criticalButtons:
@@ -3671,11 +3626,6 @@ def color_change():
         except:
             pass
         try:
-#FIXME: I am sitting on the fence with this
-#            if w in ['Spinbox'] or (w == 'Entry' and child[:-2] in comboEntries):
-#                rC(child,'configure','-bg',ourWhite)
-#            else:
-#                rC(child,'configure','-bg',bgc)
             rC(child,'configure','-bg',colorBack)
         except:
             pass
@@ -3723,10 +3673,10 @@ def color_change():
             # lose the arrow
             rC('pack','forget',f'{child}.a')
         # the entry of the jog increment combobox
-        elif '.jogincr' in child and w == 'Entry': 
+        elif '.jogincr' in child and w == 'Entry':
             rC(child,'configure','-disabledforeground',colorFore)
         # the listbox of the jog increment combobox
-        elif '.jogincr' in child and w == 'Listbox': 
+        elif '.jogincr' in child and w == 'Listbox':
             rC(child,'configure','-selectforeground',colorFore)
             rC(child,'configure','-selectbackground',colorBack)
         # all checkbuttons
@@ -3752,12 +3702,6 @@ def color_change():
     rC(f'{fplasma}.arc-voltage','configure','-fg',colorVolt)
     color_user_buttons()
     color_torch()
-#FIXME: I am sitting on the fence with this
-    # gcode view
-#    rC('.pane.bottom.t.text','configure','-foreground',colorBlue)
-#FIXME: I am sitting on the fence with this
-    # dro
-#    rC('.pane.top.right.fnumbers.text','configure','-foreground',colorActive,'-background',ourBlack)
     # the color setup buttons
     rC(f'{fsetup}.m.colors.fore','configure','-bg',colorFore,'-activebackground',colorFore)
     rC(f'{fsetup}.m.colors.back','configure','-bg',colorBack,'-activebackground',colorBack)
@@ -3972,7 +3916,6 @@ def make_run_panel():
     rC('pack',f'{fruns}.pmx.enable','-expand',1,'-fill','x')
     rC('pack',f'{fruns}.pmx.info','-expand',1,'-fill','x')
 
-#FIXME: move pmx frame up in portrait orientation
 def populate_run_panel():
     if pVars.orient.get() == 'portrait':
         rC('grid',fportrait,'-column',1,'-row',3,'-sticky','nsew','-padx',2,'-pady',(0,2))
@@ -4094,13 +4037,11 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     if not os.path.isdir('/tmp/plasmac'):
         os.mkdir('/tmp/plasmac')
     tmpPath = '/tmp/plasmac'
-
-    # not used:
-    #installType = 'pkg' if os.path.dirname(os.path.realpath(__file__)) == '/bin' else 'rip'
+    installType = 'pkg' if os.path.dirname(__file__) == '/bin' else 'rip'
 
     # not used:
     # use a non existant file name so Axis doesn't open a default file
-    # only usefull if we move the file open code in Axis so it it called after the user command file is called
+    # only usefull if we move the file open code in Axis so it is called after the user command file is called
     #args = ['do_not_open_a_file']
 
     PREF = plasmacPreferences()
@@ -4108,13 +4049,14 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TEMP = plasmacTempMaterial()
     rC = root_window.tk.call
     rE = root_window.tk.eval
+    # set the app icon
     icon = PhotoImage(file=f'{imagePath}/chips_plasma.png')
-    rC('wm','iconphoto','.',icon)
+    rE(f'wm iconphoto . {icon}')
     # set the version
-    VER = getPrefs(PREF,'GUI_OPTIONS', 'Version', '0', str)
+    VER = getPrefs(PREF, 'GUI_OPTIONS', 'Version', '0', str)
     if VER == '0':
         VER = get_version()
-        putPrefs(PREF,'GUI_OPTIONS', 'Version', VER, str)
+        putPrefs(PREF, 'GUI_OPTIONS', 'Version', VER, str)
     # tk widget variables
     pVars = nf.Variables(root_window,
              ('plasmatool', StringVar),
@@ -4188,17 +4130,18 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
              ('jogMultiplier', DoubleVar),
              )
     restoreSetup = {}
-    pVars.plasmacMode.set(getPrefs(PREF,'GUI_OPTIONS', 'Mode', 0, int))
+    pVars.plasmacMode.set(getPrefs(PREF, 'GUI_OPTIONS', 'Mode', 0, int))
     restoreSetup['plasmacMode'] = pVars.plasmacMode.get()
-    pVars.winSize.set(getPrefs(PREF,'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ',''))
+    pVars.winSize.set(getPrefs(PREF, 'GUI_OPTIONS', 'Window size', 'default', str).lower().replace(' ',''))
     restoreSetup['winSize'] = pVars.winSize.get()
-    pVars.orient.set(getPrefs(PREF,'GUI_OPTIONS', 'Orientation', 'landscape', str).lower().replace(' ',''))
+    restoreSetup['winLast'] = getPrefs(PREF, 'GUI_OPTIONS', 'Window last', '932x562', str).split('+', 1)[0]
+    pVars.orient.set(getPrefs(PREF, 'GUI_OPTIONS', 'Orientation', 'landscape', str).lower().replace(' ',''))
     restoreSetup['orient'] = pVars.orient.get()
-    pVars.fontSize.set(getPrefs(PREF,'GUI_OPTIONS','Font size', '10', str))
+    pVars.fontSize.set(getPrefs(PREF, 'GUI_OPTIONS','Font size', '10', str))
     restoreSetup['fontSize'] = pVars.fontSize.get()
-    pVars.guiFont.set(getPrefs(PREF,'GUI_OPTIONS','GUI font', 'Sans', str))
+    pVars.guiFont.set(getPrefs(PREF, 'GUI_OPTIONS','GUI font', 'Sans', str))
     restoreSetup['guiFont'] = pVars.guiFont.get()
-    pVars.codeFont.set(getPrefs(PREF,'GUI_OPTIONS','Gcode font', 'Sans', str))
+    pVars.codeFont.set(getPrefs(PREF, 'GUI_OPTIONS','Gcode font', 'Sans', str))
     restoreSetup['codeFont'] = pVars.codeFont.get()
     # make some widget names to save typing
     ftop = '.pane.top'
@@ -4227,9 +4170,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     # spinbox validator
     valspin = root_window.register(validate_spinbox)
     torchEnable = {}
-    torchEnable['enabled'] = getPrefs(PREF,'BUTTONS', 'Torch enabled', 'Torch\Enabled', str)
-    torchEnable['disabled'] = getPrefs(PREF,'BUTTONS','Torch disabled', 'Torch\Disabled', str)
-    pmPort = getPrefs(PREF,'POWERMAX', 'Port', '', str)
+    torchEnable['enabled'] = getPrefs(PREF, 'BUTTONS', 'Torch enabled', 'Torch Enabled', str)
+    torchEnable['disabled'] = getPrefs(PREF, 'BUTTONS','Torch disabled', 'Torch Disabled', str)
+    pmPort = getPrefs(PREF, 'POWERMAX', 'Port', '', str)
     set_orient_frames()
     recreate_widget_list()
     wLeds = {f'{fleds}.led-arc-ok': [_('Arc OK'), 8], \
@@ -4282,8 +4225,8 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     laserTimer = 0.0
     laserButtonState = 'laser'
     laserOffsets = {}
-    laserOffsets['X'] = getPrefs(PREF,'LASER_OFFSET', 'X axis', 0, float)
-    laserOffsets['Y'] = getPrefs(PREF,'LASER_OFFSET', 'Y axis', 0, float)
+    laserOffsets['X'] = getPrefs(PREF, 'LASER_OFFSET', 'X axis', 0, float)
+    laserOffsets['Y'] = getPrefs(PREF, 'LASER_OFFSET', 'Y axis', 0, float)
     probeOffsets = {}
     probeOffsets['X'] = getPrefs(PREF, 'OFFSET_PROBING', 'X axis', 0, float)
     probeOffsets['Y'] = getPrefs(PREF, 'OFFSET_PROBING', 'Y axis', 0, float)
@@ -4311,7 +4254,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     spinBoxes = []
     widgetValues = {}
     statValues = {'length':0, 'pierce':0, 'rapid':0, 'probe':0, 'torch':0, 'cut':0, 'paused':0, 'run':0}
-    gcodeProperties = None
     toolButtons  = ['machine_estop','machine_power','file_open','reload','program_run',
                     'program_step','program_pause','program_stop','program_blockdelete',
                     'program_optpause','view_zoomin','view_zoomout','view_z','view_z2',
@@ -4325,7 +4267,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     get_coordinate_font = get_coordinate_font
     install_help = install_help
     prompt_touchoff = prompt_touchoff
-     # monkeypatched functions from glcanon.py
+    # monkeypatched functions from glcanon.py
     o.draw_grid = draw_grid
     o.posstrs = posstrs
     # tcl called functions hijacked from axis.py
@@ -4334,7 +4276,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     TclCommands.task_run_line = task_run_line
     TclCommands.task_stop = task_stop
     TclCommands.open_file_name = open_file_name
-    TclCommands.gcode_properties = gcode_properties
     TclCommands.set_view_p = set_view_p
     TclCommands.set_view_z = set_view_z
     TclCommands.get_jog_speed = get_jog_speed
@@ -4416,9 +4357,9 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
             else:
                 if font not in fontsGui:
                     fontsGui.append(font)
-    rC('font','create','fontGui','-family',pVars.guiFont.get(),'-size',pVars.fontSize.get())
-    rC('font','create','fontArc','-family',pVars.guiFont.get(),'-size',int(pVars.fontSize.get())*3)
-    rC('font','create','fontCode','-family',pVars.codeFont.get(),'-size',pVars.fontSize.get())
+    rE(f'font create fontGui -family {pVars.guiFont.get()} -size {pVars.fontSize.get()}')
+    rE(f'font create fontArc -family {pVars.guiFont.get()} -size {int(pVars.fontSize.get())*3}')
+    rE(f'font create fontCode -family {pVars.codeFont.get()} -size {pVars.fontSize.get()}')
 
 ##############################################################################
 # GUI ALTERATIONS AND ADDITIONS                                              #
@@ -5033,7 +4974,7 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     rC('label',f'{fsetup}.l.gui.closedialogL','-text',_('Close Dialog'),'-anchor','e')
     rC('checkbutton',f'{fsetup}.l.gui.closedialog','-variable','closeDialog','-width',2,'-anchor','w','-indicatoron',0)
     rC('label',f'{fsetup}.l.gui.wsizeL','-text',_('Window Size'),'-width', 13,'-anchor','e')
-    rC('ComboBox',f'{fsetup}.l.gui.wsize','-modifycmd','set_window_size','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
+    rC('ComboBox',f'{fsetup}.l.gui.wsize','-modifycmd',f'set_window_size combo','-textvariable','winSize','-bd',1,'-width',10,'-justify','right','-editable',0)
     rC(f'{fsetup}.l.gui.wsize','configure','-values',['default','last','fullscreen','maximized'])
     rC('label',f'{fsetup}.l.gui.orientL','-text',_('Window Orient'),'-width', 13,'-anchor','e')
     rC('ComboBox',f'{fsetup}.l.gui.orient','-modifycmd','set_orientation','-textvariable','orient','-bd',1,'-width',10,'-justify','right','-editable',0)
@@ -5274,51 +5215,51 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     hal.set_p('plasmac.thc-feed-rate', f'{thcFeedRate}')
     pVars.previewLarge.set(False)
     pVars.laserText.set(_('Laser'))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC auto', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'THC auto', False, bool)
     pVars.thcAuto.set(value)
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'THC enable', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'THC enable', False, bool)
     pVars.thcEnable.set(value)
     hal.set_p('plasmac.thc-enable', str(value))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Corner lock enable', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'Corner lock enable', False, bool)
     pVars.cornerEnable.set(value)
     hal.set_p('plasmac.cornerlock-enable', str(value))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Void lock enable', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'Void lock enable', False, bool)
     pVars.voidEnable.set(value)
     hal.set_p('plasmac.voidlock-enable', str(value))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Use auto volts', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'Use auto volts', False, bool)
     pVars.autoVolts.set(value)
     hal.set_p('plasmac.use-auto-volts', str(value))
-    value = getPrefs(PREF,'ENABLE_OPTIONS', 'Ohmic probe enable', False, bool)
+    value = getPrefs(PREF, 'ENABLE_OPTIONS', 'Ohmic probe enable', False, bool)
     pVars.ohmicEnable.set(value)
     hal.set_p('plasmac.ohmic-probe-enable', str(value))
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Jog speed', int(vars.max_speed.get() * 60 * 0.5), int)
     rC(f'{fsetup}.l.gui.jogspeed','set',value)
     restoreSetup['jogSpeed'] = value
     set_jog_slider(value / vars.max_speed.get() / 60)
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning text', '', str)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Exit warning text', '', str)
     pVars.closeText.set(value)
     restoreSetup['closeText'] = value
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Exit warning', True, bool)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Exit warning', True, bool)
     pVars.closeDialog.set(value)
     restoreSetup['closeDialog'] = value
     root_window.protocol('WM_DELETE_WINDOW', close_window)
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Preview cone size', 0.5, float)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Preview cone size', 0.5, float)
     pVars.coneSize.set(value)
     restoreSetup['coneSize'] = value
     cone_size_changed()
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Popup location', 'pointer', str)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Popup location', 'pointer', str)
     pVars.popLocation.set(value)
     restoreSetup['popLocation'] = value
-    value = getPrefs(PREF,'GUI_OPTIONS', 'Table zoom', 1, float)
+    value = getPrefs(PREF, 'GUI_OPTIONS', 'Table zoom', 1, float)
     rC(f'{fsetup}.l.gui.zoom','set',value)
     restoreSetup['tableZoom'] = value
-    value = getPrefs(PREF,'GUI_OPTIONS','Cut recovery speed %', 20, int)
+    value = getPrefs(PREF, 'GUI_OPTIONS','Cut recovery speed %', 20, int)
     restoreSetup['crPercent'] = value
     rC(f'{fsetup}.l.gui.crspeed','set',value)
     # check for valid onboard virtual keyboard
     vkb_validate()
     if vkbData['valid']:
-        value = getPrefs(PREF,'GUI_OPTIONS', 'Use soft keyboard', False, bool)
+        value = getPrefs(PREF, 'GUI_OPTIONS', 'Use soft keyboard', False, bool)
     else:
         value = False
     pVars.useVirtKB.set(value)
@@ -5331,35 +5272,35 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
         rC(f'{fsetup}.l.gui.kbShortcutsL','configure','-state','disabled')
         rC(f'{fsetup}.l.gui.kbShortcuts','configure','-state','disabled')
     else:
-        value = getPrefs(PREF,'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
+        value = getPrefs(PREF, 'GUI_OPTIONS', 'Use keyboard shortcuts', True, bool)
     pVars.kbShortcuts.set(value)
     restoreSetup['kbShortcuts'] = value
     keyboard_bindings(value)
     statDivisor = 1000 if unitsPerMm == 1 else 1
     statSuffix = 'M' if unitsPerMm == 1 else '"'
     # we bring in some ints as floats so we can read QtPlasmaC statistics
-    pVars.lengthS.set(getPrefs(PREF,'STATISTICS', 'Cut length', 0, float))
+    pVars.lengthS.set(getPrefs(PREF, 'STATISTICS', 'Cut length', 0, float))
     pVars.lengthJ.set(f'0.00{statSuffix}')
     pVars.lengthT.set(f'{pVars.lengthS.get() / statDivisor:0.2f}{statSuffix}')
-    pVars.pierceS.set(getPrefs(PREF,'STATISTICS', 'Pierce count', 0, int))
+    pVars.pierceS.set(getPrefs(PREF, 'STATISTICS', 'Pierce count', 0, int))
     pVars.pierceJ.set('0')
     pVars.pierceT.set(pVars.pierceS.get())
-    pVars.rapidS.set(int(getPrefs(PREF,'STATISTICS', 'Rapid time', 0, float)))
+    pVars.rapidS.set(int(getPrefs(PREF, 'STATISTICS', 'Rapid time', 0, float)))
     pVars.rapidJ.set('00:00:00')
     pVars.rapidT.set(secs_to_hms(pVars.rapidS.get()))
-    pVars.probeS.set(int(getPrefs(PREF,'STATISTICS', 'Probe time', 0, float)))
+    pVars.probeS.set(int(getPrefs(PREF, 'STATISTICS', 'Probe time', 0, float)))
     pVars.probeJ.set('00:00:00')
     pVars.probeT.set(secs_to_hms(pVars.probeS.get()))
-    pVars.torchS.set(int(getPrefs(PREF,'STATISTICS', 'Torch on time', 0, float)))
+    pVars.torchS.set(int(getPrefs(PREF, 'STATISTICS', 'Torch on time', 0, float)))
     pVars.torchJ.set('00:00:00')
     pVars.torchT.set(secs_to_hms(pVars.torchS.get()))
-    pVars.pausedS.set(int(getPrefs(PREF,'STATISTICS', 'Paused time', 0, float)))
+    pVars.pausedS.set(int(getPrefs(PREF, 'STATISTICS', 'Paused time', 0, float)))
     pVars.pausedJ.set('00:00:00')
     pVars.pausedT.set(secs_to_hms(pVars.pausedS.get()))
-    pVars.cutS.set(int(getPrefs(PREF,'STATISTICS', 'Cut time', 0, float)))
+    pVars.cutS.set(int(getPrefs(PREF, 'STATISTICS', 'Cut time', 0, float)))
     pVars.cutJ.set('00:00:00')
     pVars.cutT.set(secs_to_hms(pVars.cutS.get()))
-    pVars.runS.set(int(getPrefs(PREF,'STATISTICS', 'Program run time', 0, float)))
+    pVars.runS.set(int(getPrefs(PREF, 'STATISTICS', 'Program run time', 0, float)))
     pVars.runJ.set('00:00:00')
     pVars.runT.set(secs_to_hms(pVars.runS.get()))
     laser_button_enable()
@@ -5367,7 +5308,6 @@ if os.path.isdir(os.path.join(repoPath, 'source/lib')):
     for widget in wLeds:
         rC(widget,'configure','-state','disabled')
         widgetValues[widget] = 0
-    halPinList = hal.get_info_pins()
     load_param_clicked()
     mode_changed()
     font_changed()
@@ -5392,7 +5332,7 @@ else:
 # HAL SETUP - CALLED DIRECTLY FROM AXIS ONCE AT STARTUP                      #
 ##############################################################################
 def user_hal_pins():
-    global firstRun, previewSize
+    global firstRun, previewSize, halPinList
     if firstRun == 'invalid':
         return
     # create new hal pins
@@ -5469,6 +5409,7 @@ def user_hal_pins():
     materialReloadPin = comp['material-reload']
     materialTempPin = comp['material-temp']
     # do user button setup after hal pin creation
+    halPinList = hal.get_info_pins()
     user_button_setup()
     # load materials when setup is complete
     load_materials()
@@ -5477,7 +5418,7 @@ def user_hal_pins():
         pmx485_startup(pmPort)
     # check preferences for a file to load
     addRecent = True
-    openFile = getPrefs(PREF,'GUI_OPTIONS','Open file', '', str)
+    openFile = getPrefs(PREF, 'GUI_OPTIONS','Open file', '', str)
     loadLast = True if openFile == 'last' else False
     if loadLast:
         openFile = ap.getpref('recentfiles', [], repr).pop(0) if len(ap.getpref('recentfiles', [], repr)) else None
@@ -5548,7 +5489,6 @@ def user_live_update():
     # set current x and y relative positions
     relPos['X'] = round(s.position[0] - s.g5x_offset[0] - s.g92_offset[0], 6)
     relPos['Y'] = round(s.position[1] - s.g5x_offset[1] - s.g92_offset[1], 6)
-#FIXME: WE MAY WANT TO MAKE THIS OPTIONAL WITH A CHECKBOX
     # set display units
     if o.canon:
         if 200 in o.canon.state.gcodes:
@@ -5631,7 +5571,10 @@ def user_live_update():
                 if pulsePins[key]['timer'] <= 0:
                     pulsePins[key]['timer'] = 0
                     rC(f'{fbuttons}.button{pulsePins[key]["button"]}','configure','-text',pulsePins[key]['text'])
-                    hal.set_p(pulsePins[key]['pin'], str(not hal.get_value(pulsePins[key]['pin'])))
+                    if pulsePins[key]['pin'].startswith('axisui.ext.out_'):
+                        comp[pulsePins[key]['pin'].replace('axisui.','')] = not hal.get_value(pulsePins[key]['pin'])
+                    else:
+                        hal.set_p(pulsePins[key]['pin'], str(not hal.get_value(pulsePins[key]['pin'])))
         # set button color for pulse-halpin buttons
         if hal.get_value(pulsePins[key]['pin']) != pulsePins[key]['state']:
             pulsePins[key]['state'] = hal.get_value(pulsePins[key]['pin'])
@@ -5833,8 +5776,6 @@ def user_live_update():
             pmx485_fault_changed(pmx485['compFault'])
         if pmx485['compArcTime'] != hal.get_value('pmx485.arcTime'):
             pmx485['compArcTime'] = hal.get_value('pmx485.arcTime')
-#FIXME: PROBABLY NOT REQUIRED AS WE CHANGE THE TEXT DIRECTLY, HERE IN PERIODIC (user_live_update)
-            #pmx485_arc_time_changed(pmx485['compArcTime'])
             pVars.arcT.set(secs_to_hms(pmx485['compArcTime']))
         if pmx485['compMinC'] != hal.get_value('pmx485.current_min'):
             pmx485['compMinC'] = hal.get_value('pmx485.current_min')
