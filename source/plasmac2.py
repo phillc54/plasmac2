@@ -5449,6 +5449,15 @@ def user_hal_pins():
     rC('pack','.about.message1','-expand','1','-fill','both')
     rC('pack','.about.ok')
     previewSize = {'w':rC('winfo','width',tabs_preview), 'h':rC('winfo','height',tabs_preview)}
+    # deprecation message
+    title = 'plasmac2 IS DEPRECATED'
+    msg0 = 'plasmac2 from this repository is now unmaintained and will be removed in the future'
+    msg1 = 'A fully maintained version is available in the master branch of LinuxCNC'
+    msg2 = 'This may be obtained from either the LinuxCNC Github repository or from the LinuxCNC Buildbot'
+    msg3 = 'https://github.com/LinuxCNC/linuxcnc    or    http://buildbot.linuxcnc.org/'
+    msg4 = 'This config may be used with the new version by changing the plasmac2 link target to'
+    msg5 =  newPath = os.path.join(BASE, 'configs/sim/axis/plasma/plasmac2') if installType == 'rip' else '/usr/share/doc/linuxcnc/examples/sample-configs/sim/axis/plasma/plasmac2'
+    plasmacPopUp('info', title, f'\n{msg0}.\n\n{msg1}.\n\n{msg2}.\n{msg3}\n\n{msg4}:\n{msg5}')
 
 
 ##############################################################################

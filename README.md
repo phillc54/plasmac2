@@ -1,3 +1,12 @@
+## Note:
+plasmac2 from this repository is unmaintained and will be removed in the future.
+
+A fully maintained version is available in the master branch of LinuxCNC.
+
+This may be obtained from either the [LinuxCNC Github](https://github.com/LinuxCNC/linuxcnc) 
+repository or from the [LinuxCNC Buildbot](http://buildbot.linuxcnc.org/).
+
+#
 # plasmac2
 A plasma add-on for the AXIS GUI using LinuxCNC v2.9 or later.
 
